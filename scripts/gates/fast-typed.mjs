@@ -1,3 +1,5 @@
+import { join } from 'node:path';
+import { buildTokens, buildTypedInputs, trustedRoot } from './typed-tools.mjs';
 import { trustedVerdict } from './verdict.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
@@ -20,15 +22,17 @@ function background(command, args) {
   });
 }
 export async function typed() {
-  exec('npm', ['run', 'build:packages']);
+  buildTypedInputs();
   // Both lanes depend on dist. Only the package lane writes release/evidence.
   const results = await Promise.allSettled([
     background(process.execPath, [trustedVerdict('unit-matrix.mjs')]),
     (async () => {
-      await background('npm', ['run', 'typecheck']);
-      await background('npm', ['run', 'check:api']);
+      await background(process.execPath, [join(trustedRoot, 'scripts/gates/type-project.mjs'), 'tsconfig.json']);
+      await background(process.execPath, ['--test', 'tests/contracts/api.test.mjs']);
+      await background(process.execPath, [join(trustedRoot, 'scripts/check-api.mjs')]);
+      buildTokens(process.cwd(), true);
       for (const args of [
-        ['packages/tokens/build.mjs', '--check'], ['scripts/inventory.mjs'],
+        [join(trustedRoot, 'scripts/inventory.mjs')],
         [trustedVerdict('verify-artifacts.mjs'), '--built-snapshot'],
         [trustedVerdict('verify-version.mjs')], [trustedVerdict('verify-inventory.mjs')],
       ]) await background(process.execPath, args);

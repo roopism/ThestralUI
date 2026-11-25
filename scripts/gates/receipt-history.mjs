@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { projectStoredPasses } from './reuse/store.mjs';
 import { execFileSync } from 'node:child_process';
 import { existsSync, linkSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -36,7 +37,11 @@ export function publishFirstReceipt(directory, tree, id) {
   }
 }
 
-function incomplete(attempt) {
+function incomplete(attempt, directory) {
+  if (Array.isArray(attempt.suites) && attempt.suites.some(row => row?.result === 'reused')) {
+    try { attempt = projectStoredPasses(directory, attempt); }
+    catch { return true; }
+  }
   return attempt.status !== 'passed' || !Array.isArray(attempt.suites) || !attempt.suites.length ||
     attempt.suites.some(row => row?.result !== 'passed' &&
       !(row?.name === 'iPhone Simulator' && row.result === 'web-only' && attempt.scope?.iphone === false));
@@ -57,16 +62,16 @@ export function relatedHistory(directory, tree, first, root, target) {
   const proposed = target && identify(target);
   function include(attempt) {
     if (attempt.tree === tree) {
-      if (proposed && !incomplete(attempt)) identify(attempt);
+      if (proposed && !incomplete(attempt, directory)) identify(attempt);
       records.push(attempt);
-    } else if (proposed && incomplete(attempt)) {
+    } else if (proposed && incomplete(attempt, directory)) {
       const earlier = identify(attempt);
       if (earlier.head === proposed.head || (earlier.patchId !== null && earlier.patchId === proposed.patchId)) records.push(attempt);
     }
   }
   if (first) {
     assert.equal(first.tree, tree, 'Inconsistent published qualification tree');
-    if (proposed && !incomplete(first)) identify(first);
+    if (proposed && !incomplete(first, directory)) identify(first);
   }
   if (!existsSync(directory)) return records;
   for (const name of readdirSync(directory).filter(name => /^[a-f0-9]{40}\.json$/.test(name) && name !== tree + '.json')) {
@@ -124,7 +129,7 @@ function requireReviewedFailures(directory, tree, history, trustedLedger) {
 }
 
 function rejectIncompleteAttempts(directory, tree, history) {
-  const failed = history.find(incomplete);
+  const failed = history.find(attempt => incomplete(attempt, directory));
   if (failed) throw Error('An earlier failed qualification for this tree, PR head or patch prevents landing ' + tree +
     '. See ' + join(directory, 'attempts', failed.id + '.json'));
 }

@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "suites": {
+    "No weakening": {
+      "lane": "github-linux",
+      "shards": 1,
+      "alsoRunOn": [
+        "github-macos"
+      ]
+    },
+    "Fast": {
+      "lane": "github-linux",
+      "shards": 1
+    },
+    "Typed and unit rosters": {
+      "lane": "github-linux",
+      "shards": 1,
+      "alsoRunOn": [
+        "github-macos"
+      ]
+    },
+    "Browser and visual rosters": {
+      "lane": "github-linux",
+      "shards": 1
+    },
+    "Catalog build": {
+      "lane": "github-linux",
+      "shards": 1
+    },
+    "Packed component specifications": {
+      "lane": "github-linux",
+      "shards": 1
+    },
+    "Packed consumers min": {
+      "lane": "github-linux",
+      "shards": 1
+    },
+    "Packed consumers max": {
+      "lane": "github-linux",
+      "shards": 1
+    },
+    "Packed bundle limits": {
+      "lane": "github-linux",
+      "shards": 1
+    },
+    "Portable web scenarios": {
+      "lane": "github-linux",
+      "shards": 1
+    },
+    "Mac browser behavior": {
+      "lane": "github-macos",
+      "shards": 3,
+      "splitBy": "engine"
+    },
+    "Mac visual comparisons": {
+      "lane": "local",
+      "shards": 1
+    },
+    "Scoped styles": {
+      "lane": "github-linux",
+      "shards": 1
+    },
+    "Mac browser performance": {
+      "lane": "local",
+      "shards": 1
+    },
+    "Native package consumer": {
+      "lane": "github-linux",
+      "shards": 1
+    },
+    "Linux browser behavior": {
+      "lane": "github-linux",
+      "shards": 3,
+      "splitBy": "engine"
+    },
+    "iPhone Simulator": {
+      "lane": "github-macos",
+      "shards": 3,
+      "splitBy": "family"
+    },
+    "Android standard and low-end": {
+      "lane": "local",
+      "shards": 1
+    }
+  }
+}

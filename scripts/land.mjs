@@ -1,3 +1,10 @@
+import { timingForIdenticalApk } from './gates/android-timing-reuse.mjs';
+import { requireObservedSource } from './gates/android-host-activity.mjs';
+import { requireOriginalReceipt, verifyLandingReuse } from './gates/reuse/runner.mjs';
+import { projectStoredPasses } from './gates/reuse/store.mjs';
+import { reusePolicyIssues } from './gates/reuse/strength.mjs';
+import { withRevisionSnapshot } from '../packages/policy/quality/staged-tree.mjs';
+import { installSnapshotDependencies } from '../packages/policy/quality/snapshot-dependencies.mjs';
 import { relatedHistory, requireReviewedFailures, treeHistory } from './gates/receipt-history.mjs';
 import { reviewPolicy } from './gates/review/qualification-policy.mjs';
 import assert from 'node:assert/strict';
@@ -9,6 +16,12 @@ import { stagedDiff } from './selection/staged-tree.mjs';
 import { withLock } from './workers/lock.mjs';
 
 const number = process.argv[2];
+if (import.meta.main && number === '--train') {
+  const { landTrainCommand } = await import('./train.mjs');
+  const train = await landTrainCommand(process.argv.slice(3));
+  console.log('Landed train', train.id, 'at', train.finalCommit, 'with tree', train.finalTree);
+  process.exit(0);
+}
 if (import.meta.main) assert.match(number ?? '', /^[1-9]\d*$/, 'Usage: npm run land <PR number>');
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 const root = git('rev-parse', '--show-toplevel');
@@ -49,6 +62,7 @@ function proposal() {
   const paths = stagedDiff(root, { parent: pr.base.sha, tree }).changes.map(change => change.path);
   requireGateIsolation(pr.head.ref, paths);
   assert.deepEqual(reviewPolicy(root, pr.base.sha, tree), []);
+  assert.deepEqual(reusePolicyIssues(root, pr.base.sha, tree), []);
   return { pr, merge, tree };
 }
 function ownerDecisions(base) {
@@ -56,7 +70,7 @@ function ownerDecisions(base) {
   return /^## Owner decisions\s*$([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(ledger)?.[1] ?? '';
 }
 
-function requireProposalHistory(tree, base, directory, proposal) {
+export function requireProposalHistory(tree, base, directory, proposal) {
   const path = join(directory, tree + '.json');
   const first = existsSync(path) ? JSON.parse(readFileSync(path)) : undefined;
   const target = proposal.commit ? { tree, base, commit: proposal.commit } : first?.commit ? first : undefined;
@@ -73,7 +87,17 @@ export function passing(tree, base, directory = join(common, 'uld-receipts'), pr
   const history = treeHistory(directory, tree, first);
   requireReviewedFailures(directory, tree, history, () => ownerDecisions(base));
   const available = history.filter(item => item.base === base && item.status === 'passed');
-  const r = available.sort((a, b) => (b.finished ?? '').localeCompare(a.finished ?? '')).at(0) ?? first;
+  const raw = available.sort((a, b) => (b.finished ?? '').localeCompare(a.finished ?? '')).at(0) ?? first;
+  if (raw.status === 'passed' && raw.base === base) requireOriginalReceipt(proposal.root ?? root,raw,base);
+  const r = projectStoredPasses(directory, raw);
+  if (r.status === 'passed' && r.base === base && raw.suites.some(row => row.result === 'reused' || row.auditRerun)) {
+    const checkout = proposal.root ?? root;
+    withRevisionSnapshot(checkout, tree, (snapshot, actual, env) => {
+      assert.equal(actual, tree);
+      installSnapshotDependencies(snapshot, join(directory, '..', 'uld-dependencies'), env);
+      verifyLandingReuse({ directory, root: checkout, snapshot }, raw);
+    });
+  }
   assert.equal(r.tree, tree);
   assert.ok(r.mode === 'qualification' || r.mode === 'release');
   if (r.status !== 'passed') return;
@@ -83,11 +107,42 @@ export function passing(tree, base, directory = join(common, 'uld-receipts'), pr
   assert.ok(r.scope.iphone ? r.devices.iphone?.passed : !r.devices.iphone);
   assert.ok(r.suites.every(row => Number.isFinite(row.durationMs) && (row.result === 'passed' ||
     row.name === 'iPhone Simulator' && !r.scope.iphone && row.result === 'web-only')));
+  if (r.androidHostActivityPolicy===1 || spawnSync('git',['--no-replace-objects','cat-file','-e',base+':scripts/gates/android-host-activity.mjs'],
+      {cwd:proposal.root??root,stdio:'ignore'}).status===0) {
+    assert.equal(r.androidHostActivityPolicy,1);
+    const timing=r.androidTiming;
+    if (timing?.result==='timing measured') {
+      requireObservedSource(timing,r);
+      const low=join(directory,'attempts',r.id+'-evidence','android','low-end');
+      assert.deepEqual(JSON.parse(readFileSync(join(low,'timing-admission.json'))),timing.admission);
+      assert.deepEqual(JSON.parse(readFileSync(join(low,'frame-measurements.json'))),timing.frameBudget);
+    } else {
+      assert.equal(timing?.result,'timing reused: identical app');
+      const gitAt=(...args)=>execFileSync('git',['--no-replace-objects',...args],{cwd:proposal.root??root,encoding:'utf8'}).trim();
+      const baseTree=gitAt('rev-parse',base+'^{tree}');
+      assert.equal(timing.baseTree,baseTree);
+      assert.equal(timing.sourceReceipt,'uld-receipts/'+baseTree+'.json');
+      assert.match(timing.measuredReceipt,/^uld-receipts\/[a-f0-9]{40}\.json$/);
+      const source=JSON.parse(readFileSync(join(directory,baseTree+'.json')));
+      assert.equal(timing.baseApkSha256,source.androidTiming?.apkSha256);
+      assert.deepEqual(timing.admission??null,source.androidTiming?.admission??null);
+      if(timing.admission) requireObservedSource(timing,r);
+      if(source.androidTiming?.entryManifestSha256) assert.equal(timing.baseEntryManifestSha256,source.androidTiming.entryManifestSha256);
+      const limits=JSON.parse(gitAt('show',tree+':tests/android/low-end-budget.json')).limits;
+      assert.ok(timing.frameBudget);
+      assert.deepEqual(timingForIdenticalApk(source,baseTree,timing.apkSha256,limits,timing.entryManifestSha256,
+        timing.baseEntryManifestSha256),timing.frameBudget);
+    }
+  }
   if (r.base !== base) return;
-  return r;
+  return raw;
 }
 if (import.meta.main) await withLock(root, 'landing', 'PR ' + number, async () => {
   const directory = join(common, 'uld-receipts');
+  if (existsSync(join(directory, 'train-landing-blocked.json'))) {
+    const { reconcileTrainLanding } = await import('./train.mjs');
+    await reconcileTrainLanding(directory, root);
+  }
   requireResolvedMerge(directory, (commit, actualTree) => {
     assert.equal(git('rev-parse', commit + '^{tree}'), actualTree);
     return passing(actualTree, commit, directory, { commit });

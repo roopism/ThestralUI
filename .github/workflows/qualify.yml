@@ -1,0 +1,101 @@
+name: Qualification lanes
+run-name: Qualify ${{ inputs.merge }} on ${{ inputs.base }} (${{ inputs.request }})
+on:
+  workflow_dispatch:
+    inputs:
+      base: {required: true, type: string}
+      merge: {required: true, type: string}
+      number: {required: true, type: string}
+      request: {required: true, type: string}
+permissions:
+  contents: read
+  pull-requests: read
+env:
+  BASE: ${{ inputs.base }}
+  MERGE: ${{ inputs.merge }}
+  NUMBER: ${{ inputs.number }}
+jobs:
+  plan:
+    if: github.repository_id == '1471056545' && github.event.repository.visibility == 'public'
+    runs-on: ubuntu-24.04-arm
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - name: Authenticate the integration commit before reading its controls
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$MERGE" = "$GITHUB_SHA"
+          test "$BASE" = "$(gh api repos/roopism/ThestralUI/git/ref/heads/feat/enterprise-ui --jq .object.sha)"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ inputs.base }}', fetch-depth: 0, persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version-file: .nvmrc}
+      - run: node scripts/gates/cloud/dispatch-check.mjs .
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - id: plan
+        run: node scripts/gates/cloud/plan.mjs . "$BASE" "$MERGE"
+  shard:
+    needs: plan
+    name: Qualify / ${{ matrix.id }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      SHARD: ${{ matrix.id }}
+      SUITE: ${{ matrix.suite }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: {ref: '${{ inputs.base }}', fetch-depth: 0, persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version-file: .nvmrc, cache: npm}
+      - name: Restore trusted browser revisions
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809
+        with:
+          path: ${{ runner.temp }}/qualification-browsers
+          key: browsers-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+      - name: Prepare the trusted toolchain
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          export PLAYWRIGHT_BROWSERS_PATH="$RUNNER_TEMP/qualification-browsers"
+          if test "$RUNNER_OS" = Linux; then
+            node node_modules/@playwright/test/cli.js install --with-deps chromium firefox webkit
+          else
+            node node_modules/@playwright/test/cli.js install chromium firefox webkit
+          fi
+      - id: image
+        if: matrix.suite == 'iPhone Simulator'
+        run: |
+          test -n "$ImageVersion"
+          echo "version=$ImageVersion" >> "$GITHUB_OUTPUT"
+      - name: Restore the iPhone build for this exact proposal
+        if: matrix.suite == 'iPhone Simulator'
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809
+        with:
+          path: ${{ runner.temp }}/iphone-cache/
+          key: iphone-host-v1-${{ steps.image.outputs.version }}-${{ inputs.base }}-${{ inputs.merge }}
+      - name: Provision the pinned iPhone tools
+        if: matrix.suite == 'iPhone Simulator'
+        run: bash scripts/gates/cloud/iphone-tools.sh
+      - name: Evaluate the exact candidate
+        run: bash scripts/gates/cloud/hosted-setup.sh
+      - name: Keep rendered images from a failing hosted visual check
+        if: failure() && matrix.suite == 'Mac visual comparisons'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: observed-${{ matrix.id }}
+          path: ${{ runner.temp }}/visual-observations.zip
+          if-no-files-found: warn
+      - name: Preserve shard evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ matrix.id }}
+          path: ${{ runner.temp }}/verified-shard/
+          if-no-files-found: error

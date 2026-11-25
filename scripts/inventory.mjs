@@ -4,7 +4,17 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { families, revision, behaviorAnchors } from '../docs/component-inventory.mjs';
+import * as registered from '../docs/component-inventory.mjs';
+import { inventoryData, loadManifests } from './manifests/generate.mjs';
+
+export function inventoryFromSources(root) {
+  const { families, shared } = loadManifests(root);
+  return inventoryData(families, shared);
+}
+const direct = process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
+const { families, revision, behaviorAnchors } = direct && process.env.UI_GATE_SNAPSHOT === '1'
+  ? inventoryFromSources(process.cwd()) : registered;
+
 export function auditInventory(rows, actual, exists = existsSync) {
   const owners = new Set(),
     ids = new Set();

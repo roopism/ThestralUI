@@ -104,7 +104,7 @@ export function iosHostKey(root, archives, { runtime, pods }) {
   });
 }
 
-export function androidHostKey(root, archives, android, abi) {
+export function androidHostKey(root, archives, android, abi, probes) {
   const list = (folder) => {
     const path = join(android.sdk, folder);
     return existsSync(path) ? readdirSync(path).sort() : [];
@@ -125,7 +125,7 @@ export function androidHostKey(root, archives, android, abi) {
   ];
   return nativeKey({
     platform: 'android',
-    files: fileInputs(root, [...sharedFiles, 'tests/android/FrameActivity.kt']),
+    files: { ...fileInputs(root, sharedFiles), calibratedFrameActivity: digest(readFileSync(join(probes, 'FrameActivity.kt'))) },
     tools,
     archives: archives.map((archive) => archiveNativeInputs(archive.path)),
   });

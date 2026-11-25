@@ -42,6 +42,27 @@ jobs:
               ':(exclude,top,literal).github/gate-review.test.mjs' \
               ':(exclude,top,literal).github/gate-review.md'
           fi
+      - name: Read trusted gate controls
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: trusted-gate
+          persist-credentials: false
+      - name: Select the trusted runtime
+        if: github.event_name == 'pull_request'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: trusted-gate/.nvmrc
+      - name: Evaluate the proposed tree with the base judges
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          npm --prefix trusted-gate ci --ignore-scripts --no-fund --no-audit
+          node trusted-gate/scripts/gates/no-weakening.mjs "$BASE" "$HEAD" "$PWD"
+          node trusted-gate/scripts/gates/review/qualification-policy.mjs "$PWD" "$BASE" "$HEAD"
       - name: Test the proposed review rules
         run: node --test .github/gate-review.test.mjs
 
