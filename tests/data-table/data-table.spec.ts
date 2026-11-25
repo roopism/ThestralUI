@@ -77,9 +77,10 @@ test('a late server response cannot replace results from a newer search', async 
     await expect.poll(() => server.requests.some(item => item.path.includes('q=slow'))).toBe(true);
     await expect(table).toHaveAttribute('aria-busy', 'true');
     expect(await table.boundingBox()).toEqual(before);
+    // The next browser round trip installs the listener before the server releases its response.
+    const slowResponse = page.waitForResponse(response => new URL(response.url()).searchParams.get('q') === 'slow');
     await field.fill('finance');
     await expect(page.getByRole('button', { name: 'Edit Title, Cedar audit' })).toBeVisible();
-    const slowResponse = page.waitForResponse(response => new URL(response.url()).searchParams.get('q') === 'slow');
     server.finishSlow();
     const response = await slowResponse;
     expect(await response.finished()).toBeNull();
