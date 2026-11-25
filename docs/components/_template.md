@@ -3,7 +3,7 @@
   "family": "Button",
   "status": "draft",
   "since": "0.3.0-rc.1",
-  "owner": "@thetechgeeek",
+  "owner": "@roopism",
   "platforms": { "web": "supported", "native": "experimental" },
   "exports": [
     { "platform": "web", "name": "Button", "from": "@ui-lazy-dev/ui-web", "rendering": "client-only" },
