@@ -37,11 +37,13 @@
     ],
     "nativeUnit": [],
     "browser": [
-      "tests/browser/enterprise-workspace.spec.ts"
+      "tests/browser/enterprise-workspace.spec.ts",
+      "tests/browser/workflow-regressions.spec.ts"
     ],
     "visual": [],
     "story": [
-      "catalog/EnterpriseWorkspace.stories.tsx"
+      "catalog/EnterpriseWorkspace.stories.tsx",
+      "catalog/WorkflowRecovery.stories.tsx"
     ],
     "scenario": [],
     "style": [
@@ -54,7 +56,9 @@
       "tests/form-wizard/workflow-commands.test.tsx | retains draft controls across steps and focuses the new step heading"
     ],
     "browser": [
-      "browser/enterprise-workspace.spec.ts | restores a saved workflow after reload and retries interrupted batch items"
+      "browser/enterprise-workspace.spec.ts | restores a saved workflow after reload and retries interrupted batch items",
+      "browser/workflow-regressions.spec.ts | submitting from the wizard field keeps keyboard focus on the pending submit button",
+      "browser/workflow-regressions.spec.ts | a tall wizard step reveals its newly focused heading on a narrow screen"
     ]
   }
 }

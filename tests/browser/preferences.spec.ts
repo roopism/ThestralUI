@@ -38,6 +38,22 @@ for (const [story, direction] of [
           .first()
           .evaluate((el) => getComputedStyle(el, '::before').content),
       ).not.toBe('none');
+
+      const indicatorWidth = (radio: HTMLInputElement) => {
+        const label = radio.labels?.[0];
+        if (!label) throw new Error('The radio has no associated label');
+        const mark = getComputedStyle(label, '::before');
+        if (mark.content === 'none' || mark.display === 'none' || mark.visibility !== 'visible')
+          return 0;
+        return parseFloat(mark.borderTopWidth);
+      };
+      for (const forcedColors of ['none', 'active'] as const) {
+        await page.emulateMedia({ forcedColors });
+        const selectedWidth = await main.getByRole('radio', { checked: true }).evaluate(indicatorWidth);
+        const otherWidth = await main.getByRole('radio', { checked: false }).evaluate(indicatorWidth);
+        expect(otherWidth).toBeGreaterThan(0);
+        expect(selectedWidth, 'Selected radio border with forced colors ' + forcedColors).toBeGreaterThan(otherWidth);
+      }
     },
   );
 }

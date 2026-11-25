@@ -5,6 +5,7 @@ The following inventory covers visible and accessibility copy in the web and nat
 | Message key | English message | Binding source |
 | --- | --- | --- |
 | `dataTable.search` | Search records | [data-table/binding.tsx:11](../packages/web/src/data-table/binding.tsx#L11) |
+| `dataTable.viewport` | Table contents | [Data Table web binding](../packages/web/src/data-table/binding.tsx) |
 | `dataTable.selectPage` | Select page | [data-table/binding.tsx:12](../packages/web/src/data-table/binding.tsx#L12) |
 | `dataTable.previousPage` | Previous page | [data-table/binding.tsx:13](../packages/web/src/data-table/binding.tsx#L13) |
 | `dataTable.nextPage` | Next page | [data-table/binding.tsx:14](../packages/web/src/data-table/binding.tsx#L14) |

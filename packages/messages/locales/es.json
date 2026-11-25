@@ -1,5 +1,6 @@
 {
   "dataTable.search": "Buscar registros",
+  "dataTable.viewport": "Contenido de la tabla",
   "dataTable.selectPage": "Seleccionar todos los registros de esta página",
   "dataTable.previousPage": "Página anterior",
   "dataTable.nextPage": "Página siguiente",

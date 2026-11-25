@@ -1,5 +1,5 @@
 'use client';
-import { type ReactNode, useRef, useEffect } from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "../button/binding.js";
 export interface WizardStep {
   id: string;
@@ -30,11 +30,21 @@ export function Wizard({
 }: WizardProps) {
   const heading = useRef<HTMLHeadingElement>(null);
   const previous = useRef(activeId);
+  const activeFields = useRef<HTMLFieldSetElement>(null);
+  const submit = useRef<HTMLButtonElement>(null);
+  const [fieldsBusy, setFieldsBusy] = useState(busy);
   const index = steps.findIndex((step) => step.id === activeId);
+  useLayoutEffect(() => {
+    if (busy === fieldsBusy) return;
+    // Disabling a focused fieldset can blur its input before focus can be recovered.
+    const fields = activeFields.current;
+    if (busy && fields?.contains(fields.ownerDocument.activeElement)) submit.current?.focus();
+    setFieldsBusy(busy);
+  }, [busy, fieldsBusy]);
   useEffect(() => {
     if (previous.current !== activeId) {
       previous.current = activeId;
-      heading.current?.focus({ preventScroll: true });
+      heading.current?.focus();
     }
   }, [activeId]);
   if (index < 0) return null;
@@ -63,8 +73,9 @@ export function Wizard({
         {steps.map((step) => (
           <fieldset
             key={step.id}
+            ref={step.id === activeId ? activeFields : undefined}
             hidden={step.id !== activeId}
-            disabled={step.id !== activeId || busy}
+            disabled={step.id !== activeId || fieldsBusy}
             aria-label={step.label}
           >
             {step.content}
@@ -77,7 +88,7 @@ export function Wizard({
               {labels?.back ?? 'Back'}
             </Button>
           )}
-          <Button type="submit" busy={busy} disabled={current.canAdvance === false}>
+          <Button ref={submit} type="submit" busy={busy} disabled={current.canAdvance === false}>
             {index === steps.length - 1 ? (labels?.finish ?? 'Finish') : (labels?.next ?? 'Next')}
           </Button>
         </div>
