@@ -219,7 +219,16 @@ async function qualify() {
         });
       });
     }
-    requireCompletedProfiles(profiles, flows, roster.map(scenario => scenario.id), budgets.limits, neutralIds);
+    try {
+      requireCompletedProfiles(profiles, flows, roster.map(scenario => scenario.id), budgets.limits, neutralIds);
+    } catch (error) {
+      if (error.code === 'android/frame-budget') {
+        writeFileSync(join(reports, 'final-budget-failure.json'), JSON.stringify({
+          error: error.message, profiles, flows, roster: roster.map(scenario => scenario.id), selected: neutralIds,
+        }) + '\n');
+      }
+      throw error;
+    }
     if (timingFailure) throw timingFailure;
     writeFileSync(
       report,

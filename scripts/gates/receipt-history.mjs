@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { projectStoredPasses } from './reuse/store.mjs';
+import { isDeepStrictEqual } from 'node:util';
+import { resolveFailure } from './landing-evidence.mjs';
 import { execFileSync } from 'node:child_process';
 import { existsSync, linkSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -134,13 +136,42 @@ function rejectIncompleteAttempts(directory, tree, history) {
     '. See ' + join(directory, 'attempts', failed.id + '.json'));
 }
 
-// Historical review explains the original failure. An incomplete attempt always bars landing,
-// including when the historical file is malformed or the old process accepted it.
-function requireEligibleHistory(directory, tree, history, trustedLedger) {
-  try {
-    requireReviewedFailures(directory, tree, history, trustedLedger);
-  } finally {
-    rejectIncompleteAttempts(directory, tree, history);
+// A published first receipt may also appear in attempts. Conflicting copies are never
+// interchangeable. Keep the existing rejection and historical decision diagnostics for
+// every attempt without an exact, independently authenticated resolution.
+function requireEligibleHistory(directory, tree, history, trustedLedger, context) {
+  const unresolved = [];
+  const reviewed = new Map();
+  let timingFailures = 0;
+  for (const row of history.filter(row => incomplete(row, directory))) {
+    if (reviewed.has(row.id)) {
+      assert.deepEqual(row, reviewed.get(row.id).failed, 'Conflicting copies of a qualification attempt');
+      continue;
+    }
+    if (!context || row.status !== 'failed' || row.tree !== tree || row.base !== context.base ||
+        !attemptFile.test(row.id + '.json') ||
+        !existsSync(join(directory, 'attempts', row.id + '-evidence', 'landing', 'manifest.json'))) {
+      unresolved.push(row);
+      continue;
+    }
+    const result = resolveFailure(context.root, directory, row, history, tree, context.base, context.roster);
+    assert.ok(history.every(copy => copy.id !== row.id || isDeepStrictEqual(copy, row)), 'Inconsistent failed receipt');
+    if (result.timingFailure) timingFailures++;
+    reviewed.set(row.id, { ...result, failed: row });
   }
+  assert.ok(timingFailures <= 1, 'A second timing failure permanently prevents landing this tree');
+  try {
+    requireReviewedFailures(directory, tree, unresolved, trustedLedger);
+  } finally {
+    rejectIncompleteAttempts(directory, tree, unresolved);
+  }
+  if (!reviewed.size) return history.filter(item => item.status === 'passed').map(receipt => ({ receipt }));
+  const evidence = [...reviewed.values()].map(({ failed, diagnostic }) =>
+    ({ failed: failed.id, ...(diagnostic && { diagnostic }) }));
+  return [...reviewed.values()].map(({ pass, failed }) => ({
+    receipt: pass.id === failed.id ? failed : pass,
+    verdict: pass,
+    evidence,
+  }));
 }
 export { requireEligibleHistory as requireReviewedFailures };

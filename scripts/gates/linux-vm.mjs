@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { reserveLinuxGuest } from '../workers/lock.mjs';
 import { withTiming } from '../workers/resource-guard.mjs';
 import { prepareGuest } from './linux-prepare.mjs';
 import { isIPv4 } from 'node:net';
@@ -14,7 +15,20 @@ const config = join(homedir(), 'Library/Application Support/ui-lazy-dev/linux-vm
 const sshOptions = ['-F', config, '-o', 'StrictHostKeyChecking=yes', '-o', 'ForwardAgent=no', '-o', 'ClearAllForwardings=yes'];
 const exec = (bin, args, options = {}) => execFileSync(bin, args, { encoding: 'utf8', ...options });
 const state = () => exec(utm, ['status', vm]).trim();
-export async function stopVm() {
+const reservationRoot = () => process.env.ULD_ARTIFACT_COMMON || process.cwd();
+
+// Internal shutdown runs under the caller's lease. Standalone callers acquire their own.
+async function withGuest(holder, run) {
+  const release = await reserveLinuxGuest(reservationRoot(), holder);
+  try { return await run(); } finally { release(); }
+}
+
+function stopReservedVm() {
+  return withGuest('Shut down Linux guest', stopVm);
+}
+export { stopReservedVm as stopVm };
+
+async function stopVm() {
   if (state() === 'stopped') return;
   assert.notEqual(process.env.ULD_CLOUD_LOCAL, '1', 'Local cloud timing requires the project VM to already be stopped');
   exec(utm, ['stop', vm, '--request']);
@@ -64,8 +78,11 @@ export function prepareLinuxDependencies(root, sshArgs, image, cache) {
 
 export async function withLinuxImageFacts(observe) {
   return withTiming('activity', 'Read current Linux guest identity', async () => {
+    const release = await reserveLinuxGuest(reservationRoot(), 'Read current Linux guest identity');
+    let startedHere = false;
     try {
-      if (state() === 'stopped') exec(utm, ['start', vm]);
+      startedHere = state() === 'stopped';
+      if (startedHere) exec(utm, ['start', vm]);
       let sshArgs;
       for (let n = 0; n < 60; n++) {
         try {
@@ -80,7 +97,10 @@ export async function withLinuxImageFacts(observe) {
       assert.equal(image.uuid, '8E1A0BED-BE5C-4A3C-9814-6543FB229DB7');
       assert.equal(image.sha256, '50e24e1fb79e89116e939d90aa7738f7af48c442fa1bc2510131e0b39c50348e');
       return await observe(image, sshArgs);
-    } finally { await stopVm(); }
+    } finally {
+      try { if (startedHere) await stopVm(); }
+      finally { release(); }
+    }
   });
 }
 
@@ -109,7 +129,13 @@ function runLinuxBrowserGroups(sshArgs, exclude) {
   }
 }
 
-export async function linuxBrowsers(root, commit, record, { exclude = [] } = {}) {
+function runReservedLinuxBrowsers(root, commit, record, options) {
+  return withGuest('Linux browser behavior', () =>
+    linuxBrowsers(root, commit, record, options));
+}
+export { runReservedLinuxBrowsers as linuxBrowsers };
+
+async function linuxBrowsers(root, commit, record, { exclude = [] } = {}) {
   assert.match(commit, /^[a-f0-9]{40}$/);
   try {
     if (state() === 'stopped') exec(utm, ['start', vm]);

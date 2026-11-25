@@ -21,7 +21,7 @@ mkdirSync(output, { mode: 0o700 });
 const evidence = join(output, 'evidence.log'), fd = openSync(evidence, 'wx', 0o600);
 const coverageFile = join(home, 'shard-coverage.json');
 const env = { HOME: home, TMPDIR: join(home, 'tmp'), CI: '1', UI_GATE_SNAPSHOT: '1', ULD_READONLY_TOOLCHAIN: '1', PATH: process.env.PATH,
-  PLAYWRIGHT_BROWSERS_PATH: process.env.PLAYWRIGHT_BROWSERS_PATH, LANG: 'en_US.UTF-8', ULD_ARTIFACT_COMMON: join(home, 'cache'), ULD_DEVICE_HOSTS: join(home, 'device-hosts'),
+  PLAYWRIGHT_BROWSERS_PATH: process.env.PLAYWRIGHT_BROWSERS_PATH, LANG: 'en_US.UTF-8', ULD_ARTIFACT_COMMON: join(candidate, '.git'), ULD_DEVICE_HOSTS: join(home, 'device-hosts'),
   GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_COUNT: '1',
   GIT_CONFIG_KEY_0: 'safe.directory', GIT_CONFIG_VALUE_0: realpathSync(trusted) };
 for (const name of ['JAVA_HOME', 'MAESTRO_BIN', 'DEVELOPER_DIR', 'GEM_HOME', 'GEM_PATH']) {

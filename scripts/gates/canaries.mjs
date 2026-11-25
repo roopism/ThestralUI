@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { androidTiming, apkDigest, apkIdentity, timingForIdenticalApk } from './android-timing-reuse.mjs';
@@ -115,6 +116,8 @@ with zipfile.ZipFile(apk, "w") as archive:
     null, guard);
   canary('scripts/gates/control.mjs', () => '', /removed registered suite/,
     "step('Control', () => run('engine'));");
+  execFileSync(process.execPath, ['--test', fileURLToPath(new URL('./tests/landing-evidence.test.mjs', import.meta.url))],
+    { stdio: 'inherit' });
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }

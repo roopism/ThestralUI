@@ -133,7 +133,8 @@ export function pushedRevisions(input) {
 export async function packedDepth() {
   const { verifyPackedDepth } = await import('./api-depth/run-depth.mjs');
   const { auditComponentSpecs } = await import('./specs/validate.mjs');
-  const { families: inventory } = await import('../../../docs/component-inventory.mjs');
+  const { packedRegistrations } = await import('./api-depth/packed-registrations.mjs');
+  const inputs = packedRegistrations(process.cwd());
   const consumer = resolve('release/depth-consumer');
   mkdirSync(consumer, { recursive: true });
   writeFileSync(join(consumer, 'package.json'), JSON.stringify({ name: 'packed-depth-consumer', private: true }));
@@ -148,14 +149,13 @@ export async function packedDepth() {
     const path = join(consumer, 'node_modules', name);
     assert.equal(realpathSync(path), join(realpathSync(consumer), 'node_modules', name), 'Linked package ' + name);
   }
-  const published = inventory.filter(family => family.api?.length || family.nativeApi?.length);
-  const specs = auditComponentSpecs({ consumer, families: published });
+  const specs = auditComponentSpecs({ consumer, families: inputs.published });
   console.log('Packed component specs:', specs.total, 'families', specs.stats, 'violations:', specs.failureCount);
   if (specs.failureCount) {
     for (const { family, code, message } of specs.issues) console.error(`${family} [${code}] ${message}`);
     throw new Error(`Component spec validation failed for ${specs.failingFamilies} families`);
   }
-  console.log('Packed family checks:', await verifyPackedDepth(consumer, 'docs/component-inventory.mjs'));
+  console.log('Packed family checks:', await verifyPackedDepth(consumer, inputs));
   return consumer;
 }
 

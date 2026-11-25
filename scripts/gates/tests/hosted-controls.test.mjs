@@ -95,3 +95,17 @@ test('the Mac visual suite stays local and missing visual evidence blocks a comb
     mode: 'qualification', status: 'passed', suites };
   assert.throws(() => combineEvidence(expected, shards, hosted, local), /Missing or duplicate local suite Mac visual comparisons/);
 });
+
+test('hosted reservations resolve inside the isolated candidate repository', t => {
+  const {root} = fixture(t);
+  const home = join(root,'home'), candidate = join(root,'candidate'), trusted = join(root,'base');
+  mkdirSync(join(home,'cache'), {recursive:true});
+  mkdirSync(trusted);
+  execFileSync('git',['init','--quiet','--template=',candidate]);
+  const runner = readFileSync(new URL('../cloud/hosted-runner.mjs', import.meta.url),'utf8');
+  const expression = runner.match(/^const env = (\{[\s\S]*?\});$/m)[1];
+  const env = new Script('(' + expression + ')').runInNewContext({home,candidate,trusted,join,realpathSync,process});
+  const common = execFileSync('git',['rev-parse','--path-format=absolute','--git-common-dir'],
+    {cwd:env.ULD_ARTIFACT_COMMON, encoding:'utf8'}).trim();
+  assert.equal(common,join(realpathSync(candidate),'.git'));
+});

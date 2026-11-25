@@ -9,6 +9,7 @@ import { buildTypedInputs, requireTypedControls } from './typed-tools.mjs';
 import { runShard } from './cloud/shard.mjs';
 import { browserMatrix } from '../../packages/policy/quality/browser-matrix.mjs';
 import { verifyCandidatePassed } from '../../packages/policy/quality/api-depth/evidence.mjs';
+import { runMacPerformance } from './mac-performance.mjs';
 import { linuxBrowsers, stopVm } from './linux-vm.mjs';
 import { deviceScope } from '../selection/local-device.mjs';
 import { withLock } from '../workers/lock.mjs';
@@ -49,7 +50,7 @@ async function executeSuite() {
     await usingSimulator(suite, async () => {
       await stopVm();
       shutdownSimulators();
-      node(control('tests/browser/quality-perf.mjs'));
+      runMacPerformance(root, base, commit);
     });
   } else if (['Android standard and low-end','iPhone Simulator'].includes(suite)) {
     const iphone = suite === 'iPhone Simulator';

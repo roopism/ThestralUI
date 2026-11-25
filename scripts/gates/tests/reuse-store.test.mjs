@@ -209,3 +209,36 @@ test('a reused operation skips work and its audit executes fresh',async()=>{
   assert.equal(row.reuseReason,'unreadable evidence');
   await assert.rejects(executeChoice(row,{reuse:false},false,reuse,()=>{throw Error('failed check');}),/failed check/);
 });
+
+test('landing rechecks the retained pass after the latest fingerprint pointer moves', async t => {
+  const { decideRow } = await import('../reuse/runner.mjs');
+  t.mock.method(Date, 'now', () => now + 200);
+  const f = sourceFixture(t);
+  const retained = f.publish();
+  const row = {name:group, fingerprint:f.fp, reusedFrom:f.id, reuseRecord:retained};
+  const context = {directory:f.directory, attemptId:randomUUID(), mode:'qualification'};
+  const identity = {config:{reusable:true}, fingerprint:f.fp, pipelineChanged:false};
+  const next = randomUUID();
+  const rel = evidencePath(next, group);
+  const data = JSON.stringify({...JSON.parse(f.evidence), attempt:next});
+  mkdirSync(dirname(join(f.directory,rel)),{recursive:true});
+  writeFileSync(join(f.directory,rel),data);
+  const later = structuredClone(f.receipt);
+  Object.assign(later,{id:next,started:new Date(now+50).toISOString(),finished:new Date(now+100).toISOString()});
+  later.suites.find(s => s.name===group).evidenceSha256 = sha256(data);
+  writeFileSync(join(f.directory,'attempts',next+'.json'),JSON.stringify(later,null,2)+'\n');
+  f.git('update-ref','refs/uld-archive/qualification-attempts/'+next,f.commit);
+  sealReceipt(f.root,later);
+  assert.equal(f.publish({attemptId:next}).sourceAttempt,next);
+  const check = () => requireLandingIdentity(row,identity,decideRow(context,group,identity,retained));
+  assert.doesNotThrow(check);
+  t.mock.method(Date, 'now', () => now + 72 * 3600000);
+  assert.throws(check);
+  t.mock.method(Date, 'now', () => now + 200);
+  writeFileSync(join(f.directory,'attempts',next+'.json'),JSON.stringify({...later,suites:[{name:group,result:'failed'}]}));
+  assert.throws(check);
+  writeFileSync(join(f.directory,'attempts',next+'.json'),JSON.stringify(later,null,2)+'\n');
+  const {disableGroup} = await import('../reuse/audit.mjs');
+  disableGroup(f.directory,group,'Control disagreement');
+  assert.throws(check);
+});

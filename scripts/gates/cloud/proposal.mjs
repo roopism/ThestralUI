@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -22,10 +23,22 @@ function api(endpoint, body) {
 // commit so both the Actions API and the checked out commit identify that merge.
 export function cloudProposal(root, base, merge, pr) {
   for (const sha of [base, merge]) assert.match(sha, oid);
-  assert.equal(git(root, 'rev-parse', base + '^{commit}'), base);
-  assert.equal(git(root, 'rev-parse', merge + '^{commit}'), merge);
   const permit = git(root, 'remote', 'get-url', 'origin');
   assert.ok(['https://github.com/roopism/ThestralUI', 'https://github.com/roopism/ThestralUI.git', 'git@github.com:roopism/ThestralUI.git'].includes(permit));
+  if (pr) {
+    assert.ok(Number.isSafeInteger(pr.number) && pr.number > 0);
+    const archive = 'refs/uld-archive/cloud-inputs/' + randomUUID();
+    git(root, 'fetch', '--atomic', '--no-tags', '--no-write-fetch-head', '--refmap=', 'origin',
+      'refs/heads/' + integration + ':' + archive + '/base', 'refs/pull/' + pr.number + '/merge:' + archive + '/merge');
+    const liveBase = git(root, 'rev-parse', archive + '/base');
+    assert.equal(liveBase, base, 'Integration advanced');
+    assert.match(pr.base.sha, oid);
+    git(root, 'merge-base', '--is-ancestor', pr.base.sha, liveBase);
+    pr = { ...pr, base: { ...pr.base, sha: liveBase } };
+    assert.equal(git(root, 'rev-parse', archive + '/merge'), merge, 'Pull request merge changed');
+  }
+  assert.equal(git(root, 'rev-parse', base + '^{commit}'), base);
+  assert.equal(git(root, 'rev-parse', merge + '^{commit}'), merge);
   const expected = { base, merge, controlDigest: typedControlDigest(root, base), tree: git(root, 'rev-parse', merge + '^{tree}'),
     baseWorkflow: git(root, 'rev-parse', base + ':' + file), mergeWorkflow: git(root, 'rev-parse', merge + ':' + file) };
   assert.equal(expected.baseWorkflow, expected.mergeWorkflow, 'A new workflow must be adopted using a trusted predecessor');
