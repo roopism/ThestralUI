@@ -3,7 +3,7 @@
   "family": "Labeled field",
   "status": "draft",
   "since": "0.1.0",
-  "owner": "@thetechgeeek",
+  "owner": "@roopism",
   "platforms": {
     "web": "supported",
     "native": "experimental"
