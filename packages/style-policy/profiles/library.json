@@ -239,11 +239,11 @@
     },
     {
       "path": "packages/web/src/icon-button/styles.css",
-      "previousManifestSha256": "dc96eacfd12bc074a756b9dfa2ef9b1907912ac5aea24de9b3d0bcc0db877a6a"
+      "previousManifestSha256": "8875984e7c2e8a19711e54c2fd711c3301e095bb3be3e60c01ed75cd3202f2f7"
     },
     {
       "path": "packages/native/src/heading/binding.tsx",
-      "previousManifestSha256": "bae77672e316a89124ffcfa5a934a2c7db04fe6e9962c15a236211df0b6cb046"
+      "previousManifestSha256": "5d7c03f957e04344bc2c76514289d112567ca112b16aaf411d0923b9641e9138"
     }
   ],
   "standaloneStyles": {
