@@ -58,6 +58,10 @@
     "scrollInputSource": {
       "commit": "f83c9d0f7a80bb7d05c6ca79a5909e020b690383",
       "probeBlob": "80ea2f5b0f4d223b990258ebdfb2bbf3c5adf1eb",
+      "fixtureBlobs": {
+        "FrameFixture.js": "1e23cca9965a608be3c1aaa56f46cc4a9bb9e901",
+        "index.js": "ef094f276d5497f0aca3f5357655da35de42ccc6"
+      },
       "apkSha256": "482de33434b25390f1d1aaf72d60c1af6a742852f75efa0235d346217294b9c6"
     }
   },

@@ -1,6 +1,9 @@
 [
   "scripts/gates/tests/android-host-activity.test.mjs | Android host admission waits at most twenty minutes and identifies input, load and missing observations",
   "scripts/gates/tests/android-host-activity.test.mjs | Android timing retains all trials and one contention diagnostic cannot replace the original failure",
+  "scripts/gates/tests/android-probe-integrity.test.mjs | Android refuses a candidate timing probe with rescaled durations before building",
+  "scripts/gates/tests/android-probe-integrity.test.mjs | Android refuses a shorter scroll fixture before building",
+  "scripts/gates/tests/android-probe-integrity.test.mjs | Android refuses changed probe bytes even if a candidate supplies its own pin",
   "scripts/gates/tests/cloud-qualification.test.mjs | browser evidence covers the whole roster and every Linux scenario once per engine",
   "scripts/gates/tests/cloud-qualification.test.mjs | cloud evidence joins only successful local measurements for the exact proposal",
   "scripts/gates/tests/cloud-qualification.test.mjs | hosted dispatch pins the toolchain and keeps timing on this Mac",
