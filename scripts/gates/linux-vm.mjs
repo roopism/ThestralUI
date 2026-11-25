@@ -16,6 +16,7 @@ const exec = (bin, args, options = {}) => execFileSync(bin, args, { encoding: 'u
 const state = () => exec(utm, ['status', vm]).trim();
 export async function stopVm() {
   if (state() === 'stopped') return;
+  assert.notEqual(process.env.ULD_CLOUD_LOCAL, '1', 'Local cloud timing requires the project VM to already be stopped');
   exec(utm, ['stop', vm, '--request']);
   for (let n = 0; n < 60; n++) {
     if (state() === 'stopped') return;

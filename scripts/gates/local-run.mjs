@@ -24,6 +24,7 @@ import { browserMatrix, scenarioMatrix } from '../../packages/policy/quality/bro
 import { verifyCandidatePassed } from '../../packages/policy/quality/api-depth/evidence.mjs';
 import { packedDepth, checkNewBudgets } from '../../packages/policy/quality/check-staged.mjs';
 import { verifyPackedCeiling } from '../../packages/policy/quality/size-ceiling.mjs';
+import { requireTypedControls } from './typed-tools.mjs';
 import { fast, typed, browserRosters } from './fast-typed.mjs';
 import { linuxBrowsers, stopVm } from './linux-vm.mjs';
 
@@ -243,6 +244,7 @@ async function auditReuse() {
 
 const trustedGate = file => fileURLToPath(new URL(file, import.meta.url));
 step('No weakening', () => {
+  requireTypedControls(root, base, tree);
   assert.deepEqual(reviewPolicy(root, base, tree), []);
   assert.deepEqual(reusePolicyIssues(root,base,tree),[]);
   node(trustedGate('no-weakening.mjs'), base, tree, root);

@@ -44,7 +44,9 @@ export function shutdownSimulators(
   sim = (...args) => execFileSync('xcrun', ['simctl', ...args], { encoding: 'utf8' }),
 ) {
   const booted = () => Object.values(JSON.parse(sim('list', 'devices', 'booted', '-j')).devices).flat();
-  for (const device of booted()) sim('shutdown', device.udid);
+  if (process.env.ULD_CLOUD_LOCAL !== '1') {
+    for (const device of booted()) sim('shutdown', device.udid);
+  }
   const remaining = booted();
   if (remaining.length)
     throw Error(

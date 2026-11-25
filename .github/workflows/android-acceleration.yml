@@ -1,0 +1,61 @@
+name: Android acceleration probe
+on: workflow_dispatch
+permissions: {}
+jobs:
+  probe:
+    if: github.repository_id == '1471056545' && github.ref == 'refs/heads/feat/enterprise-ui'
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Check KVM access as the runner user
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = aarch64
+          cd "$RUNNER_TEMP"
+          cc -Wall -Wextra -Werror -x c -o kvm-probe - <<'C'
+          #include <errno.h>
+          #include <fcntl.h>
+          #include <linux/kvm.h>
+          #include <stdio.h>
+          #include <sys/ioctl.h>
+          #include <unistd.h>
+
+          int main(void) {
+              int kvm = open("/dev/kvm", O_RDWR | O_CLOEXEC);
+              if (kvm < 0) {
+                  int error = errno;
+                  perror("open /dev/kvm");
+                  return error == ENOENT || error == ENODEV || error == EACCES || error == EPERM ? 2 : 1;
+              }
+              if (ioctl(kvm, KVM_GET_API_VERSION, 0) != KVM_API_VERSION) {
+                  fputs("Unexpected KVM API version\n", stderr);
+                  return 1;
+              }
+              int vm = ioctl(kvm, KVM_CREATE_VM, 0UL);
+              if (vm < 0) {
+                  int error = errno;
+                  perror("KVM_CREATE_VM");
+                  return error == ENODEV || error == EACCES || error == EPERM ? 2 : 1;
+              }
+              close(vm);
+              close(kvm);
+              return 0;
+          }
+          C
+          code=0
+          ./kvm-probe 2>kvm.log || code=$?
+          case "$code" in
+            0) result=available ;;
+            2) result=unavailable ;;
+            *) cat kvm.log >&2; exit "$code" ;;
+          esac
+          jq -n --arg result "$result" --arg arch "$(uname -m)" --arg kernel "$(uname -r)" \
+            --arg image "$ImageVersion" --arg revision "$GITHUB_SHA" --rawfile detail kvm.log \
+            '{result:$result,arch:$arch,kernel:$kernel,image:$image,revision:$revision,detail:$detail}' > kvm.json
+          cat kvm.json >> "$GITHUB_STEP_SUMMARY"
+      - name: Save the runner evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: android-acceleration
+          path: ${{ runner.temp }}/kvm.json
+          if-no-files-found: error

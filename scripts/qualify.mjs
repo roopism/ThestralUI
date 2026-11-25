@@ -21,6 +21,12 @@ const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 const root = git('rev-parse', '--show-toplevel');
 const common = git('rev-parse', '--path-format=absolute', '--git-common-dir');
 const args = process.argv.slice(2);
+if (args[0] === '--cloud-evidence') {
+  assert.ok(args.length === 2 || args.length === 3, 'Expected a PR number and an optional existing qualification attempt');
+  const { hostedEvidence } = await import('./gates/cloud/coordinator.mjs');
+  console.log(await hostedEvidence(root, common, args[1], args[2]));
+  process.exit(0);
+}
 const noReuse = args[0] === '--no-reuse';
 if (noReuse) args.shift();
 const mode = args[0] === '--staged' ? 'hook' : args[0] === '--release' ? 'release' : 'qualification';

@@ -1,3 +1,4 @@
+import { trustedRoot, unitCommand } from './gates/typed-tools.mjs';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -12,15 +13,15 @@ const directory = mkdtempSync(join(tmpdir(), 'ui-case-lists-'));
 try {
   const jsonSuite = (script, args) => {
     const output = join(directory, script + '.json');
-    execFileSync('npm', ['run', script, '--', ...args, '--outputFile=' + output], {
+    execFileSync(process.execPath, unitCommand(script, trustedRoot, process.cwd(), [...args, '--outputFile=' + output]), {
       stdio: 'inherit',
     });
     return unitCases(JSON.parse(readFileSync(output, 'utf8')));
   };
   const matrix = {
     schema: 1,
-    vitest: jsonSuite('test', ['--reporter=json']),
-    native: jsonSuite('test:native', ['--json']),
+    vitest: jsonSuite('vitest', ['--reporter=json']),
+    native: jsonSuite('jest', ['--json']),
     node: nodeCases([
       'tests/contracts/*.test.mjs',
       'tests/selection/*.test.mjs',
