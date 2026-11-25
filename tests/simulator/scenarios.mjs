@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { selectNativeScenarios } from '../../scripts/selection/native-scenarios.mjs';
 import nativeReader from '../../scripts/scenarios/native.cjs';
+import nativeRoles from '../../scripts/scenarios/native-roles.cjs';
 import { readCandidateScenarios } from '../../scripts/scenarios/fixture-metadata.mjs';
 import { target as androidTarget } from '../android/tree.mjs';
 
@@ -21,6 +22,17 @@ function selector({ role, name }, platform, busy = false) {
   const stateSuffix = role === 'checkbox' && platform === 'android' ? '(?:, mixed)?' : '';
   return { text: '^' + escapeRegex(description) + stateSuffix + '$', id: resourceId('scenario.' + role + '.' + name, platform),
     ...(busy ? { enabled: false } : {}) };
+}
+
+// Roles beyond the original four. Unsupported roles throw here, before any interaction.
+// Android joins a value's text to the label of value-bearing roles, as for busy and mixed states.
+export function roleSelector(target, platform, busy = false) {
+  const spec = nativeRoles.nativeRole(target.role);
+  if (spec.incumbent) return selector(target, platform, busy);
+  assert.ok(!busy, 'Only a button can be busy');
+  const valueSuffix = platform === 'android' && spec.android.value === true ? '(?:, .+)?' : '';
+  return { text: '^' + escapeRegex(target.name) + valueSuffix + '$',
+    id: resourceId('scenario.' + target.role + '.' + target.name, platform) };
 }
 
 export function verifyAndroidBusyButton(nodes, name) {
@@ -85,8 +97,8 @@ export function inAccessibilityOrder(tree, targets, platform = 'ios') {
   });
 }
 
-export function runNativeScenarios({ root, appId, maestro, device, env, run, reports, registry, reset, platform = 'ios', readAndroidTree, log = console.log }) {
-  const scenarios = selectNativeScenarios(root, registry ? nativeReader.nativeScenarios(root, registry) : readCandidateScenarios(root));
+export function runNativeScenarios({ root, appId, maestro, device, env, run, reports, registry, reset, platform = 'ios', readAndroidTree, readIOSElements, log = console.log }) {
+  const scenarios = selectNativeScenarios(root, registry ? nativeReader.deviceScenarios(root, registry) : readCandidateScenarios(root));
   const directory = mkdtempSync(join(tmpdir(), 'ui-' + platform + '-scenarios-'));
   const call = (args) => run(root, maestro, ['--device', device, ...args], { env });
   function flow(id, commands) {
@@ -99,6 +111,7 @@ export function runNativeScenarios({ root, appId, maestro, device, env, run, rep
     for (const scenario of scenarios) {
       const { id, fixtureId } = scenario;
       reset?.(id);
+      const evidence = [];
       const fixture = { id: resourceId('fixture.' + fixtureId, platform) };
       let commands = [
         'launchApp', { tapOn: { id: resourceId('open-scenarios', platform) } },
@@ -112,9 +125,17 @@ export function runNativeScenarios({ root, appId, maestro, device, env, run, rep
         try {
           const targets = [step.target, ...(step.other ? [step.other] : [])];
           for (const target of targets) {
-            const query = selector(target, platform, step.expect === 'busy');
+            const query = roleSelector(target, platform, step.expect === 'busy');
             commands.push({ assertVisible: { ...query, label } },
               { assertNotVisible: { ...query, index: '1', label: label + ' (unique target)' } });
+          }
+          const roleTargets = targets.filter(target => !nativeRoles.nativeRole(target.role).incumbent);
+          if (roleTargets.length) {
+            flow(id, commands);
+            commands = [];
+            const tree = platform === 'android' ? readAndroidTree?.() : readIOSElements?.();
+            assert.ok(tree, 'Native ' + platform + ' role evidence requires the live accessibility tree');
+            for (const target of roleTargets) evidence.push(nativeRoles.verifyNativeRole(tree, platform, target));
           }
           const checkboxes = targets.filter(target => target.role === 'checkbox');
           if (checkboxes.length) {
@@ -126,7 +147,7 @@ export function runNativeScenarios({ root, appId, maestro, device, env, run, rep
               state: ['checked', 'unchecked', 'mixed'].includes(step.expect) ? step.expect : undefined,
             });
           }
-          if (step.act === 'activate') commands.push({ tapOn: { ...selector(step.target, platform), enabled: true, label } });
+          if (step.act === 'activate') commands.push({ tapOn: { ...roleSelector(step.target, platform), enabled: true, label } });
           if (step.expect === 'busy' && platform === 'android') {
             flow(id, commands);
             commands = [];
@@ -145,6 +166,8 @@ export function runNativeScenarios({ root, appId, maestro, device, env, run, rep
       }
       if (commands.length) flow(id, commands);
       log(platform + ' scenario passed:', id);
+      // Name the evidence level of each role beyond the original four.
+      for (const row of evidence) log(platform + ' role evidence:', id, row.role, row.evidence);
     }
     return scenarios.map(({ id }) => id);
   } finally {

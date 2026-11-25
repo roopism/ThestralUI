@@ -12,8 +12,10 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { requireGateIsolation, recordMergeResult, requireResolvedMerge } from './gates/landing-policy.mjs';
+import { derivedRegistrations } from './gates/registrations.mjs';
 import { stagedDiff } from './selection/staged-tree.mjs';
 import { withLock } from './workers/lock.mjs';
+import { trustedVerdict } from './gates/verdict.mjs';
 
 const number = process.argv[2];
 if (import.meta.main && number === '--train') {
@@ -60,7 +62,7 @@ function proposal() {
   assert.equal(git('rev-parse', 'refs/remotes/origin/' + integration), pr.base.sha);
   const tree = git('rev-parse', merge + '^{tree}');
   const paths = stagedDiff(root, { parent: pr.base.sha, tree }).changes.map(change => change.path);
-  requireGateIsolation(pr.head.ref, paths);
+  requireGateIsolation(pr.head.ref, paths, undefined, derivedRegistrations(root, pr.base.sha, tree, pr.head.ref));
   assert.deepEqual(reviewPolicy(root, pr.base.sha, tree), []);
   assert.deepEqual(reusePolicyIssues(root, pr.base.sha, tree), []);
   return { pr, merge, tree };
@@ -100,6 +102,13 @@ export function passing(tree, base, directory = join(common, 'uld-receipts'), pr
       installSnapshotDependencies(snapshot, join(directory, '..', 'uld-dependencies'), env);
       verifyLandingReuse({ directory, root: checkout, snapshot }, raw);
     });
+  }
+  // When gate tests were the sole eligible operation they must themselves be the
+  // fresh audit. There are no reusable outputs or environment claims to restore.
+  if (r.status === 'passed' && raw.base === base && raw.gateTests &&
+      !raw.suites.some(row => row.result === 'reused' || row.auditRerun)) {
+    assert.notEqual(raw.gateTests.result, 'reused', 'Gate-test reuse requires an independent audit');
+    if (raw.gateTests.auditRerun) verifyLandingReuse({ directory, root: proposal.root ?? root }, raw);
   }
   assert.equal(r.tree, tree);
   assert.ok(r.mode === 'qualification' || r.mode === 'release');
@@ -172,6 +181,8 @@ if (import.meta.main) await withLock(root, 'landing', 'PR ' + number, async () =
     }
     const previous = candidates.find(item => oid.test(item.base) && passing(item.tree, item.base, directory, { commit: item.commit }));
     assert.ok(previous, 'Run npm run qualify on the current merge result first');
+    execFileSync(process.execPath, [trustedVerdict('verify-preflight.mjs'), merge, '--branch', pr.head.ref,
+      '--base', pr.base.sha], { stdio: 'inherit' });
     execFileSync(process.execPath, ['scripts/qualify.mjs', merge], { stdio: 'inherit' });
     receipt = passing(tree, pr.base.sha, directory, { commit: merge });
     assert.ok(receipt, 'Requalification did not produce a passing receipt');

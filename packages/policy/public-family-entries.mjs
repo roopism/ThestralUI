@@ -62,7 +62,7 @@ export function registeredFamilyEntries(ctx) {
         const chunk = '/* @uld-css-chunk ' + slug + ' */';
         if (!read(sheet)?.split(/\r?\n/).some(line => line.trim() === chunk)) continue;
       } else if (!matchedModule(ctx, row, pkg, slug, target, published, names)) continue;
-      allowed.set(manifest.name + path.slice(1), row);
+      allowed.set(manifest.name + path.slice(1), { slug, row });
     }
   }
   return allowed;
@@ -81,7 +81,7 @@ export function registeredFamilyOwners(ctx) {
         !rule.file?.startsWith(dir) || !/^[a-z][a-z0-9-]*\.tsx$/.test(rule.file.slice(dir.length)) ||
         !/^[A-Za-z_$][\w$]*$/.test(rule.symbol) || !/^[a-z][a-z0-9-]*$/.test(rule.family))
       throw Error('A public-family host owner requires one exact web entry, colocated source, symbol and host family.');
-    const row = ctx.registeredEntries.get(rule.entry);
+    const row = ctx.registeredEntries.get(rule.entry)?.row;
     const source = ctx.program.getSourceFile(ctx.abs(rule.file));
     if (!row && !source) {
       const read = path => {

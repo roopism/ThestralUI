@@ -1,3 +1,4 @@
+import { gateGroup, reuseRows } from './reuse/preflight.mjs';
 import { gitInputs } from './reuse/fingerprint.mjs';
 import { decideRow, executeChoice, rowIdentity, readVisualCoverage, saveFreshEvidence, sealReceipt, useRecord } from './reuse/runner.mjs';
 import { projectStoredPasses, publishRecord, sha256 } from './reuse/store.mjs';
@@ -44,12 +45,15 @@ if (mode!=='hook') process.env.ULD_ANDROID_TIMING_ATTEMPT=id;
 const noReuse = mode !== 'qualification' || process.argv.includes('--no-reuse');
 const single = process.argv.indexOf('--reuse-operation');
 const snapshot = process.cwd();
-const context = {root, snapshot, directory, base, commit, tree, mode, noReuse, attemptId:id};
+const context = {root, snapshot, trusted:fileURLToPath(new URL('../../',import.meta.url)), directory, base, commit, tree, mode, noReuse, attemptId:id};
 if (noReuse) process.env.ULD_FRESH_ANDROID_TIMING = '1';
 else delete process.env.ULD_FRESH_ANDROID_TIMING;
 const scope = deviceScope(root, base, tree, mode === 'release' || process.argv.includes('--no-reuse'));
 writeFileSync('.git/gate-selection.json', JSON.stringify({ budgetComparisonBase: base }));
 context.scope = scope;
+// Pin the admitted attempt across concurrent preflights for the same tree.
+const preflightArg = process.argv.indexOf('--preflight-id');
+if (mode === 'qualification') context.preflightId = preflightArg < 0 ? null : process.argv[preflightArg + 1] ?? null;
 const receipt = { ...initial, schema: 1, androidHostActivityPolicy:1, tree, base, commit, id, mode, scope,
   reuseSchema: 1, noReuse, auditSeed: noReuse ? null : randomBytes(32).toString('hex'), retries: null,
   status: 'running', vm: null, devices: {}, suites: [] };
@@ -58,7 +62,8 @@ function step(name, operation, dependencies = []) {
   const entry = { name, result: 'pending', durationMs: 0, fingerprint: null, reusedFrom: null,
     reuseReason: null, auditRerun: false, retries: 0 };
   steps.set(name, { operation, entry, dependencies });
-  receipt.suites.push(entry);
+  if (name === gateGroup) receipt.gateTests = entry;
+  else receipt.suites.push(entry);
 }
 function save(final = false) {
   if (mode === 'hook' || single !== -1) return;
@@ -202,7 +207,7 @@ async function execute(name,audit) {
   const start = performance.now();
   try {
     const perform = () => runGroup(name,entry,operation,audit);
-    if (['No weakening', 'Fast', 'iPhone Simulator', 'Android standard and low-end', 'Mac browser performance'].includes(name)) await perform();
+    if ([gateGroup, 'No weakening', 'Fast', 'iPhone Simulator', 'Android standard and low-end', 'Mac browser performance'].includes(name)) await perform();
     else await withTiming('activity', name, perform);
     if (entry.result === 'pending') entry.result = 'passed';
   }
@@ -249,7 +254,8 @@ async function auditReuse() {
 }
 
 const trustedGate = file => fileURLToPath(new URL(file, import.meta.url));
-step('No weakening', () => {
+const tests = globSync('*.test.mjs', { cwd: trustedGate('tests/') }).sort();
+step('No weakening', async () => {
   requireTypedControls(root, base, tree);
   assert.deepEqual(reviewPolicy(root, base, tree), []);
   assert.deepEqual(reusePolicyIssues(root,base,tree),[]);
@@ -257,7 +263,12 @@ step('No weakening', () => {
   node(trustedGate('canaries.mjs'), tree);
   node(trustedGate('device-scope-canaries.mjs'), tree);
   node(trustedGate('maestro-canary.mjs'), '--offline');
-  const tests = globSync('*.test.mjs', { cwd: trustedGate('tests/') }).sort();
+  node(trustedGate('native-role-canaries.mjs'));
+  assert.ok(tests.includes('hardening.test.mjs'));
+  await execute(gateGroup);
+  assert.ok(['passed','reused'].includes(receipt.gateTests.result), receipt.gateTests.reason);
+});
+step(gateGroup, () => {
   assert.ok(tests.includes('hardening.test.mjs'));
   // Keep the fixed-deadline reservation controls responsive on the shared host.
   node('--test', '--test-concurrency=2', ...tests.map(file => trustedGate('tests/' + file)));
@@ -325,7 +336,7 @@ if (mode!=='hook') {
     const firstPath=join(directory,tree+'.json');
     const prior=relatedHistory(directory,tree,existsSync(firstPath)?read(firstPath):undefined,root,receipt);
     receipt.retries = new Set(prior.filter(old=>old.id!==id && (old.status!=='passed' ||
-      qualificationStatus(projectStoredPasses(directory,old).suites,old.error)!=='passed')).map(old=>old.id)).size;
+      qualificationStatus(reuseRows(projectStoredPasses(directory,old)),old.error)!=='passed')).map(old=>old.id)).size;
   } catch { receipt.retries=null; }
 }
 save();
@@ -336,14 +347,14 @@ try {
     await runWithIntegrationReservation(mode, root, tree, async () => {
       if (mode !== 'hook') await stopVm();
       writeFileSync('.git/local-device-scope.json', JSON.stringify(scope));
-      for (const name of [...steps.keys()].slice(2)) await execute(name);
+      for (const row of receipt.suites.slice(2)) await execute(row.name);
       try { await auditReuse(); } finally { await finishAndroidTiming(); }
     });
   }
 } catch (error) { receipt.error = String(error.message); }
 finally {
-  for (const row of receipt.suites) if (row.result === 'pending') { row.result = 'blocked'; row.reason = receipt.error ?? 'Preflight failed'; }
-  try { receipt.status = qualificationStatus(projectStoredPasses(directory,receipt).suites, receipt.error); }
+  for (const row of reuseRows(receipt)) if (row.result === 'pending') { row.result = 'blocked'; row.reason = receipt.error ?? 'Preflight failed'; }
+  try { receipt.status = qualificationStatus(reuseRows(projectStoredPasses(directory,receipt)), receipt.error); }
   catch (error) { receipt.status='failed'; receipt.error=error.message; }
   receipt.finished = new Date().toISOString();
   if (mode!=='hook' && receipt.status==='passed') {
@@ -354,7 +365,7 @@ finally {
   if (receipt.status==='passed' && mode==='qualification' && receipt.retries===0)
     for (const row of receipt.suites.filter(row=>row.result==='passed' && row.evidenceSha256))
       publishRecord({...context,groupId:row.name,fingerprint:row.fingerprint});
-  const reused=receipt.suites.filter(row=>row.result==='reused');
+  const reused=reuseRows(receipt).filter(row=>row.result==='reused');
   console.log('Fresh',receipt.suites.filter(row=>row.result==='passed').length,'reused',reused.length,
     'saved seconds',Math.round(reused.reduce((sum,row)=>sum+Math.max(0,row.sourceDurationMs-row.durationMs),0)/1000));
   console.table(receipt.suites.map(({ name, result, durationMs }) => ({ name, result, durationMs })));

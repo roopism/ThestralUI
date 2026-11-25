@@ -42,8 +42,53 @@ function namedColor(name) {
   return colorNames.get(name);
 }
 
+// Structural values carry no design scale: a circle radius, a full viewport extent
+// and quarter-turn orientation. Any other radius, extent, angle or length is judged.
+const radiusProperty = /^border(?:-(?:top|bottom|start|end)-(?:left|right|start|end))?-radius$/;
+const viewportUnit = /^[sld]?v(?:h|w|b|i)$/i;
+const quarterTurn = { deg: 90, grad: 100, turn: 0.25 };
+function structuralDimension(prop, node, fn) {
+  const value = Number(node.value), unit = node.unit.toLowerCase();
+  if (value === 100 && viewportUnit.test(unit) && /(?:width|height|size)/.test(prop)) return true;
+  const orientation = prop === 'rotate' || (/^(?:transform|rotate)$/.test(prop) && /^rotate[z]?$/i.test(fn?.name ?? ''));
+  return orientation && unit in quarterTurn && Number.isInteger(value / quarterTurn[unit]);
+}
+
+// A family component token is --uld-<family>-<name>, declared in its own family's CSS.
+// Its value may only reference global or same-family tokens, optionally with the
+// exact published dimension as a fallback, combined by calc/min/max/clamp and zero.
+export function componentValueIssue(value, options) {
+  let ast;
+  try {
+    ast = css.parse(value, { context: 'value', parseValue: true });
+  } catch {
+    return true;
+  }
+  let invalid = false, references = 0;
+  css.walk(ast, function (node) {
+    if (node.type === 'Function' && node.name === 'var') {
+      const args = node.children.toArray();
+      references++;
+      if (!options.variables.includes(args[0]?.name)) invalid = true;
+      const comma = args.findIndex((part) => part.type === 'Operator' && part.value === ',');
+      if (comma >= 0) {
+        const fallback = args.slice(comma + 1).map(part => css.generate(part)).join('').trim();
+        if (options.componentTokens?.published?.get(args[0]?.name) !== fallback) invalid = true;
+      }
+      return this.skip;
+    }
+    if (node.type === 'Function' && !/^(?:calc|min|max|clamp)$/i.test(node.name)) invalid = true;
+    else if (['Dimension', 'Number', 'Percentage'].includes(node.type) && Number(node.value) !== 0) invalid = true;
+    else if (!['Value', 'Function', 'Operator', 'WhiteSpace', 'Dimension', 'Number', 'Percentage', 'Parentheses'].includes(node.type))
+      invalid = true;
+  });
+  return invalid || references === 0;
+}
+
 export function literalIssue(property, value, options) {
   const prop = canonical(property);
+  const component = options.componentTokens?.family?.(prop);
+  if (component) return component !== options.componentTokens.owner || componentValueIssue(value, options);
   if (!designProperty(prop)) return false;
   if (/^(?:inherit|initial|unset|revert|revert-layer|none|normal|auto|0)$/.test(value))
     return false;
@@ -72,7 +117,8 @@ export function literalIssue(property, value, options) {
     }
     if (node.type === 'Hash' || (node.type === 'Function' && colorFunctions.test(node.name)))
       invalid = true;
-    if (node.type === 'Dimension' && Number(node.value) !== 0) invalid = true;
+    if (node.type === 'Dimension' && Number(node.value) !== 0 && !structuralDimension(prop, node, this.function))
+      invalid = true;
     if (
       node.type === 'Number' &&
       Number(node.value) !== 0 &&
@@ -82,7 +128,8 @@ export function literalIssue(property, value, options) {
     if (
       node.type === 'Percentage' &&
       Number(node.value) !== 0 &&
-      !(Number(node.value) === 100 && /(?:width|height|size)/.test(prop))
+      !(Number(node.value) === 100 && /(?:width|height|size)/.test(prop)) &&
+      !(Number(node.value) === 50 && radiusProperty.test(prop))
     )
       invalid = true;
     if (node.type === 'Identifier' && !systemColors.test(node.name) && namedColor(node.name))
@@ -154,5 +201,10 @@ export function inspectCss(source, options, report, baseLine = 1, context = '') 
         decl.value,
       );
     }
+    // A web sheet may not declare a native-only token under any published spelling.
+    // A declaration already reported above is not reported twice.
+    else if (options.nativeVariables?.has(decl.prop))
+      report('style/token', baseLine + decl.source.start.line - 1,
+        context + ' ' + (decl.parent.selector ?? '@' + (decl.parent.name ?? 'rule')), decl.prop, decl.value);
   });
 }

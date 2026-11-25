@@ -18,6 +18,7 @@
     "packages/native/src/button/binding.tsx"
   ],
   "tokenFile": "packages/tokens/tokens.json",
+  "nativeTokenSources": "packages/tokens/domains",
   "scopes": [
     "uld-"
   ],
@@ -226,6 +227,489 @@
               "style/token",
               1,
               ".uld-data :is(th, td) border-block-end = 1px solid currentColor"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "path": "catalog/MotionGallery.stories.tsx",
+      "previousSha256": "c70a4a00d5d1fb9f6c435ec25584178b4a8692bc2438227386631a3c5a4c1207",
+      "currentSha256": "e3e87e8c3a3a3f4f1e156faca16ff11adc922908236da602bee916654a93204e",
+      "previousGroups": [
+        {
+          "owner": "UI platform",
+          "reason": "Migrate this existing declaration or selector to its semantic token or component scope.",
+          "expires": "2027-02-18",
+          "entries": [
+            [
+              "0409d50954f34d3258448f7003d93658fe6dc6e9d8fcbe462745de4c59cb1fba",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] .publication-cover::before inset = -110% -50% -18% 25%"
+            ],
+            [
+              "0686718655b3246850ae150041a61c8f7c9a45780046cbcd70fb63122aa2d8c2",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"][data-uld-theme=\"dark\"] --uld-focus = #ffbf8f"
+            ],
+            [
+              "08eee7bec0d5ad878b2a40282f39b58e721dd8da01fe216086681fb9336fe667",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-intro gap = 1rem"
+            ],
+            [
+              "10ca8d81675c7b19f652eef71923e24487a15d555545c561dcb8c983abe60dfd",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] --uld-radius-lg = 1rem"
+            ],
+            [
+              "120cec6460e5dfbb59133797bcd766fbc00b64a4cf599b97bb78cc385ba195e4",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-choice gap = 1rem"
+            ],
+            [
+              "140b4a92a885002ac288a561cb0512b14be5d647fa070ba8622ffa8b9d3e0567",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] h1 font-size = clamp(2.5rem, 8vw, 5rem)"
+            ],
+            [
+              "1e4fc4040cf570e7470726693f89e809aeb892ebb7f5c58b608de8e9a1c7b88d",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-intro h1 line-height = 1.04"
+            ],
+            [
+              "2a13d4226c34d127f82bdc84d9baac4d4e9d8f0be492f76acbe20456db5676dd",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-cover padding = 5%"
+            ],
+            [
+              "2baca95420bfa8fd20dceac53e28cb57d3a1c6ed58e88e8bf638edbfa8191554",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] [data-cover=\"fieldwork\"]::before background = repeating-radial-gradient(circle, #235547"
+            ],
+            [
+              "2bcdc14076fe31ac24f08c4ba5bec21e05f81c0304add2927988586824a318b4",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"][data-uld-theme=\"dark\"] --uld-border = #796967"
+            ],
+            [
+              "2fd0e515c3416bda40ffc7f96f3b7f86c6960915906553723c2aa204b17115f0",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] .publication-cover::before background = repeating-radial-gradient(ellipse at center, #f"
+            ],
+            [
+              "3005dd3b0b0c5e30067fe48f7713062ad961f853b8ac29ad9e3a980c4f36d58b",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] .publication-cover b font = italic 600 clamp(2.2rem, 9vw, 5.8rem)/.9 Georgia, serif"
+            ],
+            [
+              "35add702d30897d500d4154bbe9664a2eb350d1964494de4eda3dee2d0f6a0bc",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-cover background = #27453c"
+            ],
+            [
+              "3a07bec43a1ace7f04e86f1d25a96486df849c7e101237b114be30331c2f3d6b",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-wrap gap = 1rem"
+            ],
+            [
+              "3aa994d00be74942c532dfa6eb58c0bcb45fbed7e21f441ae769b18c30e06eb9",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] h1 font-weight = 500"
+            ],
+            [
+              "3b0f4a06d51e4267bdf88ac82bc33d5f4cb6ae254c7b9297b23fb509cfd9c0ba",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] [data-cover=\"after-hours\"]::before inset = -70% -25% -60% 45%"
+            ],
+            [
+              "3e4b1a7bafdec3a68cd01c4df359255cfa423cbcc1726fd92864ae83e8f32735",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-cover::before background = repeating-linear-gradient(112deg, transparent 0 1.4rem, #85aca0 1.42rem 1.47rem)"
+            ],
+            [
+              "4648c23f2dd76ce21243feec54b11b337ac62738f6c5dd69077bd446b6bb5acd",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-cover b padding = .06em .14em .11em"
+            ],
+            [
+              "485eeac5d0e8f69c842077cd660d6ef1508b95206767b57cf6c30bea91b55c5c",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-choice padding = .5rem 0"
+            ],
+            [
+              "48aa279fb0b0d7a9cadb8fcf404df39b2f68213df487912ff122ffe975484662",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] .publication-cover::before transform = rotate(-15deg)"
+            ],
+            [
+              "570e3443d7ea3768513cd0ab47fe5b32a42fab3030f2384e211da809387a3fec",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-cover color = #fff"
+            ],
+            [
+              "607069d161fe931366620014efdca634e71bc4f13454a216beba3c27cae41003",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] --uld-border = #b5a999"
+            ],
+            [
+              "61b420d3498cb89b11d5cdc8bd0fa484d5faf30414156f798eb606d46c9a1ced",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] --uld-canvas = #f1eade"
+            ],
+            [
+              "6e31e5932d19561270017c714009aae46075725fc48b4136a5e04a789e987b11",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library .uld-media-details line-height = 1.5"
+            ],
+            [
+              "704eccfc7b88715213578bdf291cd17794d16250c929d2c7178cfa25d2b9e5af",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library font-family = system-ui, sans-serif"
+            ],
+            [
+              "71205957555cccb2b639a092ae712dd2476ad8fd11ab613e59ab89ca03074df7",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-intro nav, .publication-library menu gap = .5rem"
+            ],
+            [
+              "7cbb039dc73c2e6bdbe4395c4514fe1408769d18efdb2b2ed1b7698c5aafa222",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] .publication-cover[data-cover=\"after-hours\"] color = #fff4c5"
+            ],
+            [
+              "7e0f39f279d9e43bc6b81a732a5a7830f5952b4ddd81fd1c0a9a07b55df256a8",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] [data-cover=\"after-hours\"]::before transform = rotate(24deg)"
+            ],
+            [
+              "801efa4265707af05e64520591b14f5bda30f9e6855d38622ade0deee155f3ee",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-cover::before inset = -25%"
+            ],
+            [
+              "81b0852a1f8cc7948c35b9362c43412bd830933df90e87e14ede47d48ae7ba38",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-intro h1 font-size = clamp(1.9rem, 6vw, 3.25rem)"
+            ],
+            [
+              "8321ab3531d003e9259a6e790bbd9fbef71a0f2f4ab8681235eeb8783a5ce743",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] [data-cover=\"after-hours\"]::before background = repeating-linear-gradient(90deg, #404e8"
+            ],
+            [
+              "83cdb9fe134900aba3d4bb918c6897ad000da954838420d6ba62eaac7331aab4",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library .uld-media-details p max-width = 60ch"
+            ],
+            [
+              "87603519d1d8a191fac26bec6dd1eb834f340f3a382187597725347d8558763c",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"][data-uld-theme=\"dark\"] --uld-surface = #2e282c"
+            ],
+            [
+              "892bbe494e57fc6ab07501be7680102036888e59b9325c1d20c2616d1d5be551",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] [data-cover=\"fieldwork\"]::before inset = -40% -8% -40% 55%"
+            ],
+            [
+              "8d8800c1a37ddf2d504c1c2fd3a0aff75647b66e97ecc73a3f9a3ad00d9c7d5b",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"][data-uld-theme=\"dark\"] --uld-text = #fff2de"
+            ],
+            [
+              "90ebbd26c5b4a523a790ba126c615e20f50604ccab37db77b68fe1563fee8136",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"][data-uld-theme=\"dark\"] --uld-muted = #dbbcac"
+            ],
+            [
+              "930f6ecdca4b4ed67860e443f3761c0fd2c8459bc30e563483fff2395a2c13cb",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-cover b letter-spacing = -.04em"
+            ],
+            [
+              "948b7bc1d2c2b347481736bc74bfba49a540e113293de01f490abd518bd7be3f",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] h1 font-family = Georgia, serif"
+            ],
+            [
+              "95249c44739da6b8a268f054cc4f3434ec73ba9d8c5192a268e6f95e7ca5d13a",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] .publication-cover color = #252531"
+            ],
+            [
+              "9935aa2da7be60c5cc13be1d1d9beb94f883f838c4f160b6d7fdd19206cc9d19",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] .publication-cover::before border-radius = 45%"
+            ],
+            [
+              "9b9f016ea26dd7e03cddcdef1d290b3b1569469298edb98a4b0a99590d1051f8",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] .publication-cover[data-cover=\"fieldwork\"] color = #172e27"
+            ],
+            [
+              "a14cb40ae0b9b3622af8b49ce1a90cae77266288a10695799532f25fea9a5c21",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] .publication-cover background = #f1b98a"
+            ],
+            [
+              "a174bd0050b7870c0460dee52332618a9af1d0cdd6f2c5636723807d3a8d8e32",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-cover b font = 650 clamp(1.5rem, 5vw, 3rem)/1 system-ui, sans-serif"
+            ],
+            [
+              "a854e6ebfde9a9d49121f6dcedbdb9497025829da21566b85bf80bbe253227e6",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] --uld-radius = 1.2rem"
+            ],
+            [
+              "bc8943ecea9d30ceaf1e47fc5ab25175bc8e79e33b5ca1677f7463f14cb9f0b0",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] .publication-cover[data-cover=\"fieldwork\"] background = #c5cf93"
+            ],
+            [
+              "c1d698fb19360f2d4802278fa3f5f540b54f400bf8c94e6c977bacdc04ebaeba",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"][data-uld-theme=\"dark\"] --uld-canvas = #211d21"
+            ],
+            [
+              "c2a555dce409afaa171c333f43f78af483a9ac46d7740be8bf0ef7a467a6d433",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] --uld-text = #26201d"
+            ],
+            [
+              "c5154f9f2c3fd648ad7c3afa3abed2e600ec1517698201fdecf4a63ffee1d12f",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-cover::before z-index = -1"
+            ],
+            [
+              "c546e3adeae8adfe70a517f490b328a0dbb6662a45db85b6ddc3561f11568608",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] --uld-focus = #8b3300"
+            ],
+            [
+              "cb490184b8c9eebf7d3ab9b179aa04672b30c3e18bfb72b7860c040480de9d94",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-wrap max-width = 56rem"
+            ],
+            [
+              "d5e4f1f0412b819cfec3d3874ebfa972c597ff6ca34670018e8338ee260b590a",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-cover::before opacity = .5"
+            ],
+            [
+              "d95aa9f097c919e271bbbd3a90bedb64811a97f999bc43da9036c8c94d4fd3b2",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] --uld-surface = #fff8ed"
+            ],
+            [
+              "d96da4876d9a9b9a6fff0b4784ac1596b69d542e2238d6692a5d29c50ad96b54",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] .publication-cover[data-cover=\"after-hours\"] background = #181d40"
+            ],
+            [
+              "da246dfa5cbd249e4a8a5d660fa27f5c36d254c9d2dcfe3bbd4b984d9b5deeb0",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library .publication-cover border = 1px solid CanvasText"
+            ],
+            [
+              "dfc6397d3f2088e4122e942c4ca3a80c52d585b916f43bb6f67b786efa149050",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library padding = clamp(1rem, 5vw, 4rem)"
+            ],
+            [
+              "f8b53985b213378e687169d9ab2bc7c4253310fee1d4435c80e32848bd338cbc",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-intro h1 letter-spacing = -.045em"
+            ],
+            [
+              "ff57b55f072a920468a451ca6ad59c36dce775af4347164d16fae8309dc93781",
+              "style/token",
+              1,
+              "PublicationLibrary .publication-library[data-direction=\"editorial\"] --uld-muted = #655348"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "path": "catalog/native/Gallery.tsx",
+      "previousSha256": "88d5c5dbf1bebdd369842f9317fb2ec004744ae669ca86c6146b78b9bc714991",
+      "currentSha256": "8a7e9e9801d94697c16f73eb722b8c106355d4e570c2ca509e8fd5d6484e8afc",
+      "previousGroups": [
+        {
+          "owner": "UI platform",
+          "reason": "Check the existing runtime style slot against its consumer contract before replacing it.",
+          "expires": "2027-02-18",
+          "entries": [
+            [
+              "42b40bff2bc45452fb9a0fa0dfd2683ec8a39542a10c969ddda1c66aade67002",
+              "style/runtime",
+              3,
+              "Gallery color = colors.text"
+            ],
+            [
+              "801a7a1f85ca60fbc77c53a7f9f712de109a48252b880a21629895de93c77cdf",
+              "style/runtime",
+              1,
+              "Gallery backgroundColor = colors.canvas"
+            ]
+          ]
+        },
+        {
+          "owner": "UI platform",
+          "reason": "Migrate this existing declaration or selector to its semantic token or component scope.",
+          "expires": "2027-02-18",
+          "entries": [
+            [
+              "ae8c9bef91f49ab2a2156435cc7091c66333d7c18b547133111b0ca31888a0bf",
+              "style/token",
+              1,
+              "Gallery fontSize = 28"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "path": "packages/web/src/spinner/styles.css",
+      "previousSha256": "f02fae32c7dd1f8c06e90bfe4b2d5a58656f3d45fd447a3c981e4debe0a2af9f",
+      "currentSha256": "9b18b56f05df450d9d292ddd2826a34d288cece0c53c2002630705d28455c0ad",
+      "previousGroups": [
+        {
+          "owner": "UI platform",
+          "reason": "Migrate this existing declaration or selector to its semantic token or component scope.",
+          "expires": "2027-02-18",
+          "entries": [
+            [
+              "123567eff561366b2ec882df58d3011412695c92cfb9d9d90376fec0f4bc46e1",
+              "style/token",
+              1,
+              ".uld-spinner block-size = 1em"
+            ],
+            [
+              "9688007a423ba1d5ed0ad6140c4b898f0cb5c01656d4dceb4ce237fe4360ad7b",
+              "style/token",
+              1,
+              ".uld-spinner inline-size = 1em"
+            ],
+            [
+              "b4c3aa1e48c37d23b2e37824e71425e7915b1b5da0cec780a9e3861cbd688fa4",
+              "style/token",
+              1,
+              ".uld-spinner animation = uld-turn 800ms linear infinite"
+            ],
+            [
+              "fe6f7daecfd00b064ddc8e07403cbfca06afd35248157ec1759cfda9c68c3de3",
+              "style/token",
+              1,
+              ".uld-spinner border = 2px solid currentColor"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "path": "packages/web/src/resizable-list-and-detail/styles.css",
+      "previousSha256": "79c3ce2880e180f1014134572a3333cbfbc43c03c73d5703ea20b876f5c7ac8b",
+      "currentSha256": "4b0f966e74e198df2009301bbcdeac28b78b7e489876d21b2e3158083e0f3d40",
+      "previousGroups": [
+        {
+          "owner": "UI platform",
+          "reason": "Migrate this existing declaration or selector to its semantic token or component scope.",
+          "expires": "2027-02-18",
+          "entries": [
+            [
+              "0d759830d93b1be320a7ac6a62ab5591e17e12e95442ff014846b9a45615126b",
+              "style/token",
+              1,
+              ".uld-split-handle min-inline-size = 2.75rem"
+            ],
+            [
+              "175774ca4d9121c6d182e751a773fe12bd01aa6e08169f35a6d60021a5652274",
+              "style/token",
+              1,
+              ".uld-split-handle:focus-visible, .uld-split-pane:focus-visible outline-offset = -2px"
+            ],
+            [
+              "3ff38773835458ba0cfed2df355fd3c634fb03e88eaa6c13be8b9ecd6cf5a4c6",
+              "style/token",
+              1,
+              ".uld-split-handle:focus-visible, .uld-split-pane:focus-visible outline = 2px solid Highlight"
+            ],
+            [
+              "550928d1fd8b0b35c199d52c9cae5b83119421d7549a4ced8e6f3583516002e8",
+              "style/token",
+              1,
+              ".uld-split-pane max-block-size = var(--uld-pane-max-height, none)"
+            ],
+            [
+              "cbf24e49c0de148cbd945d4be2cfad24bf41cacf8dbdc1d540f67f8136d0c919",
+              "style/token",
+              1,
+              ".uld-split-handle background = linear-gradient(     to right,     transparent calc(50% - 1px),     currentColor calc(50% - 1px),     currentColor calc(50% "
+            ],
+            [
+              "fc1c05e123b9e89c8f64218607f36243f8e59a5a4583c3068ff4023c06b914b5",
+              "style/token",
+              1,
+              ".uld-split-handle min-block-size = 2.75rem"
             ]
           ]
         }

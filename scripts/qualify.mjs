@@ -9,6 +9,7 @@ import { installSnapshotDependencies } from '../packages/policy/quality/snapshot
 import { familyInputs, familyInputsAt } from './manifests/bundle-parent.mjs';
 import { verifyFirstAdoptionSources } from './manifests/reviewed-bundle-budgets.mjs';
 import { createHash } from 'node:crypto';
+import { requirePreflight } from './gates/preflight-receipt.mjs';
 
 let runnerProcess;
 releaseLocksOnSignal(signal => {
@@ -37,6 +38,8 @@ if (mode !== 'hook') git('fetch', '--no-tags', 'origin',
   '+refs/heads/feat/enterprise-ui:refs/remotes/origin/feat/enterprise-ui');
 const base = mode === 'hook' ? git('rev-parse', 'HEAD') : git('rev-parse', '--verify', 'refs/remotes/origin/feat/enterprise-ui^{commit}');
 if (mode !== 'hook') git('merge-base', '--is-ancestor', base, commit);
+// Refuse before any attempt is recorded. A failed attempt bars landing the tree.
+const preflight = mode === 'hook' ? undefined : requirePreflight(root, common, base, commit, git('rev-parse', commit + '^{tree}'));
 const directory = join(common, 'uld-receipts');
 // Earlier integration runners create their own receipt. The protocol file is
 // pinned after adoption so each newer runner must continue its preflight ID.
@@ -75,7 +78,8 @@ function verify(snapshot, tree, env) {
       execFileSync(process.execPath, [join(trusted, reuseJudge), root, base, tree], { cwd: trusted, env: trustedEnv, stdio: 'inherit' });
     installSnapshotDependencies(snapshot, join(common, 'uld-dependencies'), env);
     return new Promise((resolve, reject) => {
-      runnerProcess = spawn(process.execPath, [join(trusted, runner), root, base, commit, mode, ...(initial ? [initial.id] : []), ...(noReuse ? ['--no-reuse'] : [])], {
+      runnerProcess = spawn(process.execPath, [join(trusted, runner), root, base, commit, mode, ...(initial ? [initial.id] : []),
+        ...(noReuse ? ['--no-reuse'] : []), ...(preflight?.reuseSchema === 1 ? ['--preflight-id', preflight.id] : [])], {
         cwd: snapshot, stdio: 'inherit', detached: true, env: { ...env, ULD_ARTIFACT_COMMON: common },
       });
       runnerProcess.once('error', reject);

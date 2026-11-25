@@ -280,14 +280,14 @@ export function qualify() {
       iosWindow(sim, phone.udid, bundleId);
       const { testsPassed, scenarioIds } = withMaestroSession({
         platform: 'ios', device: phone.udid, maestro, env: driverEnv, reports,
-      }, (sessionRun, { reconnectIOS: reconnect }) => {
+      }, (sessionRun, { reconnectIOS: reconnect, iosElements }) => {
         const testsPassed = runJourneys(phone.udid, app, maestro, driverEnv, reports, sessionRun, reconnect);
         const reset = () => {
           prepareIOSJourney(phone.udid, app, 'light', 'large', sim, reconnect);
           iosWindow(sim, phone.udid, bundleId);
         };
         const scenarioIds = runNativeScenarios({ root, appId: bundleId, maestro, device: phone.udid,
-          env: driverEnv, run: sessionRun, reports, reset });
+          env: driverEnv, run: sessionRun, reports, reset, readIOSElements: iosElements });
         return { testsPassed, scenarioIds };
       });
       const native = archives.find(archive => archive.name === 'ui-native');

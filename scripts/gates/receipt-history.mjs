@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { reuseRows } from './reuse/preflight.mjs';
 import { projectStoredPasses } from './reuse/store.mjs';
 import { isDeepStrictEqual } from 'node:util';
 import { resolveFailure } from './landing-evidence.mjs';
@@ -40,12 +41,12 @@ export function publishFirstReceipt(directory, tree, id) {
 }
 
 function incomplete(attempt, directory) {
-  if (Array.isArray(attempt.suites) && attempt.suites.some(row => row?.result === 'reused')) {
+  if (Array.isArray(attempt.suites) && reuseRows(attempt).some(row => row?.result === 'reused')) {
     try { attempt = projectStoredPasses(directory, attempt); }
     catch { return true; }
   }
   return attempt.status !== 'passed' || !Array.isArray(attempt.suites) || !attempt.suites.length ||
-    attempt.suites.some(row => row?.result !== 'passed' &&
+    reuseRows(attempt).some(row => row?.result !== 'passed' &&
       !(row?.name === 'iPhone Simulator' && row.result === 'web-only' && attempt.scope?.iphone === false));
 }
 

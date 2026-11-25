@@ -1,3 +1,4 @@
+import { cleanPreflightInputs, gateGroup, preflightGroup, preflightSource, reuseRows, typedGroup } from './preflight.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, realpathSync, readdirSync, lstatSync } from 'node:fs';
@@ -51,7 +52,8 @@ export function externalInputDigests(directory,names) {
 export function rowIdentity(context,name,app,inputs) {
   const {root,snapshot,tree,base,scope} = context;
   inputs ??= gitInputs(root,tree,base);
-  const config = groupConfig(root,tree,name);
+  const config = groupConfig(root,tree,name === gateGroup ? typedGroup : name);
+  if (preflightGroup(name)) assert.deepEqual(config.exclude, [], 'Preflight stages require the whole tree');
   const envFacts = name === 'Linux browser behavior'
     ? JSON.parse(execFileSync(process.execPath,[vm,'--reuse-image',snapshot,JSON.stringify(config.envFacts)],
       {cwd:snapshot,encoding:'utf8',env:{...process.env,ULD_ARTIFACT_COMMON:dirname(context.directory)}}))
@@ -70,7 +72,12 @@ export function decideRow(context,name,identity,retainedRecord) {
   if (!identity) return {reuse:false,reason:'inputs unavailable'};
   const { config, fingerprint, pipelineChanged } = identity;
   if (pipelineChanged) return {reuse:false,reason:'pipeline changes require fresh verification'};
-  const record = retainedRecord ?? readRecord(directory,name,fingerprint);
+  let record;
+  if (preflightGroup(name) && context.preflightId !== undefined) {
+    try {
+      if (cleanPreflightInputs(context)) record = preflightSource(directory,context,context.preflightId,name,fingerprint).record;
+    } catch {}
+  } else record = retainedRecord ?? readRecord(directory,name,fingerprint);
   const history = freshHistory(directory,name,attemptId);
   let enabled = false;
   try { enabled = config.reusable && !disabledGroups(directory).includes(name); } catch {}
@@ -79,10 +86,10 @@ export function decideRow(context,name,identity,retainedRecord) {
 }
 
 export function useRecord(context,row,record) {
-  const {source,evidence} = verifiedSource(context.directory,record);
+  const {source,row:original,evidence} = verifiedSource(context.directory,record,context);
   restoreOutputs(context.directory,context.snapshot,row.name,evidence.outputs);
   Object.assign(row,{result:'reused',reusedFrom:record.sourceAttempt,reuseRecord:record,
-    sourceDurationMs:source.suites.find(item=>item.name===row.name).durationMs});
+    sourceDurationMs:original.durationMs});
   return source;
 }
 
@@ -109,7 +116,7 @@ export function requireLandingIdentity(row,identity,decision) {
   assert.ok(decision.reuse && isDeepStrictEqual(decision.record,row.reuseRecord),'Reuse is no longer eligible for '+row.name);
 }
 
-function receiptRef(receipt, kind = 'reuse-receipts') {
+function receiptRef(receipt, kind = receipt.kind === 'preflight' ? 'preflight-receipts' : 'reuse-receipts') {
   assert.match(receipt.id,/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/);
   return 'refs/uld-archive/'+kind+'/'+receipt.id;
 }
@@ -149,14 +156,14 @@ export function requireOriginalReceipt(root,receipt,base) {
 }
 
 export function verifyLandingReuse({directory,root,snapshot},receipt) {
-  const claims = receipt.suites.filter(row=>row.result==='reused');
-  const audits = receipt.suites.filter(row=>row.auditRerun);
+  const claims = reuseRows(receipt).filter(row=>row.result==='reused');
+  const audits = reuseRows(receipt).filter(row=>row.auditRerun);
   if (!claims.length && !audits.length) return;
   assert.equal(receipt.mode,'qualification');
   assert.equal(receipt.noReuse,false);
   const scope = deviceScope(root,receipt.base,receipt.tree);
   assert.deepEqual(receipt.scope,scope);
-  const context = {directory,root,snapshot,scope,base:receipt.base,tree:receipt.tree,attemptId:receipt.id,mode:receipt.mode};
+  const context = {directory,root,snapshot,scope,base:receipt.base,commit:receipt.commit,tree:receipt.tree,attemptId:receipt.id,mode:receipt.mode};
   const ids = [...claims,...audits].map(row=>row.name);
   assert.equal(audits.length,1,'Missing unique fresh audit');
   assert.equal(audits[0].result,'passed');
@@ -166,8 +173,9 @@ export function verifyLandingReuse({directory,root,snapshot},receipt) {
     const app = ['iPhone Simulator','Android standard and low-end'].includes(row.name)
       ? readDeviceReuse({...context,groupId:row.name,receipt}) : null;
     const identity = rowIdentity(context,row.name,app,inputs);
-    requireLandingIdentity(row,identity,decideRow(context,row.name,identity,row.reuseRecord));
-    const {source} = verifiedSource(directory,row.reuseRecord);
+    const lookup = row.reuseRecord?.sourceKind === 'preflight' ? {...context,preflightId:row.reusedFrom} : context;
+    requireLandingIdentity(row,identity,decideRow(lookup,row.name,identity,row.reuseRecord));
+    const {source} = verifiedSource(directory,row.reuseRecord,context);
     if (row.name==='Linux browser behavior') assert.deepEqual(receipt.vm,source.vm);
     if (row.name==='iPhone Simulator') assert.deepEqual(receipt.devices.iphone,source.devices.iphone);
     if (row.name==='Android standard and low-end') {

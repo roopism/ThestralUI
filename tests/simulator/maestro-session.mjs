@@ -82,6 +82,7 @@ export function withMaestroSession({ platform, device, maestro, env, reports }, 
     return check(run, {
       reconnectIOS: () => request({ op: 'reconnect-ios' }),
       androidXML: () => readFileSync(join(request({ op: 'android-xml' }), 'nodes.xml'), 'utf8'),
+      iosElements: () => JSON.parse(readFileSync(join(request({ op: 'ios-elements' }), 'elements.json'), 'utf8')),
     });
   } finally {
     try { if (ready) request({ op: 'quit' }); }

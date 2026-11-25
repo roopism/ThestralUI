@@ -34,7 +34,6 @@
     ["570e3443d7ea3768513cd0ab47fe5b32a42fab3030f2384e211da809387a3fec", "style/token", 1, "PublicationLibrary .publication-cover color = #fff"],
     ["607069d161fe931366620014efdca634e71bc4f13454a216beba3c27cae41003", "style/token", 1, "PublicationLibrary .publication-library[data-direction=\"editorial\"] --uld-border = #b5a999"],
     ["61b420d3498cb89b11d5cdc8bd0fa484d5faf30414156f798eb606d46c9a1ced", "style/token", 1, "PublicationLibrary .publication-library[data-direction=\"editorial\"] --uld-canvas = #f1eade"],
-    ["6e31e5932d19561270017c714009aae46075725fc48b4136a5e04a789e987b11", "style/token", 1, "PublicationLibrary .publication-library .uld-media-details line-height = 1.5"],
     ["704eccfc7b88715213578bdf291cd17794d16250c929d2c7178cfa25d2b9e5af", "style/token", 1, "PublicationLibrary .publication-library font-family = system-ui, sans-serif"],
     ["71205957555cccb2b639a092ae712dd2476ad8fd11ab613e59ab89ca03074df7", "style/token", 1, "PublicationLibrary .publication-intro nav, .publication-library menu gap = .5rem"],
     ["7cbb039dc73c2e6bdbe4395c4514fe1408769d18efdb2b2ed1b7698c5aafa222", "style/token", 1, "PublicationLibrary .publication-library[data-direction=\"editorial\"] .publication-cover[data-cover=\"after-hours\"] color = #fff4c5"],
@@ -46,7 +45,6 @@
     ["87603519d1d8a191fac26bec6dd1eb834f340f3a382187597725347d8558763c", "style/token", 1, "PublicationLibrary .publication-library[data-direction=\"editorial\"][data-uld-theme=\"dark\"] --uld-surface = #2e282c"],
     ["892bbe494e57fc6ab07501be7680102036888e59b9325c1d20c2616d1d5be551", "style/token", 1, "PublicationLibrary .publication-library[data-direction=\"editorial\"] [data-cover=\"fieldwork\"]::before inset = -40% -8% -40% 55%"],
     ["8d8800c1a37ddf2d504c1c2fd3a0aff75647b66e97ecc73a3f9a3ad00d9c7d5b", "style/token", 1, "PublicationLibrary .publication-library[data-direction=\"editorial\"][data-uld-theme=\"dark\"] --uld-text = #fff2de"],
-    ["8e83e845569a982a164db73e1902a618483014090bdcc084b37b801b45441beb", "style/token", 1, "PublicationLibrary .publication-library min-height = 100dvh"],
     ["90ebbd26c5b4a523a790ba126c615e20f50604ccab37db77b68fe1563fee8136", "style/token", 1, "PublicationLibrary .publication-library[data-direction=\"editorial\"][data-uld-theme=\"dark\"] --uld-muted = #dbbcac"],
     ["930f6ecdca4b4ed67860e443f3761c0fd2c8459bc30e563483fff2395a2c13cb", "style/token", 1, "PublicationLibrary .publication-cover b letter-spacing = -.04em"],
     ["948b7bc1d2c2b347481736bc74bfba49a540e113293de01f490abd518bd7be3f", "style/token", 1, "PublicationLibrary .publication-library[data-direction=\"editorial\"] h1 font-family = Georgia, serif"],
@@ -103,18 +101,11 @@
     ["cc7e169f53bcf0fafe2bb6ba908f29edd1db2702e81f19946ce1756015b48c0c", "style/token", 1, ".catalog h2, .uld-dialog h2 line-height = 1.2"],
     ["cf0a37c6cba64adb6449fa36b297bbe01534423d1918f8566b0c33217b0fb7bc", "style/scope", 1, " selector = .actions"],
     ["cf2c85ee5cd6544e19186c76bde674b2d97819f356f60ada26471fac7cb193e5", "style/token", 1, ".catalog h1 margin = 0.2em 0 0.4em"],
-    ["f29de87d05710c9feb03432fcb7cb8b95c36e8a24564011f70a6931cded9dae6", "style/token", 1, ".catalog min-height = 100vh"],
     ["fdcc75d529fac4dbf00d50167998f2b43d4f5e3f59ef6451825e96f85a8135b0", "style/token", 1, ".specimen margin = 2rem 0"]
   ]},
-  {"path": "catalog/native/Gallery.tsx", "owner": "UI platform", "reason": "Check the existing runtime style slot against its consumer contract before replacing it.", "expires": "2027-02-18", "entries": [
-    ["42b40bff2bc45452fb9a0fa0dfd2683ec8a39542a10c969ddda1c66aade67002", "style/runtime", 3, "Gallery color = colors.text"],
-    ["801a7a1f85ca60fbc77c53a7f9f712de109a48252b880a21629895de93c77cdf", "style/runtime", 1, "Gallery backgroundColor = colors.canvas"]
-  ]},
   {"path": "catalog/native/Gallery.tsx", "owner": "UI platform", "reason": "Migrate this existing declaration or selector to its semantic token or component scope.", "expires": "2027-02-18", "entries": [
-    ["ae8c9bef91f49ab2a2156435cc7091c66333d7c18b547133111b0ca31888a0bf", "style/token", 1, "Gallery fontSize = 28"]
   ]},
   {"path": "catalog/shortlist.css", "owner": "UI platform", "reason": "Migrate this existing declaration or selector to its semantic token or component scope.", "expires": "2027-02-18", "entries": [
-    ["3776b3ce015470aef18e967632c2a41f2b91cc99e0a9f76ee5fac7208e2a4719", "style/token", 1, ".shortlist-page min-height = 100svh"],
     ["3f38e5015062a6096a6553730b930b4b218697275ea14341ea609070957b5cd4", "style/token", 1, ".opportunity --paper = #172826"],
     ["44bb552a2db5c14ba4e62c500a359534b135b411d09be3e6bd1fa9717886695c", "style/token", 1, ".shortlist .uld-adaptive-grid --uld-grid-gap = clamp(1rem, 2vw, 2rem)"],
     ["451ebf0c33f2f8b1ea579d264e172aa304ccea95063fb33bf816eab90f00ea95", "style/token", 1, ".opportunity border-radius = 1.25rem"],
@@ -166,7 +157,6 @@
     ["38c0fda064347c38ea57876433a0677faad5a0fcc5241fe6c950a2a473a20f2c", "style/token", 1, "FormField borderWidth = 1"]
   ]},
   {"path": "packages/native/src/modal-dialog/binding.tsx", "owner": "UI platform", "reason": "React Native fills the system window with StyleSheet.absoluteFill. The 48% backdrop opacity matches the web dialog scrim while leaving the parent visible.", "expires": "2027-02-18", "entries": [
-    ["b929384a33327028e830b72a88a43580e78ba40b9f03f2169f586fd94c501042", "style/runtime", 1, "Dialog style = StyleSheet.absoluteFill"],
     ["fad7251e105e8be65f56f956bd3fe9366a57cdad8033bbb94bb430fc79249458", "style/token", 1, "Dialog opacity = 0.48"]
   ]},
   {"path": "packages/native/src/modal-dialog/binding.tsx", "owner": "UI platform", "reason": "The three public panel widths cap the dialog on larger displays. A 90% height cap leaves a visible escape surface and keeps long content scrollable.", "expires": "2027-02-18", "entries": [
@@ -280,8 +270,7 @@
   ]},
   {"path": "packages/web/src/drawer/styles.css", "owner": "UI platform", "reason": "Migrate this existing declaration or selector to its semantic token or component scope.", "expires": "2027-02-18", "entries": [
     ["1cbf81dc4c98ee3e11ed44ced29f5aa268ccf6f827f2732e06ac1429d6ca102e", "style/token", 1, ".uld-edge-start[open], .uld-edge-end[open] inline-size = min(90vw, 28rem)"],
-    ["67e300d0c5cfe43806521e8770aca3e2ae5cb8adb1d3dca3996e62ce45a9adba", "style/token", 1, ".uld-edge-start[open], .uld-edge-end[open] transform = translateX(var(--uld-drag-offset, 0px))"],
-    ["d4f1fbac27071fc90cebeeed3e8f55e8a33cc8590b57e4f1be9d7f7907ab917b", "style/token", 1, ".uld-edge-start[open], .uld-edge-end[open] block-size = 100dvh"]
+    ["67e300d0c5cfe43806521e8770aca3e2ae5cb8adb1d3dca3996e62ce45a9adba", "style/token", 1, ".uld-edge-start[open], .uld-edge-end[open] transform = translateX(var(--uld-drag-offset, 0px))"]
   ]},
   {"path": "packages/web/src/expanding-media-card/styles.css", "owner": "UI platform", "reason": "Migrate this existing declaration or selector to its semantic token or component scope.", "expires": "2027-02-18", "entries": [
     ["26e32e8701c8a3f6e29152adc2daf268ae13b0fca57843749273cc5477aebfe0", "style/token", 1, ".uld-media-card border = 1px solid var(--uld-border)"]
@@ -342,8 +331,7 @@
     ["955ef7f875e32d4a05abe023655bdf6ac007ec2e3462a4fae22dfbf3af652061", "style/token", 1, ".uld-page-actions gap = 0.5rem"]
   ]},
   {"path": "packages/web/src/radio-group/styles.css", "owner": "UI platform", "reason": "Migrate this existing declaration or selector to its semantic token or component scope.", "expires": "2027-02-18", "entries": [
-    ["09d8d8a9209b1eb3dc1086457693cca508b31b4b0274d2a9910f32e748f9d5e4", "style/token", 1, ".uld-controls .react-aria-Radio[data-selected]::before border = 0.4em solid var(--uld-accent)"],
-    ["fa3214346e925a9950c2eb37f78b62c05a6104b3225636f11f5b252e756fc60b", "style/token", 1, ".uld-controls .react-aria-Radio::before border-radius = 50%"]
+    ["09d8d8a9209b1eb3dc1086457693cca508b31b4b0274d2a9910f32e748f9d5e4", "style/token", 1, ".uld-controls .react-aria-Radio[data-selected]::before border = 0.4em solid var(--uld-accent)"]
   ]},
   {"path": "packages/web/src/record-selection/styles.css", "owner": "UI platform", "reason": "Migrate this existing declaration or selector to its semantic token or component scope.", "expires": "2027-02-18", "entries": [
     ["170d9c6a199feb4cdff8632e43d40e387290c606badf0c0f9d255f93c8fab2cb", "style/token", 1, ".uld-record-option[data-focus-visible] outline = 2px solid currentColor"],
@@ -359,8 +347,6 @@
   ]},
   {"path": "packages/web/src/resizable-list-and-detail/styles.css", "owner": "UI platform", "reason": "Migrate this existing declaration or selector to its semantic token or component scope.", "expires": "2027-02-18", "entries": [
     ["0d759830d93b1be320a7ac6a62ab5591e17e12e95442ff014846b9a45615126b", "style/token", 1, ".uld-split-handle min-inline-size = 2.75rem"],
-    ["175774ca4d9121c6d182e751a773fe12bd01aa6e08169f35a6d60021a5652274", "style/token", 1, ".uld-split-handle:focus-visible, .uld-split-pane:focus-visible outline-offset = -2px"],
-    ["3ff38773835458ba0cfed2df355fd3c634fb03e88eaa6c13be8b9ecd6cf5a4c6", "style/token", 1, ".uld-split-handle:focus-visible, .uld-split-pane:focus-visible outline = 2px solid Highlight"],
     ["550928d1fd8b0b35c199d52c9cae5b83119421d7549a4ced8e6f3583516002e8", "style/token", 1, ".uld-split-pane max-block-size = var(--uld-pane-max-height, none)"],
     ["cbf24e49c0de148cbd945d4be2cfad24bf41cacf8dbdc1d540f67f8136d0c919", "style/token", 1, ".uld-split-handle background = linear-gradient(     to right,     transparent calc(50% - 1px),     currentColor calc(50% - 1px),     currentColor calc(50% "],
     ["fc1c05e123b9e89c8f64218607f36243f8e59a5a4583c3068ff4023c06b914b5", "style/token", 1, ".uld-split-handle min-block-size = 2.75rem"]
@@ -375,19 +361,15 @@
     ["ecc560839669e22979063c263f754436fbc51b4d8228f6ffa74ba88a4f289199", "style/token", 1, ".uld-skeleton min-block-size = 1em"]
   ]},
   {"path": "packages/web/src/spinner/styles.css", "owner": "UI platform", "reason": "Migrate this existing declaration or selector to its semantic token or component scope.", "expires": "2027-02-18", "entries": [
-    ["09c3178f2cc6debaad79cff959eddb11e2fd735aae22e5e5a214da241f429038", "style/token", 1, "to transform = rotate(1turn)"],
     ["123567eff561366b2ec882df58d3011412695c92cfb9d9d90376fec0f4bc46e1", "style/token", 1, ".uld-spinner block-size = 1em"],
-    ["21ee1700a49f39f22e3d75136b2051faefdd352978091db5286b4983811a44f6", "style/token", 1, ".uld-spinner border-radius = 50%"],
     ["9688007a423ba1d5ed0ad6140c4b898f0cb5c01656d4dceb4ce237fe4360ad7b", "style/token", 1, ".uld-spinner inline-size = 1em"],
-    ["b4c3aa1e48c37d23b2e37824e71425e7915b1b5da0cec780a9e3861cbd688fa4", "style/token", 1, ".uld-spinner animation = uld-turn 800ms linear infinite"],
-    ["fe6f7daecfd00b064ddc8e07403cbfca06afd35248157ec1759cfda9c68c3de3", "style/token", 1, ".uld-spinner border = 2px solid currentColor"]
+    ["b4c3aa1e48c37d23b2e37824e71425e7915b1b5da0cec780a9e3861cbd688fa4", "style/token", 1, ".uld-spinner animation = uld-turn 800ms linear infinite"]
   ]},
   {"path": "packages/web/src/surface/styles.css", "owner": "UI platform", "reason": "Migrate this existing declaration or selector to its semantic token or component scope.", "expires": "2027-02-18", "entries": [
     ["25e15f067518974b6822370ec1baefa92d359527cad6f3a4d2196861fe739816", "style/token", 1, ".uld-surface border = 1px solid var(--uld-border)"],
     ["84f631dbd45df8d01f99c5ebcb2bb29b085f190565ead52342c8813d17094849", "style/token", 1, ".uld-surface padding = 1rem"]
   ]},
   {"path": "packages/web/src/switch/styles.css", "owner": "UI platform", "reason": "Migrate this existing declaration or selector to its semantic token or component scope.", "expires": "2027-02-18", "entries": [
-    ["21854f5425c09e62a047ad94bfcf87be513151a898cc69d447909465f97e523a", "style/token", 1, ".uld-controls .react-aria-Switch::after border-radius = 50%"],
     ["47b42906c5d4a8df371ce90c0d86d2882f8d5adead48a6dcb0a17d6c2c85583b", "style/token", 1, ".uld-controls .react-aria-Switch::after inset-inline-start = 0.23em"],
     ["5f5b4c243af18b57c4a73da53829b5d8cb1841bd09bf101c2161830ee9b47264", "style/token", 1, ".uld-controls .react-aria-Switch[data-selected]::after inset-inline-start = 1.3em"],
     ["61e8e7b4928a66323b5f5a6070856f1423f63a3d5554af26f331fba68bfb4254", "style/token", 1, ".uld-controls .react-aria-Switch::before border-radius = 2em"],
@@ -429,8 +411,6 @@
   ]},
   {"path": "packages/web/src/virtual-treegrid/styles.css", "owner": "UI platform", "reason": "Migrate this existing declaration or selector to its semantic token or component scope.", "expires": "2027-02-18", "entries": [
     ["52cfd359a61c4ba06bbd4d779ab944228f7007b59dc4d5656a803bccfaa47643", "style/token", 1, ".uld-tree-chevron min-inline-size = 2.75rem"],
-    ["87984649733d1ae5165e9b5ec88a1fa2e1f3bae489b8f27a26e74b22b1883c42", "style/token", 1, ".uld-tree-chevron:dir(rtl) span[data-expanded='false'] transform = rotate(180deg)"],
-    ["bb5e43bdd7f247711364a83aa0489ea071af090d9e4ffb155be566287c7eb9ce", "style/token", 1, ".uld-tree-chevron span[data-expanded='true'] transform = rotate(90deg)"],
     ["beb8ce937ef026b1ff86e0e2225990269c22abb0b7622dd523c14058bdedc783", "style/token", 1, ".uld-tree-chevron min-block-size = 2.75rem"]
   ]},
   {"path": "packages/web/src/icon-button/styles.css", "owner": "UI platform", "reason": "The opt-in square control retains the existing Button marker and the token-matched 32, 44, 48 and 56 pixel fallback sizes when consumed without the theme.", "expires": "2027-02-18", "entries": [

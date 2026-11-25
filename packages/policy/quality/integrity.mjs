@@ -171,7 +171,38 @@ const secrets = [
   /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
   /\b(?:gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{40,}|sk-(?:proj-)?[A-Za-z0-9_-]{36,}|AKIA[A-Z0-9]{16})\b/,
   /\beyJ[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{18,}\b/,
+  // Gitleaks-style rules. Each one has a rejecting fixture in tests/contracts/integrity.test.mjs.
+  /-----BEGIN[ A-Z0-9_-]{0,100}PRIVATE KEY(?: BLOCK)?-----/,
+  /\b(?:A3T[A-Z0-9]|AKIA|ASIA|ABIA|ACCA)[A-Z2-7]{16}\b/,
+  /\baws.{0,20}?(?:secret|private).{0,20}?['"][A-Za-z0-9/+]{40}['"]/i,
+  /\bey[A-Za-z0-9_-]{17,}\.ey[A-Za-z0-9_-]{17,}\.(?:[A-Za-z0-9_-]{10,}={0,2})?/,
+  /\bnpm_[A-Za-z0-9]{36}\b/,
+  /\bglpat-[A-Za-z0-9_-]{20,}\b/,
+  /\bxox[abposr]-[0-9A-Za-z-]{10,}/,
+  /\bhooks\.slack\.com\/(?:services|workflows)\/[A-Za-z0-9+/]{43,}/,
+  /\b[sr]k_(?:live|test)_[0-9A-Za-z]{24,}\b/,
+  /\bAIza[0-9A-Za-z_-]{35}\b/,
+  /\bpypi-AgEIcHlwaS5vcmc[A-Za-z0-9_-]{50,}/,
+  /\bSG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}\b/,
+  /\bdckr_pat_[A-Za-z0-9_-]{27,}/,
+  /\bshp(?:at|ca|pa|ss)_[a-fA-F0-9]{32}\b/,
+  /\bhf_[A-Za-z]{34}\b/,
+  /_authToken\s*=\s*(?!\$\{)[^\s'"]{8,}/,
 ];
+// A key-like name assigned a long, high-entropy literal. Placeholders and repeated text fall below the floor.
+const assignment =
+  /(?:api[_-]?key|secret|token|passw(?:or)?d|client[_-]?secret|access[_-]?key)["']?\s*[:=]\s*["']([A-Za-z0-9_+/=-]{20,})["']/gi;
+function entropy(value) {
+  const counts = new Map();
+  for (const char of value) counts.set(char, (counts.get(char) ?? 0) + 1);
+  let bits = 0;
+  for (const count of counts.values()) bits -= (count / value.length) * Math.log2(count / value.length);
+  return bits;
+}
+function assignedSecret(text) {
+  for (const match of text.matchAll(assignment)) if (entropy(match[1]) >= 3.5) return true;
+  return false;
+}
 export function inspectSecret(path, bytes) {
   if (
     /(?:^|\/)(?:\.env(?:$|\.(?:local|production|development|test)$)|id_rsa|id_ed25519|[^/]+\.p12)$/.test(
@@ -179,7 +210,8 @@ export function inspectSecret(path, bytes) {
     )
   )
     return [path + ' — remove the private configuration from the candidate'];
-  return secrets.some((pattern) => pattern.test(bytes.toString('latin1')))
+  const text = bytes.toString('latin1');
+  return secrets.some((pattern) => pattern.test(text)) || assignedSecret(text)
     ? [
         path +
           ' — suspected credential; replace it with a synthetic fixture and inspect its history',

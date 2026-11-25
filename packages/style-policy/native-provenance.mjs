@@ -1,7 +1,9 @@
 import ts from 'typescript';
 
 // Resolve local symbols without loading a dependency or executing the inspected file.
-export function nativeProvenance(file, tokenPaths) {
+// Native-only tokens are published by the native entry and read only through its import.
+const nativeEntry = '@ui-lazy-dev/tokens/native';
+export function nativeProvenance(file, tokenPaths, nativeTokenPaths) {
   const compiler = { noLib: true, noResolve: true, types: [], jsx: ts.JsxEmit.Preserve };
   const host = ts.createCompilerHost(compiler);
   host.getSourceFile = name => name === file.fileName ? file : undefined;
@@ -13,6 +15,7 @@ export function nativeProvenance(file, tokenPaths) {
     return symbol?.declarations?.[0];
   }
   const known = new Set(tokenPaths ?? []);
+  const nativeKnown = new Set(nativeTokenPaths ?? []);
   const modified = new Set();
   function markWrite(node) {
     if (!node) return;
@@ -132,6 +135,7 @@ export function nativeProvenance(file, tokenPaths) {
     }
     const t = field(node);
     const map = t?.typeArguments?.[0];
+    if (t && ts.isTypeReferenceNode(t) && imported(t.typeName, nativeEntry, 'NativeResolvedTokens')) return markWrite(node);
     if (rnStyle(t) || (builtin(t, 'Partial') && builtin(map, 'Record') && rnStyle(map.typeArguments?.[1])) ||
         (t && ts.isTypeReferenceNode(t) && imported(t.typeName, '@ui-lazy-dev/tokens/modes', 'ResolvedTokens'))) {
       return markWrite(node);
@@ -139,6 +143,7 @@ export function nativeProvenance(file, tokenPaths) {
     if (ts.isIdentifier(node)) {
       const d = declaration(node);
       if (!d) return;
+      if (imported(node, nativeEntry, 'nativeTokens')) return markWrite(node);
       if (parameter(d) || imported(node, '@ui-lazy-dev/tokens', 'tokens')) return markWrite(node);
       if (ts.isVariableDeclaration(d)) escape(d.initializer, seen);
       return;
@@ -162,6 +167,12 @@ export function nativeProvenance(file, tokenPaths) {
   function tokenLeaf(node, keys = [], seen = new Set()) {
     if (ts.isParenthesizedExpression(node)) return tokenLeaf(node.expression,keys,seen);
     const type = field(node);
+    // A resolved native theme carries the mode's tokens and the native-only tokens derived from it.
+    if (type && ts.isTypeReferenceNode(type) && imported(type.typeName,nativeEntry,'NativeResolvedTokens')) {
+      if (keys[0] === 'color') return keys.length === 2 && known.has('light.' + keys[1]) && known.has('dark.' + keys[1]);
+      return keys.length === 2 && !['palette','dark','light'].includes(keys[0]) &&
+        (known.has(keys.join('.')) || nativeKnown.has(keys.join('.')));
+    }
     if (type && ts.isTypeReferenceNode(type) && imported(type.typeName,'@ui-lazy-dev/tokens/modes','ResolvedTokens')) {
       if (keys[0] === 'color') return keys.length === 2 && known.has('light.' + keys[1]) && known.has('dark.' + keys[1]);
       return keys.length === 2 && !['palette','dark','light'].includes(keys[0]) && known.has(keys.join('.'));
@@ -172,6 +183,7 @@ export function nativeProvenance(file, tokenPaths) {
       return tokenLeaf(node.left,keys,seen) && tokenLeaf(node.right,keys,seen);
     if (!ts.isIdentifier(node)) return false;
     if (imported(node,'@ui-lazy-dev/tokens','tokens')) return known.has(keys.join('.'));
+    if (imported(node,nativeEntry,'nativeTokens')) return nativeKnown.has(keys.join('.'));
     const decl = declaration(node);
     if (!decl || modified.has(decl) || seen.has(decl) || !ts.isVariableDeclaration(decl) ||
         !(decl.parent.flags & ts.NodeFlags.Const) || !decl.initializer) return false;
@@ -184,7 +196,11 @@ export function nativeProvenance(file, tokenPaths) {
   }
   // React Native ignores absent style array entries. 'undefined' is an identifier
   // and a local binding with that spelling may point to an arbitrary style object.
+  // StyleSheet.absoluteFill from react-native sets no design value either: it is the
+  // structural constant for absolute position with zero insets.
   function absentStyle(node) {
+    if (ts.isPropertyAccessExpression(node) && /^absoluteFill(?:Object)?$/.test(node.name.text) &&
+        imported(node.expression, 'react-native', 'StyleSheet')) return true;
     if (node.kind === ts.SyntaxKind.NullKeyword || node.kind === ts.SyntaxKind.FalseKeyword) return true;
     if (!ts.isIdentifier(node) || node.text !== 'undefined') return false;
     const symbol = checker.getSymbolAtLocation(node);

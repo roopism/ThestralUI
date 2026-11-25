@@ -1,3 +1,4 @@
+import { gateGroup, preflightSource, reuseRows } from './preflight.mjs';
 import assert from 'node:assert/strict';
 import { readArtifact } from '../../build-cache/artifact-cache.mjs';
 import { execFileSync } from 'node:child_process';
@@ -94,12 +95,19 @@ export function readRecord(directory,groupId,fingerprint) {
   } catch { return null; }
 }
 
-export function verifiedSource(directory,record) {
+export function verifiedSource(directory,record,context) {
+  if (record.sourceKind === 'preflight') {
+    const pass = preflightSource(directory,context,record.sourceAttempt,record.groupId,record.fingerprint);
+    assert.deepEqual(record,pass.record);
+    return pass;
+  }
   return validate(directory,record,record.groupId,record.fingerprint);
 }
 
 // Keep the record originally used by each row even after the latest lookup expires or moves.
 export function projectStoredPasses(directory,receipt) {
+  const nested = receipt.gateTests && reuseRows(receipt).some(row => row.result === 'reused');
+  if (nested) receipt = {...receipt,suites:reuseRows(receipt)};
   if (!receipt.suites?.some(row => row.result === 'reused')) return receipt;
   assert.equal(receipt.reuseSchema,1);
   assert.equal(receipt.mode,'qualification');
@@ -107,11 +115,14 @@ export function projectStoredPasses(directory,receipt) {
   const suites = receipt.suites.map(row => {
     if (row.result !== 'reused') return row;
     const record = row.reuseRecord;
-    validate(directory,record,row.name,row.fingerprint);
+    assert.equal(record.groupId,row.name);
+    assert.equal(record.fingerprint,row.fingerprint);
+    verifiedSource(directory,record,receipt);
     assert.equal(row.reusedFrom,record.sourceAttempt);
     assert.notEqual(receipt.id,record.sourceAttempt);
     return {...row,result:'passed'};
   });
+  if (nested) return {...receipt,gateTests:suites.pop(),suites};
   return {...receipt,suites};
 }
 
@@ -122,7 +133,9 @@ export function freshHistory(directory,groupId,except) {
       if (!file.endsWith('.json') || !uuid.test(file.slice(0,-5)) || file === except+'.json') continue;
       const attempt = json(readBytes(directory,'attempts/'+file));
       assert.equal(file,attempt.id+'.json');
-      const row = attempt.suites.find(row => row.name === groupId);
+      // Older runners executed the gate tests as part of every fresh No weakening row.
+      const row = groupId === gateGroup ? attempt.gateTests ?? attempt.suites.find(row => row.name === 'No weakening')
+        : attempt.suites.find(row => row.name === groupId);
       if (!row || row.result === 'reused' || row.result === 'web-only' || row.result === 'blocked' || row.result === 'pending') continue;
       const started = Date.parse(attempt.started);
       assert.ok(Number.isFinite(started));

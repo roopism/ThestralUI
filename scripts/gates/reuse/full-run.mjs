@@ -1,3 +1,4 @@
+import { reuseRows } from './preflight.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
@@ -39,7 +40,7 @@ export function sealedClaims(root, started) {
     assert.equal(receipt.reuseSchema,1);
     assert.equal(receipt.status,'passed');
     assert.ok(Number.isFinite(Date.parse(receipt.finished)));
-    if (receipt.mode==='qualification' && Date.parse(receipt.finished)<=cutoff && receipt.suites.some(row=>row.result==='reused'))
+    if (receipt.mode==='qualification' && Date.parse(receipt.finished)<=cutoff && reuseRows(receipt).some(row=>row.result==='reused'))
       claims.push(receipt);
   }
   return claims;
@@ -48,6 +49,8 @@ export function sealedClaims(root, started) {
 // Compare all eligible historical claims, including those for different trees with the same fingerprint.
 // A blocked or otherwise unverified stage conservatively disables a matching earlier reuse claim.
 export function compareFullRun(directory, fresh, history, disable = disableGroup) {
+  fresh = {...fresh,suites:reuseRows(fresh)};
+  history = history.map(attempt => ({...attempt,suites:reuseRows(attempt)}));
   assert.equal(fresh.noReuse, true);
   assert.equal(fresh.mode, 'qualification');
   assert.ok(['passed', 'failed'].includes(fresh.status) && Array.isArray(fresh.suites));

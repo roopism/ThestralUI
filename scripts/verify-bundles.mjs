@@ -39,6 +39,10 @@ const policies = {
   },
 };
 const baseline = readJson(join(root, 'tests/packaging/bundle-baseline.json'));
+// Entries read only by native renderers. Like the ui-native package, they are outside the
+// web budgets, and every web entry of the same package must exclude their output.
+const nativeEntries = { '@ui-lazy-dev/tokens': { entry: './native', output: /\/dist\/native\.js$/ } };
+const webEntry = (name, entry) => nativeEntries[name]?.entry !== entry;
 
 // The original representative imports stay mandatory. Every additional public subpath is measured
 // independently, along with each named import registered for it by the owning family.
@@ -58,7 +62,7 @@ export function registeredBundleImports(families, shared, names, limits) {
       if (separate.has(pkg)) continue;
       const name = names.get(pkg);
       assert.ok(name, 'Unregistered workspace ' + pkg);
-      add(name, path);
+      if (webEntry(name, path)) add(name, path);
     }
   }
   for (const label of Object.keys(limits)) {
@@ -86,7 +90,7 @@ export async function measureBundles(cwd, { diagnostics = false, selectedEntries
   const results = [];
   for (const [pkg, entries] of bundleImports()) {
     const manifest = readJson(join(cwd, 'node_modules', pkg, 'package.json'));
-    if (!diagnostics) assertCoverage(Object.keys(manifest.exports), [...entries.keys()]);
+    if (!diagnostics) assertCoverage(Object.keys(manifest.exports).filter(entry => webEntry(pkg, entry)), [...entries.keys()]);
     for (const [entry, symbols] of entries) {
       if (diagnostics && !Object.hasOwn(manifest.exports, entry)) continue;
       const name = pkg + (entry === '.' ? '' : entry.slice(1));
@@ -131,6 +135,10 @@ export async function measureBundles(cwd, { diagnostics = false, selectedEntries
         if (entry === '.' || entry === './styles.css') {
           assert.ok(!included.some(path => /\/dist\/(?:modes(?:\/|\.)|brands\/)/.test(path)),
             'Optional modes or brand assets leaked into ' + name);
+        }
+        if (nativeEntries[pkg]) {
+          assert.ok(!included.some(path => nativeEntries[pkg].output.test(path)),
+            'Native-only tokens leaked into the web entry ' + name);
         }
         if (pkg === '@ui-lazy-dev/tokens' && !entry.startsWith('./brands/expressive')) {
           assert.ok(!included.some(path => /\/brands\/expressive[./]/.test(path)),
