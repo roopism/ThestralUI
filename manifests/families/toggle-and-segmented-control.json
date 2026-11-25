@@ -1,0 +1,60 @@
+{
+  "id": "Toggle and segmented control",
+  "order": 26,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:ToggleButton",
+      "forms:ToggleButtonGroup"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseNavigation.stories.tsx",
+    "test": "tests/browser/enterprise-navigation.spec.ts",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "behaviorAnchor": "name: 'Compact'",
+  "depth": {
+    "representative": "forms:ToggleButton",
+    "expectation": "Single/multiple selection, disabled keys and direction-aware keyboard navigation",
+    "oracle": "Switch orientation and locale; retain stable selected keys while disabled choices stay unreachable.",
+    "evidence": {
+      "browser": "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings"
+    },
+    "assertions": {
+      "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings": "expect(compact).toBeChecked()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/toggle-and-segmented-control/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/form-spec-states.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-navigation.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseNavigation.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "browser": [
+      "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings"
+    ],
+    "vitest": [
+      "tests/form-spec-states.test.tsx | readonly switches ignore activation and a disabled segmented choice cannot be selected"
+    ]
+  }
+}

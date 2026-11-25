@@ -1,0 +1,255 @@
+{
+  "paths": [
+    "packages/web/src",
+    "packages/native/src",
+    "catalog"
+  ],
+  "required": [
+    "packages/web/src/application-shell/binding.tsx",
+    "packages/web/src/_shared/styles/workflows.css",
+    "packages/web/src/application-shell/styles.css",
+    "packages/web/src/command-palette/styles.css",
+    "packages/web/src/form-wizard/styles.css",
+    "packages/web/src/navigation-bar-and-rail/styles.css",
+    "packages/web/src/page-composition/styles.css",
+    "packages/web/src/record-selection/styles.css",
+    "packages/web/src/resizable-list-and-detail/styles.css",
+    "packages/web/src/settings/styles.css",
+    "packages/native/src/button/binding.tsx"
+  ],
+  "tokenFile": "packages/tokens/tokens.json",
+  "scopes": [
+    "uld-"
+  ],
+  "catalogScopes": [
+    "catalog",
+    "component-grid",
+    "specimen",
+    "shortlist",
+    "opportunity",
+    "publication-",
+    "proof-"
+  ],
+  "baselineTransitions": [
+    {
+      "path": "packages/native/src/modal-dialog/binding.tsx",
+      "previousSha256": "8a86291aebd67aa0d49fd4fee129c18c686db7d4e1139f39fd404daf64898988",
+      "currentSha256": "80f20a2693c9f809596efe2fc167fb66079d920f6bab89208803703a56e46014",
+      "previousGroups": [
+        {
+          "owner": "UI platform",
+          "reason": "Migrate this existing declaration or selector to its semantic token or component scope.",
+          "expires": "2027-02-18",
+          "entries": [
+            [
+              "7030e6fabb9158b6b1e54a191ac5c3d8cbf1126f655e99d7c4d71b2cc2a673fd",
+              "style/token",
+              1,
+              "Dialog padding = 20"
+            ],
+            [
+              "8aaa2d5b116d06cd1fdac3b625003bb9f193d9e3ff47e34f6402e1289d731fdd",
+              "style/token",
+              1,
+              "Dialog maxHeight = '90%'"
+            ],
+            [
+              "9fd1a0ab4d526a6feae5f31cf9fc4e22170e114049e30dea3d2a0bd1bce2f678",
+              "style/token",
+              1,
+              "Dialog padding = 24"
+            ],
+            [
+              "e3f165a986b51d892ed4e446fb300e03a74278cab5968e94039faf5fedcd83ad",
+              "style/token",
+              1,
+              "Dialog backgroundColor = 'rgba(0,0,0,0.48)'"
+            ],
+            [
+              "e731c162b9867b5bbb22a43efbd2ea93f52089428cccd54681cf9ad08a6e07a7",
+              "style/token",
+              1,
+              "Dialog maxWidth = 480"
+            ],
+            [
+              "e847cb5fd3544a32c6268ab8f3099045435850d236b2dd804d064c2eb672ab36",
+              "style/token",
+              1,
+              "Dialog fontWeight = '700'"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "path": "packages/web/src/_shared/styles/styles.css",
+      "previousSha256": "6e7e2e29e3f4a8f81abc4a46297e147bd23bd92d5c90bcd9a7f221e5ddd87a7f",
+      "currentSha256": "536a789cf7e3a8a160ff55d244816b2cf596956461ff488646fb3b0eccd60dc6",
+      "previousGroups": [
+        {
+          "owner": "UI platform",
+          "reason": "Migrate this existing declaration or selector to its semantic token or component scope.",
+          "expires": "2027-02-18",
+          "entries": [
+            [
+              "5686331bcb3635d9886a5596b7e564e75f76f9dea5fc98e75aa9b944c65c8a3a",
+              "style/token",
+              1,
+              ".uld-button:focus-visible, .uld-field :focus-visible, .uld-dialog :focus-visible outline = 3px solid var(--uld-focus)"
+            ],
+            [
+              "6991d8cc79aa6715561ac4800a5e2b8169c0578f62f696308d214feedab66cd6",
+              "style/token",
+              1,
+              ".uld-button, .uld-field input, .uld-field textarea, .uld-field select border = 1px solid var(--uld-border)"
+            ],
+            [
+              "d1fded3968eb1ebc7ddd9d955aa8b6b66b6cad3407090dfe48d096cf93317445",
+              "style/token",
+              1,
+              ".uld-button:focus-visible, .uld-field :focus-visible, .uld-dialog :focus-visible outline-offset = 3px"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "path": "packages/web/src/modal-dialog/styles.css",
+      "previousSha256": "e3211b2b8f8b79814b858bd9f35d5b321802d0c538224e0332cd8438f360a36d",
+      "currentSha256": "7ff4ba7d082cdfef9b2e5d95a7be27b43644562dc649549f3cd5c52107abfb0e",
+      "previousGroups": [
+        {
+          "owner": "UI platform",
+          "reason": "Migrate this existing declaration or selector to its semantic token or component scope.",
+          "expires": "2027-02-18",
+          "entries": [
+            [
+              "30e63353596215b19a058013fad56f1460bb0254c266e8def3ce155c01c4548c",
+              "style/token",
+              1,
+              ".uld-dialog::backdrop background = rgb(15 23 19 / 0.48)"
+            ],
+            [
+              "4edc93373ac63feb31c817390ce534c518aed1cc25044773a79887a9e5b4cec6",
+              "style/token",
+              1,
+              ".uld-dialog padding = 1.5rem"
+            ],
+            [
+              "a329aa867d27c00f1405db39620538f15367811685b70c1d22b96f33d19dd09a",
+              "style/token",
+              1,
+              ".uld-dialog width = min(26rem, 88vw)"
+            ],
+            [
+              "c51ed0e7cfe96d0a7b0d42864823e7821d2a4c321e8170930b2a69d79f110215",
+              "style/token",
+              1,
+              ".uld-dialog border = 1px solid var(--uld-border)"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "path": "packages/web/src/data-table/styles.css",
+      "previousSha256": "4aea1824b5749cb9475ba17456dbe4205b6aece299626dd20b872e5cc91fcb5c",
+      "currentSha256": "35c76346387edd23be9cec760bf1762679f52b1ef5153f3cce1b7860284b6823",
+      "previousGroups": [
+        {
+          "owner": "UI platform",
+          "reason": "Migrate this existing declaration or selector to its semantic token or component scope.",
+          "expires": "2027-02-18",
+          "entries": [
+            [
+              "0ecba3c08b0a26af44b87136f054a8cc7fbf84771bfe499f73995e9fbdb78d50",
+              "style/token",
+              1,
+              ".uld-data button, .uld-data-tools input:not([type='checkbox']) min-block-size = 2.75rem"
+            ],
+            [
+              "2a474901e914036a8cfd9a436e2fd0d1d10a26fc505bb556e3258ea4148be428",
+              "style/token",
+              1,
+              ".uld-data :focus-visible outline = 2px solid Highlight"
+            ],
+            [
+              "42a52c6bfd4133db9ab0d114e5b84b373b283dc292a1477dbda6a62385d12beb",
+              "style/token",
+              1,
+              ".uld-data :is(.uld-data-tools, .uld-data-pages) gap = 0.5rem"
+            ],
+            [
+              "512c97d097388f9e0551d36e46a20201ff38bdbc992da8ad94c56e1abd4a048b",
+              "style/token",
+              1,
+              ".uld-data input[type='checkbox'] margin = 0.75rem"
+            ],
+            [
+              "90591da9eee75e51f66a77bcec28babf5c0820023fb9b3fb919e617b23264539",
+              "style/token",
+              1,
+              ".uld-data :is(th, td) padding = 0.35rem 0.6rem"
+            ],
+            [
+              "9cabb550d2352224ea8e14435198b94d6d0561aaed14ec1d4adbc51e6a731ff9",
+              "style/token",
+              1,
+              ".uld-data input[type='checkbox'] inline-size = 1.25rem"
+            ],
+            [
+              "b391a2fbf3c5ffac9ddf042ebbbb662dbb14a7b81c1f3f2c25400d210f855f26",
+              "style/token",
+              1,
+              ".uld-data-tools label gap = 0.25rem"
+            ],
+            [
+              "c4af1709ea9ffd41513367bc6ecdfb38cba9be481c9291c00d28d5838181cfd4",
+              "style/token",
+              1,
+              ".uld-data input[type='checkbox'] block-size = 1.25rem"
+            ],
+            [
+              "d261a4e069ff72f8b19981e123f6d0eddca90e7e2e02ad77afafbc2639a34c75",
+              "style/token",
+              1,
+              ".uld-data :focus-visible outline-offset = 2px"
+            ],
+            [
+              "e4534c58e48947d606628ce4f6ec2e4ce1b02279ffe30eee23f1dbf7aafcb4f6",
+              "style/token",
+              1,
+              ".uld-data gap = 0.75rem"
+            ],
+            [
+              "fcb2ab12065ef7b2c94a32dfa372dc285eadd3f42d6da987995926d97b5b6430",
+              "style/token",
+              1,
+              ".uld-data :is(th, td) border-block-end = 1px solid currentColor"
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "baselineAdditions": [
+    {
+      "path": "packages/native/src/data-table/binding.tsx",
+      "previousManifestSha256": "5aa41f266e5147c5a659f32db169ee1844efcb5f198055a4236f20aa24589023"
+    },
+    {
+      "path": "packages/web/src/icon-button/styles.css",
+      "previousManifestSha256": "dc96eacfd12bc074a756b9dfa2ef9b1907912ac5aea24de9b3d0bcc0db877a6a"
+    },
+    {
+      "path": "packages/native/src/heading/binding.tsx",
+      "previousManifestSha256": "bae77672e316a89124ffcfa5a934a2c7db04fe6e9962c15a236211df0b6cb046"
+    }
+  ],
+  "standaloneStyles": {
+    "packages/web/src/data-table/styles.css": {
+      "scopeBoundary": "(.uld-data) to ([data-uld-table])",
+      "publishedDimensions": true
+    }
+  }
+}

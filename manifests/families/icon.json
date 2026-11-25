@@ -1,0 +1,45 @@
+{
+  "id": "Icon",
+  "order": 8,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "primitives:Icon"
+    ],
+    "web": "exported",
+    "native": "planned",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "primitives:Icon",
+    "expectation": "Token size, current color and distinct decorative or labeled rendering",
+    "oracle": "Render an icon inside a named action and a standalone status symbol; only the latter supplies its own name.",
+    "evidence": {
+      "packed": "primitives:Icon"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/icon/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/family-contracts.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/family-contracts.test.tsx | layout, loading, image and grouping slots preserve native roles, names, and caller content"
+    ]
+  }
+}

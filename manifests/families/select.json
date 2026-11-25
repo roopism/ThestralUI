@@ -1,0 +1,60 @@
+{
+  "id": "Select",
+  "order": 28,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:Select",
+      "forms:SelectValue"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseNavigation.stories.tsx",
+    "test": "tests/browser/enterprise-navigation.spec.ts",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "behaviorAnchor": "name: /Language/",
+  "depth": {
+    "representative": "forms:Select",
+    "expectation": "Trigger, selected value, placeholder, overlay, error and empty states",
+    "oracle": "Select by keyboard, Escape without changing selection, and confirm form reset restores the default.",
+    "evidence": {
+      "browser": "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip"
+    },
+    "assertions": {
+      "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip": "expect(language).toContainText('French')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/select/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/form-spec-states.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-navigation.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseNavigation.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "browser": [
+      "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip"
+    ],
+    "vitest": [
+      "tests/form-spec-states.test.tsx | listbox disabled keys, disabled select and readonly combobox keep distinct interaction contracts"
+    ]
+  }
+}

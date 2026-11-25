@@ -1,0 +1,16 @@
+{
+  "id": "Swipe actions",
+  "order": 92,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [],
+    "web": "planned",
+    "native": "planned",
+    "note": "Gesture sheet provides a dismiss gesture. Row action gestures require separate conflict and alternate-action coverage.",
+    "ownership": "stateless or host-managed"
+  }
+}

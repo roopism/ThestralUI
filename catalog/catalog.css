@@ -1,0 +1,62 @@
+body {
+  margin: 0;
+}
+.catalog {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: clamp(24px, 6vw, 86px);
+  background: var(--uld-canvas);
+  color: var(--uld-text);
+  font:
+    16px/1.5 system-ui,
+    sans-serif;
+}
+.catalog h1 {
+  font-size: clamp(42px, 7vw, 86px);
+  letter-spacing: -0.065em;
+  line-height: 1;
+  margin: 0.2em 0 0.4em;
+}
+.catalog h2,
+.uld-dialog h2 {
+  font-size: 24px;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+.catalog p {
+  color: var(--uld-muted);
+  max-width: 56ch;
+}
+.component-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 1rem;
+  margin-block: 2rem;
+}
+.component-grid section,
+.specimen {
+  background: var(--uld-surface);
+  border: 1px solid var(--uld-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+.specimen {
+  max-width: 34rem;
+  margin: 2rem 0;
+}
+.catalog code {
+  font-size: 0.9rem;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+/* The unstyled Button example is styled by the "app", as a consumer would. */
+.catalog .app-action {
+  color: CanvasText;
+  background: Canvas;
+  border: thin solid CanvasText;
+}

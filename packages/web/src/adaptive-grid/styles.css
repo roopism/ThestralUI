@@ -1,0 +1,11 @@
+/* @uld-css-chunk styles.019 */
+
+
+.uld-adaptive-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, var(--uld-column-min, 18rem)), 1fr)
+  );
+  gap: var(--uld-grid-gap, 1rem);
+}

@@ -1,0 +1,59 @@
+{
+  "id": "Record selection",
+  "order": 62,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "workflows:RecordList"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseWorkspace.stories.tsx",
+    "test": "tests/workflow-shell.test.tsx",
+    "ownership": "owner supplied state"
+  },
+  "depth": {
+    "representative": "workflows:RecordList",
+    "expectation": "Named list, stable keys, selection changes and disabled or empty records",
+    "oracle": "Remove or reorder the focused record and verify external selection state and focus remain coherent.",
+    "evidence": {
+      "unit": "tests/workflow-shell.test.tsx | navigation retains real destinations and marks the current page, and list selection belongs to the host"
+    },
+    "assertions": {
+      "tests/workflow-shell.test.tsx | navigation retains real destinations and marks the current page, and list selection belongs to the host": "expect(update).toHaveBeenCalledWith('b')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/record-selection/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/workflow-shell.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-workspace.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseWorkspace.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/record-selection/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/workflow-shell.test.tsx | navigation retains real destinations and marks the current page, and list selection belongs to the host"
+    ],
+    "browser": [
+      "browser/enterprise-workspace.spec.ts | a review retains its draft, focus, selection and list scroll when resized mid-task"
+    ]
+  }
+}

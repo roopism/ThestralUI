@@ -1,0 +1,30 @@
+/* @uld-css-chunk styles.017 */
+
+.uld-dialog {
+  box-sizing: border-box;
+  color: var(--uld-text);
+  background: var(--uld-surface);
+  border: 1px solid var(--uld-border);
+  border-radius: var(--uld-radius);
+  padding: var(--uld-space-lg);
+  inline-size: 26rem;
+  max-inline-size: 92%;
+  max-block-size: 90%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+}
+/* @uld-css-chunk styles.018 */
+
+.uld-dialog::backdrop {
+  background: color-mix(in srgb, var(--uld-shadow-color) 48%, transparent);
+}
+/* @uld-css-chunk styles */
+
+.uld-dialog[data-size='sm'] { inline-size: 20rem; }
+.uld-dialog[data-size='lg'] { inline-size: 40rem; }
+.uld-dialog > .uld-dialog-actions { display: flex; flex-wrap: wrap; gap: var(--uld-gap); margin-block-start: var(--uld-gap); }
+@scope (.uld-dialog) to (dialog) {
+  :focus-visible { outline: var(--uld-focus-width) solid var(--uld-focus); outline-offset: var(--uld-focus-offset); }
+}
+:root:has(.uld-dialog-root:modal) { overflow: hidden; }

@@ -1,0 +1,44 @@
+{
+  "recorded": "2026-11-20",
+  "system": {
+    "processor": "Apple M3 Pro",
+    "platform": "darwin",
+    "os": "25.6.0",
+    "arch": "arm64",
+    "browser": "156.0.8078.4",
+    "throttle": 4,
+    "dataset": 5000,
+    "mountCycles": 24,
+    "scrollSamples": 40
+  },
+  "budgets": {
+    "openP95Ms": {
+      "baseline": 34.7,
+      "allowance": 40.3
+    },
+    "typingP95Ms": {
+      "baseline": 14.8,
+      "allowance": 16.7
+    },
+    "typingMaxCommits": {
+      "baseline": 1,
+      "allowance": 1
+    },
+    "scrollTwoFramesP95Ms": {
+      "baseline": 50.5,
+      "allowance": 33.4
+    },
+    "peakRows": {
+      "baseline": 13,
+      "allowance": 8
+    },
+    "heapGrowthKiB": {
+      "baseline": 1781,
+      "allowance": 1536
+    },
+    "motionFrameP95Ms": {
+      "baseline": 16.7,
+      "allowance": 16.7
+    }
+  }
+}

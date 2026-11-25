@@ -1,0 +1,25 @@
+/* @uld-css-chunk collections.022 */
+
+.uld-tree-chevron {
+  color: inherit;
+  background: transparent;
+  border: 0;
+  min-inline-size: 2.75rem;
+  min-block-size: 2.75rem;
+  font: inherit;
+}
+/* @uld-css-chunk collections.023 */
+
+.uld-tree-chevron span {
+  display: inline-block;
+}
+/* @uld-css-chunk collections.024 */
+
+.uld-tree-chevron span[data-expanded='true'] {
+  transform: rotate(90deg);
+}
+/* @uld-css-chunk collections.025 */
+
+.uld-tree-chevron:dir(rtl) span[data-expanded='false'] {
+  transform: rotate(180deg);
+}

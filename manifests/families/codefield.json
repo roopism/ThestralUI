@@ -1,0 +1,67 @@
+{
+  "id": "CodeField",
+  "order": 44,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "entry-fields:CodeField"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EntryFields.stories.tsx",
+    "test": "tests/codefield/entry-fields.test.tsx",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "entry-fields:CodeField",
+    "expectation": "Fixed length, paste/autofill semantics, leading zero and validation",
+    "oracle": "Enter and paste into a single focus target; retain a leading zero and prevent an extra digit.",
+    "evidence": {
+      "unit": "tests/codefield/entry-fields.test.tsx | a code uses a single editable value with browser autofill and preserves leading zeros",
+      "packed": "entry-fields:CodeField"
+    },
+    "assertions": {
+      "tests/codefield/entry-fields.test.tsx | a code uses a single editable value with browser autofill and preserves leading zeros": "expect(field.autocomplete).toBe('one-time-code')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/codefield/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/codefield/entry-fields.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/preferences.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EntryFields.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/codefield/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/codefield/entry-fields.test.tsx | a code uses a single editable value with browser autofill and preserves leading zeros"
+    ],
+    "browser": [
+      "browser/preferences.spec.ts | recovery summary focuses the field in forced colors"
+    ]
+  },
+  "budgets": [
+    {
+      "name": "@ui-lazy-dev/ui-web/entry-fields#CodeField",
+      "bytes": 559,
+      "order": 26
+    }
+  ]
+}

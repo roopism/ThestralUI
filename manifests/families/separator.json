@@ -1,0 +1,65 @@
+{
+  "id": "Separator",
+  "order": 7,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "primitives:Divider",
+      "navigation:Separator",
+      "document:Separator"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseNavigation.stories.tsx",
+    "test": "tests/browser/enterprise-navigation.spec.ts",
+    "ownership": "stateless or host-managed"
+  },
+  "behaviorAnchor": "getByRole('separator')",
+  "depth": {
+    "representative": "primitives:Divider",
+    "expectation": "Horizontal and vertical orientation; decorative and named use",
+    "oracle": "Inspect semantic orientation in both layouts and distinguish a decorative divider from a resizable handle.",
+    "evidence": {
+      "browser": "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings",
+      "packed": "document:Separator"
+    },
+    "assertions": {
+      "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings": "expect(page.getByRole('separator')).toBeVisible()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/separator/aria-binding.tsx",
+      "packages/web/src/separator/binding.tsx",
+      "packages/web/src/separator/server-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/foundation-specs.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-navigation.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseNavigation.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/separator/styles.css"
+    ]
+  },
+  "cases": {
+    "browser": [
+      "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings"
+    ],
+    "vitest": [
+      "tests/foundation-specs.test.tsx | a divider exposes the host separator and a named scroll region can receive focus"
+    ]
+  }
+}

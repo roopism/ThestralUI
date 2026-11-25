@@ -1,0 +1,82 @@
+{
+  "id": "Icon button",
+  "order": 16,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "primitives:IconButton"
+    ],
+    "web": "supported",
+    "native": "experimental",
+    "story": "catalog/ButtonSizes.stories.tsx",
+    "test": "tests/browser/button-depth.spec.ts",
+    "nativeApi": [
+      "native:IconButton"
+    ],
+    "nativeStory": "catalog/native/Gallery.tsx",
+    "nativeTest": "tests/icon-button/native.test.cjs",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "primitives:IconButton",
+    "expectation": "Shared button sizes, square visual geometry and required accessible label",
+    "oracle": "Check decorative child is hidden, control remains named, busy suppresses activation and compact treatment preserves the target.",
+    "evidence": {
+      "packed-priority": "primitives:IconButton",
+      "native": "tests/icon-button/native.test.cjs | native icon-only actions have square targets and keep the caller label"
+    },
+    "assertions": {
+      "tests/icon-button/native.test.cjs | native icon-only actions have square targets and keep the caller label": "expect(style.width).toBe(style.height)"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/icon-button/binding.tsx"
+    ],
+    "nativeSource": [
+      "packages/native/src/icon-button/binding.tsx"
+    ],
+    "unit": [
+      "tests/primitives.test.tsx"
+    ],
+    "nativeUnit": [
+      "tests/icon-button/native.test.cjs"
+    ],
+    "browser": [
+      "tests/browser/button-depth.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/ButtonSizes.stories.tsx",
+      "catalog/native/Gallery.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "browser": [
+      "browser/button-depth.spec.ts | coarse pointer | explicit compact actions retain a 48 pixel touch target",
+      "browser/button-depth.spec.ts | public button sizes retain native form behavior, square targets and logical icon placement"
+    ],
+    "vitest": [
+      "tests/primitives.test.tsx | icon actions are named, suppress duplicate input while busy, and error feedback is announced"
+    ],
+    "native": [
+      "tests/icon-button/native.test.cjs | native icon-only actions have square targets and keep the caller label"
+    ]
+  },
+  "rootExports": [
+    {
+      "pkg": "native",
+      "from": "./icon-button/binding.js",
+      "names": [
+        "IconButton"
+      ],
+      "order": 1
+    }
+  ]
+}

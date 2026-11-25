@@ -1,0 +1,57 @@
+{
+  "id": "Search",
+  "order": 22,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:SearchField"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/Controls.stories.tsx",
+    "test": "tests/advanced.test.tsx",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "forms:SearchField",
+    "expectation": "Clear action, controlled query and composition-aware submit",
+    "oracle": "Clear a nonempty search by keyboard, preserve focus and avoid committing intermediate IME text.",
+    "evidence": {
+      "unit": "tests/advanced.test.tsx | selection controls report state to their owners and keep localized names"
+    },
+    "assertions": {
+      "tests/advanced.test.tsx | selection controls report state to their owners and keep localized names": "expect(screen.getByRole('searchbox', { name: '検索' })).toBeTruthy()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/search/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/advanced.test.tsx",
+      "tests/form-spec-states.test.tsx",
+      "tests/autocomplete/form-spec-states.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/Controls.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/advanced.test.tsx | selection controls report state to their owners and keep localized names",
+      "tests/autocomplete/form-spec-states.test.tsx | clearing an empty autocomplete query restores the collection and its accessible searchbox",
+      "tests/form-spec-states.test.tsx | text and search fields distinguish a focusable readonly input from a disabled editor"
+    ]
+  }
+}

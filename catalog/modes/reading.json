@@ -1,0 +1,13 @@
+{
+  "name": "reading",
+  "overrides": [
+    "type.bodyLeading",
+    "type.bodySize",
+    "color.surface"
+  ],
+  "tokens": {
+    "type.bodyLeading": 1.7,
+    "type.bodySize": 18,
+    "color.surface": "{color.canvas}"
+  }
+}

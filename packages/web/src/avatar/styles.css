@@ -1,0 +1,7 @@
+/* @uld-css-chunk primitives.030 */
+
+.uld-avatar {
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  object-fit: cover;
+}

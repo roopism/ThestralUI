@@ -1,0 +1,68 @@
+{
+  "id": "Application shell",
+  "order": 59,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "workflows:AppShell"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseWorkspace.stories.tsx",
+    "test": "tests/application-shell/workflow-shell.test.tsx",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "workflows:AppShell",
+    "expectation": "Header, navigation and content slots, skip navigation and mobile-to-desktop transitions",
+    "oracle": "Tab into the main region and resize a workspace without remounting active page content.",
+    "evidence": {
+      "unit": "tests/application-shell/workflow-shell.test.tsx | links the skip target to the main region and preserves the navigation markup"
+    },
+    "assertions": {
+      "tests/application-shell/workflow-shell.test.tsx | links the skip target to the main region and preserves the navigation markup": "expect(screen.getByRole('link', { name: 'Skip to workspace' }).getAttribute('href')).toBe('#' + main.id)"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/application-shell/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/application-shell/workflow-shell.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-workspace.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseWorkspace.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/application-shell/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/application-shell/workflow-shell.test.tsx | links the skip target to the main region and preserves the navigation markup",
+      "tests/application-shell/workflow-shell.test.tsx | landmarks follow the skip link in reading order and optional slots collapse when omitted",
+      "tests/application-shell/workflow-shell.test.tsx | the skip link is the first focus stop and the main region accepts programmatic focus only"
+    ],
+    "browser": [
+      "browser/enterprise-workspace.spec.ts | Arabic and mixed-script content reflows at twice the default text size"
+    ]
+  },
+  "budgets": [
+    {
+      "name": "@ui-lazy-dev/ui-web/workflows#AppShell",
+      "bytes": 305,
+      "order": 20
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+/* @uld-css-chunk motion.019 */
+
+.uld-alert-modal {
+  padding: 0;
+  width: min(calc(100% - 2rem), 28rem);
+  max-height: 90dvh;
+  overflow: auto;
+}
+/* @uld-css-chunk motion.020 */
+
+.uld-alert-content {
+  padding: var(--uld-space-lg);
+}

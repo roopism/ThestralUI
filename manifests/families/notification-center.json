@@ -1,0 +1,58 @@
+{
+  "id": "Notification center",
+  "order": 66,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "workflows:NotificationCenter"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseWorkspace.stories.tsx",
+    "test": "tests/notification-center/workflow-status.test.tsx",
+    "ownership": "owner supplied state"
+  },
+  "depth": {
+    "representative": "workflows:NotificationCenter",
+    "expectation": "Read/unread ownership, bulk operation, recovery, empty and restricted states",
+    "oracle": "Mark some items read, refresh their order, and retry a failed load without losing the logical target.",
+    "evidence": {
+      "unit": "tests/notification-center/workflow-status.test.tsx | loading, permission denial, retrieval failure and empty notifications are distinct"
+    },
+    "assertions": {
+      "tests/notification-center/workflow-status.test.tsx | loading, permission denial, retrieval failure and empty notifications are distinct": "expect(retry).toHaveBeenCalledOnce()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/notification-center/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/notification-center/workflow-status.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/workflow-regressions.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseWorkspace.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/notification-center/workflow-status.test.tsx | loading, permission denial, retrieval failure and empty notifications are distinct",
+      "tests/notification-center/workflow-status.test.tsx | reading an item focuses the next unread action and reading all focuses the heading"
+    ],
+    "browser": [
+      "browser/workflow-regressions.spec.ts | completed notification and batch actions return focus to their headings"
+    ]
+  }
+}

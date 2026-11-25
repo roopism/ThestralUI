@@ -1,0 +1,77 @@
+{
+  "id": "Avatar",
+  "order": 10,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "avatar:Avatar"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/Primitives.stories.tsx",
+    "test": "tests/primitives.test.tsx",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "avatar:Avatar",
+    "expectation": "Token sizes, caller fallback, safe media and accessible naming",
+    "oracle": "Swap from a broken image to a valid image and check the label and dimensions throughout.",
+    "evidence": {
+      "unit": "tests/avatar/runtime-isolation.test.tsx | an invalid or unavailable avatar falls back by name and retries only a changed source",
+      "packed": "avatar:Avatar"
+    },
+    "assertions": {
+      "tests/avatar/runtime-isolation.test.tsx | an invalid or unavailable avatar falls back by name and retries only a changed source": "expect(screen.getByRole('img').getAttribute('src')).toBe('https://example.test/b.jpg')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/avatar/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/primitives.test.tsx",
+      "tests/avatar/runtime-isolation.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/Primitives.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/avatar/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/avatar/runtime-isolation.test.tsx | an invalid or unavailable avatar falls back by name and retries only a changed source",
+      "tests/avatar/runtime-isolation.test.tsx | initials use the first two words, whole characters and a caller fallback when given",
+      "tests/avatar/runtime-isolation.test.tsx | an unsafe image address never reaches the document and the named fallback is shown",
+      "tests/avatar/runtime-isolation.test.tsx | a loaded image is named by the person and stays outside the tab order"
+    ]
+  },
+  "entries": [
+    {
+      "pkg": "web",
+      "path": "./avatar",
+      "target": {
+        "types": "./dist/avatar.d.ts",
+        "default": "./dist/avatar.js"
+      },
+      "order": 17
+    }
+  ],
+  "budgets": [
+    {
+      "name": "@ui-lazy-dev/ui-web/avatar#Avatar",
+      "bytes": 472,
+      "order": 33
+    }
+  ]
+}

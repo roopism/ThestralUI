@@ -1,0 +1,33 @@
+/* @uld-css-chunk controls.016 */
+
+.uld-controls .react-aria-Switch {
+  position: relative;
+}
+/* @uld-css-chunk controls.017 */
+
+.uld-controls .react-aria-Switch::before {
+  inline-size: 2.3em;
+  border-radius: 2em;
+}
+/* @uld-css-chunk controls.018 */
+
+.uld-controls .react-aria-Switch::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0.23em;
+  inline-size: 0.77em;
+  block-size: 0.77em;
+  border-radius: 50%;
+  background: var(--uld-muted);
+}
+/* @uld-css-chunk controls.019 */
+
+.uld-controls .react-aria-Switch[data-selected]::before {
+  border-color: var(--uld-accent);
+}
+/* @uld-css-chunk controls.020 */
+
+.uld-controls .react-aria-Switch[data-selected]::after {
+  inset-inline-start: 1.3em;
+  background: var(--uld-accent);
+}

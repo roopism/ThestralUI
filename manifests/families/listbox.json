@@ -1,0 +1,62 @@
+{
+  "id": "Listbox",
+  "order": 27,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:ListBox",
+      "forms:ListBoxItem"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseNavigation.stories.tsx",
+    "test": "tests/browser/enterprise-navigation.spec.ts",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "behaviorAnchor": "getByRole('option'",
+  "depth": {
+    "representative": "forms:ListBox",
+    "expectation": "Single/multiple selection, disabled keys, textValue typeahead and empty/loading state",
+    "oracle": "Exercise keyboard typeahead among rich labels and controlled selection after items reorder.",
+    "evidence": {
+      "browser": "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip"
+    },
+    "assertions": {
+      "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip": "expect(language).toContainText('French')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/listbox/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/form-spec-states.test.tsx",
+      "tests/autocomplete/form-spec-states.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-navigation.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseNavigation.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "browser": [
+      "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip"
+    ],
+    "vitest": [
+      "tests/autocomplete/form-spec-states.test.tsx | clearing an empty autocomplete query restores the collection and its accessible searchbox",
+      "tests/form-spec-states.test.tsx | listbox disabled keys, disabled select and readonly combobox keep distinct interaction contracts"
+    ]
+  }
+}

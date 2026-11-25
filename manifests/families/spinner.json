@@ -1,0 +1,52 @@
+{
+  "id": "Spinner",
+  "order": 12,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "primitives:Spinner"
+    ],
+    "web": "exported",
+    "native": "planned",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "primitives:Spinner",
+    "expectation": "Density, accessible label and decorative mode inside an already named status",
+    "oracle": "Prevent double announcements inside busy actions and retain a visible static reduced-motion indication.",
+    "evidence": {
+      "packed": "primitives:Spinner"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/spinner/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/family-contracts.test.tsx",
+      "tests/spinner/foundation-specs.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [],
+    "scenario": [],
+    "style": [
+      "packages/web/src/spinner/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/family-contracts.test.tsx | layout, loading, image and grouping slots preserve native roles, names, and caller content",
+      "tests/spinner/foundation-specs.test.tsx | an indeterminate spinner is a named status and adds no tab stop",
+      "tests/spinner/foundation-specs.test.tsx | without a label the ring is decorative inside an already named busy region",
+      "tests/spinner/foundation-specs.test.tsx | adding a label turns the same ring into one named status",
+      "tests/spinner/foundation-specs.test.tsx | a decorative spinner inside a busy action leaves the action name unchanged"
+    ]
+  }
+}

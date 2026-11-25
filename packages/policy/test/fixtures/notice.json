@@ -1,0 +1,25 @@
+{
+  "family": {
+    "id": "Notice",
+    "api": [
+      ".:Notice"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "owner": "UI platform",
+    "story": "catalog/Notice.stories.tsx",
+    "test": "tests/notice/notice.test.tsx"
+  },
+  "files": {
+    "catalog/Notice.stories.tsx": "export default {title:'Notices'};",
+    "tests/packaging/fixture/app/foundations/page.js": "import {Notice} from '@ui-lazy-dev/ui-web'; export default function Page(){return <Notice/>;}",
+    "packages/tokens/tokens.json": "{}",
+    "docs/components/notice.scenarios.yaml": "{\"family\": \"Notice\", \"scenarios\": [{\"id\": \"notice.read\", \"fixture\": \"order\", \"steps\": [{\"expect\": \"visible\", \"target\": {\"role\": \"text\", \"name\": \"Read the notice\"}}]}]}",
+    "tests/notice/notice.test.tsx": "test('reads the notice', () => { expect(renderToString(<Notice/>)).toContain('<p>'); });",
+    "tests/notice/reading.spec.ts": "test('reads the notice', async ({page}) => { await expect(page.getByText('Read the notice')).toBeVisible(); });",
+    "tests/notice/notice.visual.ts": "test('shows the notice', async ({page}) => { await expect(page.locator('main')).toHaveScreenshot(); });"
+  },
+  "declarations": {
+    "title": "string"
+  }
+}

@@ -1,0 +1,28 @@
+/* @uld-css-chunk workflows.037 */
+
+.uld-app-links {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+}
+/* @uld-css-chunk workflows.038 */
+
+.uld-app-links a {
+  color: inherit;
+  min-block-size: 2.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-inline: 0.65rem;
+  border-radius: var(--uld-radius, 0.3rem);
+  text-decoration: none;
+}
+/* @uld-css-chunk workflows.039 */
+
+.uld-app-links [aria-current='page'] {
+  font-weight: 700;
+  box-shadow: inset 0 -2px var(--uld-accent, currentColor);
+}

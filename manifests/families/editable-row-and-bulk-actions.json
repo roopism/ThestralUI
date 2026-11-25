@@ -1,0 +1,16 @@
+{
+  "id": "Editable row and bulk actions",
+  "order": 86,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [],
+    "web": "equivalent",
+    "native": "planned",
+    "note": "DataTable owns page selection, editing, saving and recovery.",
+    "ownership": "stateless or host-managed"
+  }
+}

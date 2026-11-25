@@ -1,0 +1,126 @@
+{
+  "$schema": "https://www.designtokens.org/schemas/2025.10/resolver.json",
+  "version": "2025.10",
+  "sets": {
+    "foundation": {
+      "sources": [
+        {
+          "$ref": "../domains/color.json"
+        },
+        {
+          "$ref": "../domains/space.json"
+        },
+        {
+          "$ref": "../domains/density.json"
+        },
+        {
+          "$ref": "../domains/shape.json"
+        },
+        {
+          "$ref": "../domains/motion.json"
+        },
+        {
+          "$ref": "../domains/type.json"
+        },
+        {
+          "$ref": "../domains/elevation.json"
+        },
+        {
+          "$ref": "../domains/layer.json"
+        },
+        {
+          "$ref": "../domains/chart.json"
+        },
+        {
+          "$ref": "contrast-palette.tokens.json"
+        }
+      ]
+    }
+  },
+  "modifiers": {
+    "brand": {
+      "default": "enterprise",
+      "contexts": {
+        "enterprise": [],
+        "expressive": [
+          {
+            "$ref": "expressive.tokens.json"
+          }
+        ]
+      }
+    },
+    "scheme": {
+      "default": "light",
+      "contexts": {
+        "light": [
+          {
+            "$ref": "light.tokens.json"
+          }
+        ],
+        "dark": [
+          {
+            "$ref": "dark.tokens.json"
+          }
+        ],
+        "high-contrast": [
+          {
+            "$ref": "high-contrast.tokens.json"
+          }
+        ]
+      }
+    },
+    "density": {
+      "default": "comfortable",
+      "contexts": {
+        "compact": [
+          {
+            "$ref": "compact.tokens.json"
+          }
+        ],
+        "comfortable": [],
+        "spacious": [
+          {
+            "$ref": "spacious.tokens.json"
+          }
+        ]
+      }
+    },
+    "motion": {
+      "default": "full",
+      "contexts": {
+        "full": [],
+        "reduced": [
+          {
+            "$ref": "reduced.tokens.json"
+          }
+        ]
+      }
+    },
+    "mode": {
+      "default": "default",
+      "contexts": {
+        "default": []
+      }
+    }
+  },
+  "resolutionOrder": [
+    {
+      "$ref": "#/sets/foundation"
+    },
+    {
+      "$ref": "#/modifiers/brand"
+    },
+    {
+      "$ref": "#/modifiers/scheme"
+    },
+    {
+      "$ref": "#/modifiers/density"
+    },
+    {
+      "$ref": "#/modifiers/motion"
+    },
+    {
+      "$ref": "#/modifiers/mode"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "mode": "prepare",
+  "tree": "69f7c6c7717ee704b827766a306b51e9ac9ea9ab",
+  "harnessManifestSha256": "44ef2264e37d5e68b665398ae19e2cc50844725c93d739f70c24738a69983484",
+  "driverSha256": "95f78f64f4c5e23c796c701717684e6973c0b0bb9f889d12294b4fdcc14bd3bb",
+  "node": "v22.23.2",
+  "productPackages": [
+    {
+      "name": "@ui-lazy-dev/tokens",
+      "version": "0.3.0-rc.1",
+      "filename": "ui-lazy-dev-tokens-0.3.0-rc.1.tgz",
+      "bytes": 2399,
+      "sha256": "eef89ace81ba2db06e40b48edc13200e0f509e70f3bf78668da074f3ed089c1f",
+      "integrity": "sha512-NblArK4rtyRehhwRO0cO8ctG3af7X3rmATzVPsnn0SkJYVTKn44yrEpnpsU/x15FAPFXNeLDNXGs83SLs2phqg=="
+    },
+    {
+      "name": "@ui-lazy-dev/ui-native",
+      "version": "0.3.0-rc.1",
+      "filename": "ui-lazy-dev-ui-native-0.3.0-rc.1.tgz",
+      "bytes": 2627,
+      "sha256": "b233ec81d07477454906d7ad43414efb61dd2fcede16f1eac9f08212f793dea9",
+      "integrity": "sha512-9YVF1rBU2IV8PHYh0N60QMqAsNrDq1dhtd5ugmTgxUAzXTjcj+YAK/IPAZvISZdDsckbIXxcpUd1Q6O657lWLA=="
+    }
+  ],
+  "qualified": false,
+  "status": "prepared",
+  "flows": [
+    {
+      "file": "tests/simulator/workspace.yaml",
+      "commands": 33,
+      "assertions": 18,
+      "buttonSelectors": 12,
+      "sourceSha256": "8a4be2c22673e3b3b12437fbf8f34a3e507eaa16bda3ecf25b777b81ab9fe0d4",
+      "adaptedSha256": "e9952c32c4ddce075418226701e6ae44e9809ef44765480473f6cacf2a21b99e"
+    },
+    {
+      "file": "tests/simulator/appearance.yaml",
+      "commands": 14,
+      "assertions": 2,
+      "buttonSelectors": 4,
+      "sourceSha256": "853cc066eb3d3e03dee99e88ae6fe37aee61e662cd2b7d74d2923040ecfac4bf",
+      "adaptedSha256": "1b05f3d577c24824d16fec3e64c7015b842fdaf7969114ba219381739aca41f0"
+    }
+  ],
+  "lockSha256": "f1dc882e4ce749ed2181a3814dd912637d793e7a5434d71e3cf38c5e168071f0",
+  "npm": "10.9.8"
+}

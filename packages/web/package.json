@@ -1,0 +1,105 @@
+{
+  "name": "@ui-lazy-dev/ui-web",
+  "version": "0.3.0-rc.1",
+  "private": true,
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist"
+  ],
+  "imports": {
+    "#uld-jsx/jsx-runtime": "./dist/_shared/jsx-runtime.js",
+    "#uld-jsx/jsx-dev-runtime": "./dist/_shared/jsx-dev-runtime.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./dialog": {
+      "types": "./dist/dialog.d.ts",
+      "default": "./dist/dialog.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./forms": {
+      "types": "./dist/forms.d.ts",
+      "default": "./dist/forms.js"
+    },
+    "./navigation": {
+      "types": "./dist/navigation.d.ts",
+      "default": "./dist/navigation.js"
+    },
+    "./primitives": {
+      "types": "./dist/primitives.d.ts",
+      "default": "./dist/primitives.js"
+    },
+    "./primitives.css": "./dist/primitives.css",
+    "./collections": {
+      "types": "./dist/collections.d.ts",
+      "default": "./dist/collections.js"
+    },
+    "./workflows": {
+      "types": "./dist/workflows.d.ts",
+      "default": "./dist/workflows.js"
+    },
+    "./motion": {
+      "types": "./dist/motion.d.ts",
+      "default": "./dist/motion.js"
+    },
+    "./motion.css": "./dist/motion.css",
+    "./collections.css": "./dist/collections.css",
+    "./workflows.css": "./dist/workflows.css",
+    "./entry-fields": {
+      "types": "./dist/entry-fields.d.ts",
+      "default": "./dist/entry-fields.js"
+    },
+    "./controls.css": "./dist/controls.css",
+    "./patterns": {
+      "types": "./dist/patterns.d.ts",
+      "default": "./dist/patterns.js"
+    },
+    "./color": {
+      "types": "./dist/color.d.ts",
+      "default": "./dist/color.js"
+    },
+    "./avatar": {
+      "types": "./dist/avatar.d.ts",
+      "default": "./dist/avatar.js"
+    },
+    "./modes": {
+      "types": "./dist/modes.d.ts",
+      "default": "./dist/modes.js"
+    },
+    "./document": {
+      "types": "./dist/document.d.ts",
+      "default": "./dist/document.js"
+    },
+    "./modal-dialog": {
+      "types": "./dist/modal-dialog/index.d.ts",
+      "default": "./dist/modal-dialog/index.js"
+    },
+    "./data-table": {
+      "types": "./dist/data-table/index.d.ts",
+      "default": "./dist/data-table/index.js"
+    },
+    "./data-table.css": "./dist/data-table.css",
+    "./keyboard-shortcut-label": {
+      "types": "./dist/keyboard-shortcut-label/index.d.ts",
+      "default": "./dist/keyboard-shortcut-label/index.js"
+    },
+    "./keyboard-shortcut-label.css": "./dist/keyboard-shortcut-label.css"
+  },
+  "peerDependencies": {
+    "@ui-lazy-dev/tokens": "0.3.0-rc.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node ../../scripts/copy-styles.mjs"
+  },
+  "dependencies": {
+    "react-aria-components": "1.22.1"
+  }
+}

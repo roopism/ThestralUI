@@ -1,0 +1,16 @@
+{
+  "id": "System notifications",
+  "order": 98,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Apple"
+    ],
+    "api": [],
+    "web": "excluded",
+    "native": "planned",
+    "note": "Use the OS notification service for delivery. NotificationCenter implements the in-app inbox.",
+    "ownership": "stateless or host-managed"
+  }
+}

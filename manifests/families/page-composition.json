@@ -1,0 +1,46 @@
+{
+  "id": "Page composition",
+  "order": 61,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "workflows:WorkspacePage"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseWorkspace.stories.tsx",
+    "test": "tests/workflow-shell.test.tsx",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "workflows:WorkspacePage",
+    "expectation": "Header, actions and content slots with ordered heading and responsive actions",
+    "oracle": "Embed long localized actions in a narrow panel and confirm reachable controls and coherent heading order.",
+    "evidence": {
+      "packed": "workflows:WorkspacePage"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/page-composition/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/workflow-shell.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseWorkspace.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/page-composition/styles.css"
+    ]
+  }
+}

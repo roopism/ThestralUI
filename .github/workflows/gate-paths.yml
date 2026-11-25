@@ -1,0 +1,82 @@
+name: Gate paths
+on:
+  push:
+  pull_request:
+    branches: [feat/enterprise-ui]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+permissions:
+  contents: read
+jobs:
+  frozen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check proposal against the enterprise branch’s gate policy
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          HEAD_BRANCH: ${{ github.head_ref || (github.ref_type == 'branch' && github.ref_name || github.ref) }}
+          HEAD_REPOSITORY: ${{ github.event_name == 'push' && github.repository || github.event.pull_request.head.repo.full_name }}
+        run: |
+          set -eu
+          base=$(git rev-parse --verify "${BASE_SHA:-origin/feat/enterprise-ui}^{commit}")
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$HEAD_BRANCH" = feat/enterprise-ui ]; then
+            base=$HEAD_SHA
+          fi
+          if git cat-file -e "$base:.github/gate-review.mjs"; then
+            git show "$base:.github/gate-review.mjs" > "$RUNNER_TEMP/gate-review.mjs"
+            node "$RUNNER_TEMP/gate-review.mjs" "$base" "$HEAD_SHA"
+          else
+            # The first adoption is limited to these five governance files under the old owner rule.
+            test "$(git show "$base:.github/CODEOWNERS")" = '* @thetechgeeek'
+            test "$HEAD_BRANCH" = feat/gates
+            test "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"
+            git diff --exit-code --name-only --no-renames --ignore-submodules=none "$base...$HEAD_SHA" -- . \
+              ':(exclude,top,literal).github/CODEOWNERS' \
+              ':(exclude,top,literal).github/workflows/gate-paths.yml' \
+              ':(exclude,top,literal).github/gate-review.mjs' \
+              ':(exclude,top,literal).github/gate-review.test.mjs' \
+              ':(exclude,top,literal).github/gate-review.md'
+          fi
+      - name: Test the proposed review rules
+        run: node --test .github/gate-review.test.mjs
+
+  open-gate-proposal:
+    needs: frozen
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feat/gates'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    concurrency: gate-proposal-pull-request
+    steps:
+      - name: Open the gate proposal for human review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -eu
+          head=$(gh api "repos/$GH_REPO/git/ref/heads/feat/gates" --jq .object.sha)
+          if [ "$head" != "$GITHUB_SHA" ]; then
+            echo 'A later push will handle the current proposal.'
+            exit 0
+          fi
+          existing=$(gh api -X GET "repos/$GH_REPO/pulls" -f state=open \
+            -f "head=${GH_REPO%/*}:feat/gates" -f base=feat/enterprise-ui --jq '.[0].html_url // empty')
+          if [ -n "$existing" ]; then
+            echo "Updated proposal: $existing"
+            exit 0
+          fi
+          changed=$(gh api "repos/$GH_REPO/compare/feat%2Fenterprise-ui...$head" --jq '.files | length')
+          if [ "$changed" = 0 ]; then
+            echo 'The gate branch has no changes to propose.'
+            exit 0
+          fi
+          gh pr create --repo "$GH_REPO" --head feat/gates --base feat/enterprise-ui \
+            --title 'Review proposed changes to the quality gates' \
+            --body 'Please review the complete gate diff and the checks at the latest commit. Merging requires the repository owner’s approval.'

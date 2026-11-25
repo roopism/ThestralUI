@@ -1,0 +1,328 @@
+{
+  "id": "Data table",
+  "order": 56,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "Roadmap"
+    ],
+    "api": [
+      "collections:DataTable",
+      "data-table:DataTable",
+      "data-table:useDataTable",
+      "data-table:getDataTableRow"
+    ],
+    "web": "supported",
+    "native": "experimental",
+    "story": "catalog/data-table.stories.tsx",
+    "test": "tests/data-table/collections.test.tsx",
+    "ownership": "internal with owner callbacks",
+    "nativeApi": [
+      "native/data-table:DataTable",
+      "native/data-table:useDataTable"
+    ],
+    "nativeStory": "catalog/native/scenarios/DataTable.tsx",
+    "nativeTest": "tests/data-table/native.test.cjs"
+  },
+  "depth": {
+    "representative": "collections:DataTable",
+    "expectation": "Client filters, sort, paging, selection and edits plus a defined external-state path for server data",
+    "oracle": "Change sort/page with selected IDs; cancel a failed edit while preserving pending row data and page bounds.",
+    "evidence": {
+      "unit": "tests/data-table/collections.test.tsx | retains selected IDs across search and pages and excludes removed records",
+      "native": "tests/data-table/native.test.cjs | archives the exact off-page and current records from the phone work queue",
+      "browser": "data-table/data-table.spec.ts | server paging, edits and cross-page bulk actions complete the same desktop and phone workflow"
+    },
+    "assertions": {
+      "tests/data-table/collections.test.tsx | retains selected IDs across search and pages and excludes removed records": "expect(apply.mock.calls[1][0]).toEqual(['c'])",
+      "tests/data-table/native.test.cjs | archives the exact off-page and current records from the phone work queue": "expect(s.getByText('Archived 2 records')).toBeVisible()",
+      "data-table/data-table.spec.ts | server paging, edits and cross-page bulk actions complete the same desktop and phone workflow": "expect(table.locator('[data-row-id=\"t29\"]')).toHaveCount(0)"
+    },
+    "consumerTypes": {
+      "data-table:DataTable": {
+        "accept": [
+          {
+            "label": "Work queue",
+            "size": "md",
+            "layout": "adaptive",
+            "loading": false
+          },
+          {
+            "rows": [
+              {
+                "id": "a"
+              }
+            ],
+            "columns": [],
+            "readOnly": true
+          }
+        ],
+        "reject": [
+          {
+            "size": "large"
+          },
+          {
+            "label": 3
+          }
+        ]
+      },
+      "data-table:useDataTable": {
+        "accept": [
+          {
+            "pageSize": 25,
+            "defaultSort": {
+              "column": "record",
+              "ascending": true
+            }
+          },
+          {
+            "selectedIds": [
+              "a",
+              "b"
+            ],
+            "locale": "ar"
+          }
+        ],
+        "reject": [
+          {
+            "pageSize": "25"
+          },
+          {
+            "selectedIds": [
+              5
+            ]
+          }
+        ]
+      },
+      "data-table:getDataTableRow": {
+        "accept": [
+          {
+            "id": "review"
+          },
+          {
+            "cellPadding": "0"
+          }
+        ],
+        "reject": [
+          {
+            "id": false
+          },
+          {
+            "tBodies": "none"
+          }
+        ]
+      },
+      "native/data-table:DataTable": {
+        "accept": [
+          {
+            "label": "Work queue",
+            "size": "md",
+            "layout": "adaptive",
+            "loading": false
+          },
+          {
+            "rows": [
+              {
+                "id": "a"
+              }
+            ],
+            "columns": [],
+            "readOnly": true
+          }
+        ],
+        "reject": [
+          {
+            "size": "large"
+          },
+          {
+            "label": 3
+          }
+        ]
+      },
+      "native/data-table:useDataTable": {
+        "accept": [
+          {
+            "pageSize": 25,
+            "defaultSort": {
+              "column": "record",
+              "ascending": true
+            }
+          },
+          {
+            "selectedIds": [
+              "a",
+              "b"
+            ],
+            "locale": "ar"
+          }
+        ],
+        "reject": [
+          {
+            "pageSize": "25"
+          },
+          {
+            "selectedIds": [
+              5
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/data-table/binding.tsx",
+      "packages/web/src/data-table/index.ts",
+      "packages/web/src/data-table/state.ts",
+      "packages/web/src/data-table/controls.tsx"
+    ],
+    "nativeSource": [
+      "packages/native/src/data-table/binding.tsx",
+      "packages/native/src/data-table/model.ts"
+    ],
+    "unit": [
+      "tests/data-table/collections.test.tsx",
+      "tests/data-table/ownership.test.tsx"
+    ],
+    "nativeUnit": [
+      "tests/data-table/native.test.cjs",
+      "tests/data-table/model-contract.cjs",
+      "tests/native/catalog-presentation.test.cjs"
+    ],
+    "browser": [
+      "tests/data-table/data-table.spec.ts",
+      "tests/data-table/web-fixtures.tsx",
+      "tests/data-table/http-fixture.ts"
+    ],
+    "visual": [
+      "tests/data-table/data-table.visual.ts"
+    ],
+    "story": [
+      "catalog/data-table.stories.tsx",
+      "catalog/collection-events.ts",
+      "catalog/data-table/WorkQueue.tsx",
+      "catalog/data-table/work-records.ts",
+      "catalog/native/scenarios/DataTable.tsx",
+      "catalog/data-table/StateExamples.tsx",
+      "catalog/native/scenarios/fixtures.cjs",
+      "catalog/native/scenarios/presentation.tsx"
+    ],
+    "scenario": [
+      "docs/components/data-table.scenarios.yaml"
+    ],
+    "style": [
+      "packages/web/src/data-table/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/data-table/collections.test.tsx | cancels or asynchronously saves edits and retains a draft on failure",
+      "tests/data-table/collections.test.tsx | retains selected IDs across search and pages and excludes removed records",
+      "tests/data-table/collections.test.tsx | sorts numbers by value, pages safely after data changes, and provides an empty state",
+      "tests/data-table/ownership.test.tsx | the server owns its page, order and total while selection retains off-page row IDs",
+      "tests/data-table/ownership.test.tsx | a custom table can drive the public hook without mounting the styled table",
+      "tests/data-table/ownership.test.tsx | unstyled table retains accessible parts and the caller can reference the host",
+      "tests/data-table/ownership.test.tsx | read-only, permission and localization choices preserve the records and localized names",
+      "tests/data-table/ownership.test.tsx | the initial HTML contains labeled search, column headers, records and real paging controls",
+      "tests/data-table/ownership.test.tsx | a rejected bulk operation retains selection and the application can retry once",
+      "tests/data-table/ownership.test.tsx | the web public hook obeys the shared paging, batched selection and controlled veto contract",
+      "tests/data-table/collections.test.tsx | reports sort, page, search and selection changes and honors an initial sort"
+    ],
+    "browser": [
+      "data-table/data-table.spec.ts | server paging, edits and cross-page bulk actions complete the same desktop and phone workflow",
+      "data-table/data-table.spec.ts | a late server response cannot replace results from a newer search",
+      "data-table/data-table.spec.ts | the adaptive table preserves accessible names and native controls in both themes and viewports",
+      "data-table/data-table.spec.ts | the narrow stylesheet and legacy collection stylesheet isolate nested unstyled tables",
+      "data-table/data-table.spec.ts | record text stays selectable and copyable, with reachable controls at twice-normal layout zoom",
+      "data-table/data-table.spec.ts | a controlled page checkbox retains its real mixed state when its owner vetoes selection",
+      "data-table/data-table.spec.ts | the production catalog omits the HTTP test transport",
+      "data-table/data-table.spec.ts | Escape cancels a table cell edit inside a dialog and keeps focus on the cell",
+      "data-table/data-table.spec.ts | table viewport takes focus when an owner removes the focused editor or cell",
+      "data-table/data-table.spec.ts | the accessibility tree declares the table name once"
+    ],
+    "native": [
+      "tests/data-table/native.test.cjs | native queue sorts real cells; the accessible checkbox and mixed page state track selection",
+      "tests/data-table/native.test.cjs | archives the exact off-page and current records from the phone work queue",
+      "tests/data-table/native.test.cjs | a server page is authoritative even if its rows do not match the local query or sort",
+      "tests/data-table/native.test.cjs | headless local sorting, search and page bounds respect numbers and permanently removed IDs",
+      "tests/data-table/native.test.cjs | failed edits retain the draft, block duplicate and pending actions, and permit a successful retry or cancel",
+      "tests/data-table/native.test.cjs | a narrow screen summarizes the record and discloses all named fields, wide screens show them directly",
+      "tests/native/scenarios.test.cjs | data-table.sort-column",
+      "tests/native/scenarios.test.cjs | data-table.select-record",
+      "tests/native/scenarios.test.cjs | data-table.archive-across-pages",
+      "tests/data-table/native.test.cjs | bulk rejection keeps the selection, prevents duplicate submissions and reports the caller’s retry error",
+      "tests/native/scenarios.test.cjs | data-table.empty-results",
+      "tests/native/scenarios.test.cjs | data-table.retry-edit",
+      "tests/data-table/native.test.cjs | the native public hook obeys the shared paging, batched selection and controlled veto contract",
+      "tests/data-table/native.test.cjs | every gallery scroll view containing the active editor forwards the first keyboard-open action",
+      "tests/native/catalog-presentation.test.cjs | the native work queue announces one archived record and retains plural results",
+      "tests/data-table/native.test.cjs | removing the focused native cell returns focus to the stable table viewport"
+    ],
+    "visual": [
+      "data-table/data-table.visual.ts | data table audit queue light phone",
+      "data-table/data-table.visual.ts | data table audit queue light desktop",
+      "data-table/data-table.visual.ts | data table audit queue dark phone",
+      "data-table/data-table.visual.ts | data table audit queue dark desktop"
+    ]
+  },
+  "budgets": [
+    {
+      "name": "@ui-lazy-dev/ui-web/collections#DataTable",
+      "bytes": 3339,
+      "order": 17
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/data-table",
+      "bytes": 3409,
+      "order": 310
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/data-table#DataTable",
+      "bytes": 3342,
+      "order": 311
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/data-table#useDataTable",
+      "bytes": 1097,
+      "order": 312
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/data-table#getDataTableRow",
+      "bytes": 129,
+      "order": 313
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/data-table.css",
+      "bytes": 990,
+      "order": 314
+    }
+  ],
+  "entries": [
+    {
+      "pkg": "web",
+      "path": "./data-table",
+      "target": {
+        "types": "./dist/data-table/index.d.ts",
+        "default": "./dist/data-table/index.js"
+      },
+      "order": 31
+    },
+    {
+      "pkg": "web",
+      "path": "./data-table.css",
+      "target": "./dist/data-table.css",
+      "order": 32
+    },
+    {
+      "pkg": "native",
+      "path": "./data-table",
+      "target": {
+        "types": "./dist/data-table/binding.d.ts",
+        "default": "./dist/data-table/binding.js"
+      },
+      "order": 3
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+# Family manifests
+
+Edit the family's `families/<spec-slug>.json`. Keep its case-sensitive inventory `id` and its public binding names stable. The `inventory` and `depth` sections describe the family and its public contracts. The `files` arrays list repository-relative implementation, test, story and scenario paths for test selection. Reference-only inventory rows have no implementation or depth contract.
+
+Use `cases.browser` and `cases.visual` for Playwright case identities without the engine prefix. The generator expands each case across all configured engines. Use `cases.vitest` and `cases.native` for the full test identity, including its file. Shared journeys may appear in multiple families and execute once. Keep cross-library suites, package-level entry points and whole-entry bundle ceilings in `shared.json`. A family owns its family-specific export paths, symbol budgets and root re-export declarations. Existing order values preserve the public registries' historical order. New records can omit the order and sort after the existing records.
+
+From the repository root, MAIN writes shared outputs with `node scripts/manifests/generate.mjs --dest .`. Run `node scripts/manifests/generate.mjs --check` to detect stale files. To inspect output separately, pass an empty directory to `--dest`. Generation preserves unrelated package metadata and any inline implementation at the start of the root entry files.
+
+For the initial migration, `node scripts/manifests/generate.mjs --dest "$output" --compare-legacy` compares each legacy inventory export and property order and requires exact bytes for the other twelve files. Then `node scripts/manifests/generate.mjs --source "$output" --check` verifies that a second generation produces the same bytes for all thirteen outputs. Set `output` to a fresh temporary directory for this check.
+
+When shared validator tests change, replace the affected file's case names in `shared.json` with the identities returned by `nodeCases` in `packages/policy/quality/unit-matrix.mjs`. Run the tests first to catch failures and skips. A removed test name must disappear from the matrix. Family-owned tests stay in their family's manifest. After regeneration, `node scripts/unit-matrix.mjs` compares the exact executed suites with the generated requirements.

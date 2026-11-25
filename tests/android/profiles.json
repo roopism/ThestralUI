@@ -1,0 +1,28 @@
+{
+  "platform": "android-36.1",
+  "image": "google_apis_playstore",
+  "profiles": [
+    {
+      "id": "standard",
+      "device": "pixel_8a",
+      "ramMiB": 4096,
+      "cores": 4,
+      "width": 1080,
+      "height": 2400,
+      "density": 420,
+      "heapMiB": 256
+    },
+    {
+      "id": "low-end",
+      "device": "pixel_4a",
+      "ramMiB": 2048,
+      "cores": 2,
+      "width": 720,
+      "height": 1600,
+      "density": 320,
+      "heapMiB": 128,
+      "platform": "android-36",
+      "image": "default"
+    }
+  ]
+}

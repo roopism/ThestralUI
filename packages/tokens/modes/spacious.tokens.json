@@ -1,0 +1,13 @@
+{
+  "size": {
+    "control": {"$type": "dimension", "$value": {"value": 52, "unit": "px"}},
+    "gap": {"$type": "dimension", "$value": {"value": 12, "unit": "px"}}
+  },
+  "space": {
+    "spaceXs": {"$type": "dimension", "$value": {"value": 6, "unit": "px"}},
+    "spaceSm": {"$type": "dimension", "$value": {"value": 12, "unit": "px"}},
+    "spaceMd": {"$type": "dimension", "$value": {"value": 20, "unit": "px"}},
+    "spaceLg": {"$type": "dimension", "$value": {"value": 32, "unit": "px"}},
+    "spaceXl": {"$type": "dimension", "$value": {"value": 48, "unit": "px"}}
+  }
+}

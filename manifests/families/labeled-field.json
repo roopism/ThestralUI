@@ -1,0 +1,106 @@
+{
+  "id": "Labeled field",
+  "order": 18,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap",
+      "RAC"
+    ],
+    "api": [
+      ".:FormField"
+    ],
+    "web": "supported",
+    "native": "experimental",
+    "story": "catalog/labeled-field.stories.tsx",
+    "test": "tests/labeled-field/controls.test.tsx",
+    "nativeApi": [
+      "native:FormField"
+    ],
+    "nativeStory": "catalog/native/Gallery.tsx",
+    "nativeTest": "tests/labeled-field/native.test.cjs",
+    "ownership": "browser control and owner"
+  },
+  "depth": {
+    "representative": ".:FormField",
+    "expectation": "Caller-owned input ref, description/error IDs, required hint and field adornments",
+    "oracle": "Verify a pre-labeled input retains all description IDs, native reset and focus on label activation.",
+    "evidence": {
+      "unit": "tests/labeled-field/controls.test.tsx | fields keep independent labels and compose help with existing descriptions and errors",
+      "native": "tests/labeled-field/native.test.cjs | a controlled field preserves its name, help, validation and caller input props",
+      "packed": ".:FormField"
+    },
+    "assertions": {
+      "tests/labeled-field/controls.test.tsx | fields keep independent labels and compose help with existing descriptions and errors": "expect(descriptions).toEqual(['Digits only', 'Four digits', 'Enter four digits'])",
+      "tests/labeled-field/native.test.cjs | a controlled field preserves its name, help, validation and caller input props": "expect(change).toHaveBeenCalledWith('山田')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/labeled-field/binding.tsx"
+    ],
+    "nativeSource": [
+      "packages/native/src/labeled-field/binding.tsx",
+      "packages/native/src/labeled-field/control.tsx"
+    ],
+    "unit": [
+      "tests/labeled-field/controls.test.tsx"
+    ],
+    "nativeUnit": [
+      "tests/labeled-field/native.test.cjs"
+    ],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/labeled-field.stories.tsx",
+      "catalog/native/Gallery.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/labeled-field/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/labeled-field/controls.test.tsx | fields keep independent labels and compose help with existing descriptions and errors"
+    ],
+    "native": [
+      "tests/labeled-field/native.test.cjs | a controlled field preserves its name, help, validation and caller input props"
+    ]
+  },
+  "rootExports": [
+    {
+      "pkg": "web",
+      "from": "./labeled-field/binding.js",
+      "names": [
+        "FormField"
+      ],
+      "order": 1
+    },
+    {
+      "pkg": "web",
+      "from": "./labeled-field/binding.js",
+      "names": [
+        "type FormFieldProps"
+      ],
+      "order": 4
+    },
+    {
+      "pkg": "native",
+      "from": "./labeled-field/binding.js",
+      "names": [
+        "FormField"
+      ],
+      "order": 3
+    },
+    {
+      "pkg": "native",
+      "from": "./labeled-field/binding.js",
+      "names": [
+        "type FormFieldProps"
+      ],
+      "order": 4
+    }
+  ]
+}

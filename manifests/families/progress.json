@@ -1,0 +1,52 @@
+{
+  "id": "Progress",
+  "order": 13,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "primitives:Progress"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/Primitives.stories.tsx",
+    "test": "tests/primitives.test.tsx",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "primitives:Progress",
+    "expectation": "Determinate and indeterminate forms plus caller formatting for unit text",
+    "oracle": "Check 0, completion, indeterminate removal of value and localized accessible value.",
+    "evidence": {
+      "packed": "primitives:Progress"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/progress/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/primitives.test.tsx",
+      "tests/progress/foundation-specs.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/Primitives.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/progress/foundation-specs.test.tsx | indeterminate progress retains its name, then exposes a native fraction when work is measured",
+      "tests/progress/foundation-specs.test.tsx | a localized value text and caller attributes reach the native progress element",
+      "tests/progress/foundation-specs.test.tsx | completed work reports a full fraction and keeps the same element"
+    ]
+  }
+}

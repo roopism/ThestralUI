@@ -1,0 +1,62 @@
+name: Enterprise acceptance
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.2
+          architecture: arm64
+          cache: npm
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: '17.0.21+9'
+          architecture: aarch64
+      - name: Verify native toolchain and select the iPhone
+        run: |
+          test "$(uname -m)" = arm64
+          test "$(xcodebuild -version | head -1)" = 'Xcode 26.3'
+          java -XshowSettings:properties -version 2>&1 | grep -F 'java.specification.version = 17'
+          java -XshowSettings:properties -version 2>&1 | grep -F 'os.arch = aarch64'
+          xcrun simctl list devices available --json > "$RUNNER_TEMP/simulators.json"
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { appendFileSync, readFileSync } from 'node:fs';
+          const { devices } = JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/simulators.json', 'utf8'));
+          const phone = devices['com.apple.CoreSimulator.SimRuntime.iOS-26-2']?.find(device => device.name === 'iPhone 17' && device.isAvailable);
+          assert.ok(phone, 'Install the iOS 26.2 iPhone 17 runtime for the Xcode 26.3 build');
+          appendFileSync(process.env.GITHUB_ENV, 'UI_SIMULATOR_ID=' + phone.udid + '\n');
+          JS
+      - name: Install CocoaPods from the native fixture lock
+        run: |
+          export GEM_HOME="$RUNNER_TEMP/acceptance-gems"
+          export GEM_PATH="$GEM_HOME"
+          pods_version="$(awk '/^COCOAPODS:/ { print $2 }' tests/simulator/host/Podfile.lock)"
+          gem install --no-document cocoapods --version "$pods_version"
+          test "$("$GEM_HOME/bin/pod" --version)" = "$pods_version"
+          echo "GEM_HOME=$GEM_HOME" >> "$GITHUB_ENV"
+          echo "GEM_PATH=$GEM_PATH" >> "$GITHUB_ENV"
+          echo "$GEM_HOME/bin" >> "$GITHUB_PATH"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/@playwright/test/cli.js install chromium firefox webkit
+      - name: Install the simulator runner
+        run: |
+          curl --fail --location --retry 3 --silent --show-error --output "$RUNNER_TEMP/maestro.zip" https://github.com/mobile-dev-inc/Maestro/releases/download/cli-2.4.0/maestro.zip
+          cd "$RUNNER_TEMP"
+          echo 'aea22ce67ab6718997ec990c58652ede0c2be8f10ac4799039ca3dce3390d634  maestro.zip' | shasum -a 256 -c -
+          unzip -q maestro.zip
+          chmod +x maestro/bin/maestro
+          test "$(maestro/bin/maestro --version | tail -1)" = '2.4.0'
+          echo "MAESTRO_BIN=$RUNNER_TEMP/maestro/bin/maestro" >> "$GITHUB_ENV"
+      - run: npm run gate:full

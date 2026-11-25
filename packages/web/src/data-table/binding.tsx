@@ -1,0 +1,219 @@
+'use client';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { ButtonTarget, useButton } from '../button/binding.js';
+import { SelectionCheckbox, TableField } from './controls.js';
+import { useDataTable, type DataColumn, type UseDataTableOptions } from './state.js';
+export type { DataColumn } from './state.js';
+export const english = {
+  search: 'Search records',
+  loading: 'Loading records',
+  bulkFailed: 'Could not apply changes. Try again.',
+  selectPage: 'Select page',
+  previous: 'Previous page',
+  next: 'Next page',
+  empty: 'No matching records',
+  cancel: 'Cancel',
+  save: 'Save',
+  saveFailed: 'Could not save changes. Try again.',
+  select: (name: string) => 'Select ' + name,
+  edit: (column: string, name: string) => 'Edit ' + column + ', ' + name,
+  page: (current: number, total: number) => 'Page ' + current + ' of ' + total,
+  selected: (count: number) => count + ' selected',
+};
+export type DataTableLabels = typeof english;
+export interface DataTableProps<R extends { id: string }> extends UseDataTableOptions<R>, Omit<ComponentPropsWithRef<'section'>, 'children'> {
+  label: string;
+  getRowLabel: (row: R) => string;
+  labels?: Partial<DataTableLabels>;
+  /** Returned promises lock the action until they settle; existing synchronous callbacks keep their return contract. */
+  bulkAction?: { label: string; onApply: (rowIds: string[]) => void };
+  unstyled?: boolean;
+  layout?: 'table' | 'adaptive';
+  size?: 'sm' | 'md' | 'lg';
+  loading?: boolean;
+  error?: ReactNode;
+  toolbar?: ReactNode;
+  emptyState?: ReactNode;
+  readOnly?: boolean;
+  disabled?: boolean;
+}
+function TableAction(props: ComponentPropsWithRef<'button'>) {
+  return <ButtonTarget {...props} behavior={useButton(props)} />;
+}
+
+export function EditableCell<R>({
+  row,
+  column,
+  name,
+  labels, disabled, busy, unstyled,
+}: {
+  row: R;
+  column: DataColumn<R>;
+  name: string;
+  labels: DataTableLabels;
+  disabled?: boolean;
+  busy?: boolean;
+  unstyled?: boolean;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const restoreFocus = useRef(false);
+  const inFlight = useRef(false);
+  useLayoutEffect(() => () => {
+    const control = trigger.current ?? input.current?.form;
+    if (control?.contains(control.ownerDocument.activeElement)) {
+      control.closest<HTMLElement>('[data-part="viewport"]')?.focus({ preventScroll: true });
+    }
+  }, []);
+  useEffect(() => {
+    if (draft === null && restoreFocus.current) {
+      trigger.current?.focus({ preventScroll: true });
+      restoreFocus.current = false;
+    }
+  }, [draft]);
+  const finish = () => {
+    restoreFocus.current = true;
+    setDraft(null);
+  };
+  const accessibleName = labels.edit(column.label, name);
+  if (draft === null)
+    return (
+      <TableAction
+        ref={trigger}
+        type="button"
+        aria-label={accessibleName}
+        disabled={disabled}
+        aria-disabled={busy || undefined}
+        data-part="edit"
+        className={unstyled ? undefined : "uld-cell-edit"}
+        onClick={() => {
+          if (busy) return;
+          setFailed(false);
+          setDraft(String(column.value(row)));
+        }}
+      >
+        {column.render ? column.render(row) : column.value(row)}
+      </TableAction>
+    );
+  return (
+    <form data-part="editor"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        if (inFlight.current || disabled || busy) return;
+        inFlight.current = true;
+        setPending(true);
+        setFailed(false);
+        try {
+          await column.onEdit!(row, draft);
+          finish();
+        } catch {
+          setFailed(true);
+          input.current?.focus({ preventScroll: true });
+        } finally {
+          inFlight.current = false;
+          setPending(false);
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && !inFlight.current) {
+          event.preventDefault();
+          event.stopPropagation();
+          finish();
+        }
+      }}
+    >
+      <TableField ref={input} mode="edit" label={accessibleName} value={draft}
+        readOnly={pending || disabled || busy} onValueChange={setDraft} />
+      <TableAction type="submit" disabled={pending || disabled || busy} aria-busy={pending || undefined}>
+        {labels.save}
+      </TableAction>
+      <TableAction type="button" disabled={pending || disabled || busy} onClick={finish}>
+        {labels.cancel}
+      </TableAction>
+      {failed && <span role="alert" aria-label={labels.saveFailed}>{labels.saveFailed}</span>}
+    </form>
+  );
+}
+/** A semantic table with local collection processing or explicit server-owned pages. */
+export function DataTable<R extends { id: string }>({
+  label, rows, columns, getRowLabel, locale, labels: overrides, pageSize, bulkAction,
+  defaultSort, server, selectedIds, defaultSelectedIds, onSelectionChange, onSearchChange, onSortChange, onPageChange,
+  unstyled, layout = 'table', size, loading, error, toolbar, emptyState, readOnly, disabled, className, ...host
+}: DataTableProps<R>) {
+  const model = useDataTable({ rows, columns, locale, pageSize, defaultSort, server, selectedIds,
+    defaultSelectedIds, onSelectionChange, onSearchChange, onSortChange, onPageChange });
+  const { state, visible, pages, selected } = model;
+  const labels = { ...english, ...overrides };
+  const id = useId();
+  const applying = useRef(false);
+  const [pending, setPending] = useState(false);
+  const [bulkFailed, setBulkFailed] = useState(false);
+  const locked = disabled || loading || pending;
+  const classes = (name: string) => unstyled ? undefined : name;
+  const selectRows = bulkAction !== undefined || selectedIds !== undefined || defaultSelectedIds !== undefined || onSelectionChange !== undefined;
+  async function apply() {
+    if (!bulkAction || applying.current || !selected.size) return;
+    applying.current = true;
+    setBulkFailed(false);
+    try {
+      const run: (ids: string[]) => unknown = bulkAction.onApply;
+      const result = run(model.selectedIds);
+      if (result && typeof result === 'object' && 'then' in result) { setPending(true); await result; }
+    } catch {
+      setBulkFailed(true);
+    } finally {
+      applying.current = false;
+      setPending(false);
+    }
+  }
+  return <section {...host} data-uld-table="" data-part="root" data-layout={layout} data-size={size}
+    className={[classes('uld-data'), className].filter(Boolean).join(' ') || undefined}>
+    <div data-part="toolbar" className={classes('uld-data-tools')}>
+      <label>{labels.search}
+        <TableField mode="search" label={labels.search} value={state.query} controls={id}
+          disabled={disabled} onValueChange={model.search} />
+      </label>
+      {selectRows && <output data-part="selection">{labels.selected(selected.size)}</output>}
+      {bulkAction && <TableAction data-part="bulk-action" type="button" disabled={locked || readOnly || !selected.size} onClick={apply}>{bulkAction.label}</TableAction>}
+      {toolbar}
+    </div>
+    {(error || bulkFailed) && <div data-part="status" role="alert">{error || labels.bulkFailed}</div>}
+    <div data-part="viewport" className={classes('uld-data-scroll')} tabIndex={0}>
+      {loading && <span data-part="status" role="status">{labels.loading}</span>}
+      <table data-part="table" id={id} role="table" aria-label={label} aria-busy={loading || undefined}>
+        <thead data-part="header" role="rowgroup"><tr role="row">
+          {selectRows && <th role="columnheader" scope="col">
+            <SelectionCheckbox label={labels.selectPage} disabled={locked || !visible.length}
+              checked={model.somePage && !model.allPage ? 'mixed' : model.allPage}
+              onChange={checked => model.select(visible.map(row => row.id), checked)} />
+          </th>}
+          {columns.map(column => <th key={column.id} role="columnheader" scope="col"
+            aria-sort={state.sort?.column === column.id ? (state.sort.ascending ? 'ascending' : 'descending') : undefined}>
+            <TableAction data-part="sort" type="button" disabled={disabled} onClick={() => model.sortBy(column.id)}>{column.label}
+              <span aria-hidden="true">{state.sort?.column === column.id ? (state.sort.ascending ? ' ↑' : ' ↓') : ' ↕'}</span>
+            </TableAction>
+          </th>)}
+        </tr></thead>
+        <tbody role="rowgroup">{visible.map(row => <tr key={row.id} role="row" data-part="row" data-row-id={row.id}>
+          {selectRows && <td role="cell" data-part="cell"><SelectionCheckbox label={labels.select(getRowLabel(row))}
+            checked={selected.has(row.id)} disabled={locked} onChange={checked => model.select([row.id], checked)} /></td>}
+          {columns.map(column => <td role="cell" data-part="cell" key={column.id}>
+            {layout === 'adaptive' && !unstyled && <span aria-hidden="true" className="uld-data-cell-label">{column.label}</span>}
+            {column.onEdit && !readOnly ? <EditableCell row={row} column={column} labels={labels} name={getRowLabel(row)} disabled={disabled} busy={loading || pending} unstyled={unstyled} />
+              : column.render ? column.render(row) : column.value(row)}
+          </td>)}
+        </tr>)}
+          {!visible.length && !loading && <tr role="row"><td role="cell" colSpan={columns.length + Number(selectRows)}>{emptyState ?? <span data-part="status" role="status">{labels.empty}</span>}</td></tr>}
+        </tbody>
+      </table>
+    </div>
+    <div data-part="pagination" className={classes('uld-data-pages')}>
+      <TableAction type="button" disabled={disabled || state.page <= 0} onClick={() => model.goToPage(state.page - 1)}>{labels.previous}</TableAction>
+      <output>{labels.page(state.page + 1, pages)}</output>
+      <TableAction type="button" disabled={disabled || state.page >= pages - 1} onClick={() => model.goToPage(state.page + 1)}>{labels.next}</TableAction>
+    </div>
+  </section>;
+}

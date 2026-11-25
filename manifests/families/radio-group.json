@@ -1,0 +1,66 @@
+{
+  "id": "Radio group",
+  "order": 24,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:RadioGroup",
+      "forms:Radio"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/Controls.stories.tsx",
+    "test": "tests/advanced.test.tsx",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "forms:RadioGroup",
+    "expectation": "Controlled/default value, orientation and disabled options",
+    "oracle": "Verify RTL arrow order skips disabled options and form submission contains one value.",
+    "evidence": {
+      "unit": "tests/advanced.test.tsx | selection controls report state to their owners and keep localized names"
+    },
+    "assertions": {
+      "tests/advanced.test.tsx | selection controls report state to their owners and keep localized names": "expect((screen.getByRole('radio', { name: 'Standard' }) as HTMLInputElement).checked).toBe(true)"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/radio-group/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/advanced.test.tsx",
+      "tests/form-spec-states.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/preferences.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/Controls.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/radio-group/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/advanced.test.tsx | selection controls report state to their owners and keep localized names",
+      "tests/form-spec-states.test.tsx | checkbox and radio groups retain selection in readonly mode and expose unavailable choices"
+    ],
+    "browser": [
+      "browser/preferences.spec.ts | arabic preferences retain keyboard selection and reflow at 320 CSS pixels",
+      "browser/preferences.spec.ts | english preferences retain keyboard selection and reflow at 320 CSS pixels",
+      "browser/preferences.spec.ts | expanded preferences retain keyboard selection and reflow at 320 CSS pixels",
+      "browser/preferences.spec.ts | japanese preferences retain keyboard selection and reflow at 320 CSS pixels"
+    ]
+  }
+}

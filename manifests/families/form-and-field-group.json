@@ -1,0 +1,54 @@
+{
+  "id": "Form and field group",
+  "order": 21,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:Form",
+      "forms:Group"
+    ],
+    "web": "exported",
+    "native": "planned",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "forms:Form",
+    "expectation": "Group-level labeling, controlled error mapping and submit/reset contract",
+    "oracle": "Send field and form errors, retain values, then reset both and verify error associations.",
+    "evidence": {
+      "unit": "tests/depth-controls.test.tsx | form validation reaches a named text input and its associated error message"
+    },
+    "assertions": {
+      "tests/depth-controls.test.tsx | form validation reaches a named text input and its associated error message": "expect(input.getAttribute('aria-invalid')).toBe('true')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/form-and-field-group/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/depth-controls.test.tsx",
+      "tests/form-spec-states.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/depth-controls.test.tsx | form validation reaches a named text input and its associated error message",
+      "tests/form-spec-states.test.tsx | a disabled picker blocks its trigger and a readonly date range preserves both endpoints",
+      "tests/form-spec-states.test.tsx | a named form submits enabled fields through its submit action and skips a disabled editor",
+      "tests/form-spec-states.test.tsx | readonly numbers, disabled thumbs and readonly temporal segments expose state on the editing target"
+    ]
+  }
+}

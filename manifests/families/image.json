@@ -1,0 +1,17 @@
+{
+  "id": "Image",
+  "order": 83,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap",
+      "Apple"
+    ],
+    "api": [],
+    "web": "equivalent",
+    "native": "planned",
+    "note": "Use a native HTML image with alt, size and loading policy.",
+    "ownership": "stateless or host-managed"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "Menu bar",
+  "order": 94,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG"
+    ],
+    "api": [],
+    "web": "planned",
+    "native": "planned",
+    "note": "A horizontal menubar needs its own keyboard contract.",
+    "ownership": "stateless or host-managed"
+  }
+}

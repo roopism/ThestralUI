@@ -1,0 +1,335 @@
+{
+  "id": "Button",
+  "order": 15,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "Material",
+      "Apple"
+    ],
+    "api": [
+      ".:Button",
+      ".:useButton",
+      "navigation:Trigger"
+    ],
+    "web": "supported",
+    "native": "experimental",
+    "story": "catalog/ButtonSizes.stories.tsx",
+    "test": "tests/browser/button-depth.spec.ts",
+    "nativeApi": [
+      "native:Button",
+      "native:useButton",
+      "native/button:Button",
+      "native/button:useButton"
+    ],
+    "nativeStory": "catalog/native/Gallery.tsx",
+    "nativeTest": "tests/button/native.test.cjs",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": ".:Button",
+    "expectation": "Small, medium and large token sizes; logical start/end icon slots; accessible icon-only action via IconButton",
+    "oracle": "Check each size with pending, disabled, keyboard activation and submit. Decorative icons leave the accessible name unchanged; RTL reverses visual placement.",
+    "evidence": {
+      "packed-priority": ".:Button",
+      "native": [
+        "tests/button/native.test.cjs | busy buttons retain their name and suppress duplicate activation",
+        "tests/button/native.test.cjs | all native button sizes retain a coarse target and the default matches the previous medium size",
+        "tests/button/native.test.cjs | native actions retain decorative slots and one accessible label while busy"
+      ]
+    },
+    "assertions": {
+      "tests/button/native.test.cjs | busy buttons retain their name and suppress duplicate activation": "expect(onPress).not.toHaveBeenCalled()",
+      "tests/button/native.test.cjs | all native button sizes retain a coarse target and the default matches the previous medium size": "expect(styles.sm.paddingHorizontal).toBeLessThan(styles.md.paddingHorizontal)",
+      "tests/button/native.test.cjs | native actions retain decorative slots and one accessible label while busy": "expect(rendered.getByTestId(id, { includeHiddenElements: true })).toBeTruthy()"
+    },
+    "consumerTypes": {
+      ".:useButton": {
+        "accept": [
+          {
+            "busy": true,
+            "type": "submit"
+          },
+          {
+            "disabled": true
+          }
+        ],
+        "reject": [
+          {
+            "busy": "yes"
+          },
+          {
+            "type": "link"
+          }
+        ]
+      },
+      "native:useButton": {
+        "accept": [
+          {
+            "label": "Save",
+            "busy": true
+          },
+          {
+            "disabled": true,
+            "accessibilityHint": "Saves the draft"
+          }
+        ],
+        "reject": [
+          {
+            "busy": "yes"
+          },
+          {
+            "label": 3
+          },
+          {
+            "onPress": 3
+          }
+        ]
+      },
+      "native/button:Button": {
+        "accept": [
+          {
+            "label": "Save",
+            "tone": "danger",
+            "pressableStyle": {
+              "borderRadius": 9
+            }
+          },
+          {
+            "labelStyle": {
+              "fontSize": 19
+            }
+          }
+        ],
+        "reject": [
+          {
+            "tone": "broken"
+          },
+          {
+            "pressableStyle": {
+              "borderRadius": false
+            }
+          }
+        ]
+      },
+      "native/button:useButton": {
+        "accept": [
+          {
+            "label": "Save",
+            "busy": true
+          },
+          {
+            "disabled": true,
+            "accessibilityHint": "Saves the draft"
+          }
+        ],
+        "reject": [
+          {
+            "busy": "yes"
+          },
+          {
+            "label": 3
+          },
+          {
+            "onPress": 3
+          }
+        ]
+      }
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/button/aria-binding.tsx",
+      "packages/web/src/button/binding.tsx"
+    ],
+    "nativeSource": [
+      "packages/native/src/button/binding.tsx",
+      "packages/native/src/button/press-target.tsx"
+    ],
+    "unit": [
+      "tests/button/controls.test.tsx",
+      "tests/runtime-cleanup.test.tsx",
+      "tests/form-spec-states.test.tsx",
+      "tests/navigation-labels.test.tsx"
+    ],
+    "nativeUnit": [
+      "tests/button/native.test.cjs",
+      "tests/native/scenarios.test.cjs"
+    ],
+    "browser": [
+      "tests/browser/button-depth.spec.ts",
+      "tests/browser/button-states.spec.ts",
+      "tests/button/forced-colors.spec.ts"
+    ],
+    "visual": [
+      "tests/browser/button.visual.ts"
+    ],
+    "story": [
+      "catalog/ButtonSizes.stories.tsx",
+      "catalog/ButtonStates.stories.tsx",
+      "catalog/button.stories.tsx",
+      "catalog/native/Gallery.tsx"
+    ],
+    "scenario": [
+      "docs/components/button.scenarios.yaml"
+    ],
+    "style": [
+      "packages/web/src/button/styles.css"
+    ]
+  },
+  "cases": {
+    "browser": [
+      "browser/button-depth.spec.ts | coarse pointer | explicit compact actions retain a 48 pixel touch target",
+      "browser/button-depth.spec.ts | public button sizes retain native form behavior, square targets and logical icon placement",
+      "browser/button-states.spec.ts | a busy submit keeps focus and width, and blocks every way of submitting again",
+      "browser/button-states.spec.ts | every tone and state passes the accessibility scan in dark",
+      "browser/button-states.spec.ts | every tone and state passes the accessibility scan in light",
+      "browser/button-states.spec.ts | every tone passes the accessibility scan in the enterprise brand with the dark scheme",
+      "browser/button-states.spec.ts | every tone passes the accessibility scan in the enterprise brand with the high-contrast scheme",
+      "browser/button-states.spec.ts | every tone passes the accessibility scan in the enterprise brand with the light scheme",
+      "browser/button-states.spec.ts | every tone passes the accessibility scan in the expressive brand with the dark scheme",
+      "browser/button-states.spec.ts | every tone passes the accessibility scan in the expressive brand with the high-contrast scheme",
+      "browser/button-states.spec.ts | every tone passes the accessibility scan in the expressive brand with the light scheme",
+      "browser/button-states.spec.ts | the busy indicator stays still when reduced motion is requested",
+      "browser/button-states.spec.ts | touch | every density keeps a 48 pixel target for every size on a touch screen",
+      "browser/button-states.spec.ts | unstyled mode keeps behaviour and part names and drops library styles",
+      "browser/quality.spec.ts | Button preserves native activation, nearby text selection and scrolling at increased layout zoom",
+      "button/forced-colors.spec.ts | forced colors paint primary and danger button labels in the light system palette",
+      "button/forced-colors.spec.ts | forced colors paint primary and danger button labels in the dark system palette"
+    ],
+    "vitest": [
+      "tests/button/controls.test.tsx | a pending submit keeps focus and its name, and cannot submit again",
+      "tests/button/controls.test.tsx | a standard action does not accidentally submit the surrounding form",
+      "tests/button/controls.test.tsx | an explicitly disabled action leaves the focus order and stays disabled while busy",
+      "tests/button/controls.test.tsx | decorative start and end icons keep their logical order, including while the action is busy",
+      "tests/button/controls.test.tsx | every part has a stable class name and data-part, also in unstyled mode",
+      "tests/button/controls.test.tsx | the headless hook gives a plain button the same pending behaviour",
+      "tests/button/controls.test.tsx | tones and full width are exposed for styling",
+      "tests/form-spec-states.test.tsx | a disabled picker blocks its trigger and a readonly date range preserves both endpoints",
+      "tests/form-spec-states.test.tsx | a named form submits enabled fields through its submit action and skips a disabled editor",
+      "tests/form-spec-states.test.tsx | listbox disabled keys, disabled select and readonly combobox keep distinct interaction contracts",
+      "tests/form-spec-states.test.tsx | readonly numbers, disabled thumbs and readonly temporal segments expose state on the editing target",
+      "tests/navigation-labels.test.tsx | an RTL toolbar names the controls and preserves the direction of shortcut notation",
+      "tests/runtime-cleanup.test.tsx | unmount cancels a pending tooltip and restores document scroll after a modal"
+    ],
+    "native": [
+      "tests/button/native.test.cjs | a live reduced-motion change wins over a stale initial preference",
+      "tests/button/native.test.cjs | all native button sizes retain a coarse target and the default matches the previous medium size",
+      "tests/button/native.test.cjs | busy buttons retain their name and suppress duplicate activation",
+      "tests/button/native.test.cjs | busy keeps the size and focus, hides the label and icons behind an indicator, and names each part",
+      "tests/button/native.test.cjs | every tone uses its tokens in light and dark",
+      "tests/button/native.test.cjs | forwards the automation identifier to the same accessible press target",
+      "tests/button/native.test.cjs | full width stretches the action and unstyled mode keeps only the behaviour",
+      "tests/button/native.test.cjs | iOS highlights a pressed action with the press-opacity token",
+      "tests/button/native.test.cjs | native actions retain decorative slots and one accessible label while busy",
+      "tests/button/native.test.cjs | press feedback honors the OS reduce motion setting (false)",
+      "tests/button/native.test.cjs | press feedback honors the OS reduce motion setting (true)",
+      "tests/button/native.test.cjs | uses a bounded Android theme ripple on both active public controls",
+      "tests/native/scenarios.test.cjs | button.disabled-named",
+      "tests/native/scenarios.test.cjs | button.pending-keeps-name",
+      "tests/native/scenarios.test.cjs | button.save-once",
+      "tests/button/native.test.cjs | the headless hook gives a custom Pressable the same accessible behaviour",
+      "tests/button/native.test.cjs | the family subpath forwards a native ref and consumer styles to the named parts",
+      "tests/button/native.test.cjs | a busy action keeps a visible stationary indicator when reduced motion is enabled"
+    ],
+    "visual": [
+      "browser/button.visual.ts | button dark desktop",
+      "browser/button.visual.ts | button dark phone",
+      "browser/button.visual.ts | button light desktop",
+      "browser/button.visual.ts | button light phone"
+    ]
+  },
+  "budgets": [
+    {
+      "name": "@ui-lazy-dev/ui-web#Button",
+      "bytes": 572,
+      "order": 5
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web#useButton",
+      "bytes": 205,
+      "order": 6
+    }
+  ],
+  "rootExports": [
+    {
+      "pkg": "web",
+      "from": "./button/binding.js",
+      "names": [
+        "Button"
+      ],
+      "order": 0
+    },
+    {
+      "pkg": "web",
+      "from": "./button/binding.js",
+      "names": [
+        "type ButtonProps"
+      ],
+      "order": 3
+    },
+    {
+      "pkg": "web",
+      "from": "./button/binding.js",
+      "names": [
+        "useButton"
+      ],
+      "order": 5
+    },
+    {
+      "pkg": "web",
+      "from": "./button/binding.js",
+      "names": [
+        "type UseButtonOptions",
+        "type ButtonBehavior"
+      ],
+      "order": 6
+    },
+    {
+      "pkg": "native",
+      "from": "./button/binding.js",
+      "names": [
+        "Button"
+      ],
+      "order": 0
+    },
+    {
+      "pkg": "native",
+      "from": "./button/binding.js",
+      "names": [
+        "type ButtonProps"
+      ],
+      "order": 2
+    },
+    {
+      "pkg": "native",
+      "from": "./button/binding.js",
+      "names": [
+        "useButton"
+      ],
+      "order": 7
+    },
+    {
+      "pkg": "native",
+      "from": "./button/binding.js",
+      "names": [
+        "type UseButtonOptions",
+        "type ButtonBehavior"
+      ],
+      "order": 8
+    }
+  ],
+  "entries": [
+    {
+      "pkg": "native",
+      "path": "./button",
+      "target": {
+        "types": "./dist/button/binding.d.ts",
+        "default": "./dist/button/binding.js"
+      },
+      "order": 1
+    }
+  ]
+}

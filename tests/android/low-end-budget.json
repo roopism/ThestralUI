@@ -1,0 +1,80 @@
+{
+  "reference": {
+    "systemImage": "system-images;android-36;default;arm64-v8a",
+    "fingerprint": "Android/sdk_phone64_arm64/emu64a:16/BE2A.250530.026.D1/13818094:userdebug/test-keys",
+    "hostGpu": "Apple M3 Pro",
+    "nativeSha256": "b4a2e587bd342b4b4f7eb7da016e2360a11757c7e9e737bc0ca2c90eec879544",
+    "tokensSha256": "a8cfda760af0fa44517ec52e221ac26bc1833f318715d376e35ed2e8fdc59b2d",
+    "trials": [
+      {
+        "press": {
+          "frames": 68,
+          "inputs": 55,
+          "p95FrameMs": 37.255616,
+          "deadlineMissFraction": 0.014705882352941176,
+          "p95InputToCommitMs": 35.014435
+        },
+        "scroll": {
+          "frames": 120,
+          "inputs": 272,
+          "p95FrameMs": 17.474927,
+          "deadlineMissFraction": 0,
+          "p95InputToCommitMs": 21.579277
+        }
+      },
+      {
+        "press": {
+          "frames": 67,
+          "inputs": 55,
+          "p95FrameMs": 17.139982,
+          "deadlineMissFraction": 0,
+          "p95InputToCommitMs": 36.176697
+        },
+        "scroll": {
+          "frames": 120,
+          "inputs": 270,
+          "p95FrameMs": 17.420151,
+          "deadlineMissFraction": 0,
+          "p95InputToCommitMs": 21.17608
+        }
+      },
+      {
+        "press": {
+          "frames": 68,
+          "inputs": 57,
+          "p95FrameMs": 17.473184,
+          "deadlineMissFraction": 0,
+          "p95InputToCommitMs": 35.628794
+        },
+        "scroll": {
+          "frames": 120,
+          "inputs": 270,
+          "p95FrameMs": 17.577002,
+          "deadlineMissFraction": 0,
+          "p95InputToCommitMs": 21.211176
+        }
+      }
+    ],
+    "scrollInputSource": {
+      "commit": "f83c9d0f7a80bb7d05c6ca79a5909e020b690383",
+      "probeBlob": "80ea2f5b0f4d223b990258ebdfb2bbf3c5adf1eb",
+      "apkSha256": "482de33434b25390f1d1aaf72d60c1af6a742852f75efa0235d346217294b9c6"
+    }
+  },
+  "allowance": {
+    "timingFraction": 0.25,
+    "missFractionIncrease": 0.03
+  },
+  "limits": {
+    "press": {
+      "p95FrameMs": 21.84148,
+      "p95InputToCommitMs": 44.535992,
+      "deadlineMissFraction": 0.03
+    },
+    "scroll": {
+      "p95FrameMs": 21.843659,
+      "p95InputToCommitMs": 26.51397,
+      "deadlineMissFraction": 0.03
+    }
+  }
+}

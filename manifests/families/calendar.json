@@ -1,0 +1,59 @@
+{
+  "id": "Calendar",
+  "order": 35,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:Calendar",
+      "forms:CalendarCell",
+      "forms:CalendarGrid",
+      "forms:CalendarGridHeader",
+      "forms:CalendarHeaderCell",
+      "forms:CalendarGridBody"
+    ],
+    "web": "exported",
+    "native": "planned",
+    "story": "catalog/Authoring.stories.tsx",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "forms:Calendar",
+    "expectation": "Named months and days, minimum/maximum, unavailable dates and non-Gregorian locale",
+    "oracle": "Navigate month boundaries by keyboard; unavailable dates stay perceivable and cannot be selected.",
+    "evidence": {
+      "unit": "tests/depth-controls.test.tsx | calendar distinguishes unavailable days and both picker endpoints keep independent labels"
+    },
+    "assertions": {
+      "tests/depth-controls.test.tsx | calendar distinguishes unavailable days and both picker endpoints keep independent labels": "expect(dates.getAllByRole('button').some((x) => x.getAttribute('data-unavailable') !== null)).toBe(true)"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/calendar/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/depth-controls.test.tsx",
+      "tests/form-spec-states.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/Authoring.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/depth-controls.test.tsx | calendar distinguishes unavailable days and both picker endpoints keep independent labels",
+      "tests/form-spec-states.test.tsx | an available calendar date becomes selected and a time field exposes editable clock segments"
+    ]
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "id": "Drawer",
+  "order": 69,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Material",
+      "Roadmap"
+    ],
+    "api": [
+      "motion:Drawer"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/MotionGallery.stories.tsx",
+    "test": "tests/drawer/motion-overlays.test.tsx",
+    "ownership": "owner supplied state"
+  },
+  "depth": {
+    "representative": "motion:Drawer",
+    "expectation": "Controlled visibility, logical leading/trailing side, nested focus and safe-area layout",
+    "oracle": "Open/dismiss in RTL and on a short viewport; focus and body scroll restore to the launcher.",
+    "evidence": {
+      "unit": "tests/motion-overlays.test.tsx | Drawer provides a named modal, close button, and Escape"
+    },
+    "assertions": {
+      "tests/motion-overlays.test.tsx | Drawer provides a named modal, close button, and Escape": "expect(dismiss).toHaveBeenCalledTimes(2)"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/drawer/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/drawer/motion-overlays.test.tsx",
+      "tests/motion-overlays.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/motion.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/MotionGallery.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/drawer/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/drawer/motion-overlays.test.tsx | explicit focus return supports a pointer trigger that never took focus",
+      "tests/motion-overlays.test.tsx | Drawer provides a named modal, close button, and Escape"
+    ],
+    "browser": [
+      "browser/motion.spec.ts | browse drawer returns focus on Escape and media tolerates rapid reversals"
+    ]
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "mode": "library",
+  "registeredFamilyEntries": true,
+  "include": [
+    "packages/web/src",
+    "packages/native/src",
+    "packages/tokens",
+    "catalog"
+  ],
+  "baseline": "docs/ui-ownership-exceptions.json",
+  "owners": [
+    {
+      "file": "packages/web/src/modal-dialog/binding.tsx",
+      "symbol": "Dialog",
+      "family": "dialog"
+    },
+    {
+      "file": "packages/native/src/modal-dialog/binding.tsx",
+      "symbol": "Dialog",
+      "family": "dialog"
+    }
+  ],
+  "adapters": [],
+  "publicEntries": {
+    "@ui-lazy-dev/ui-web": [
+      "/",
+      "/dialog",
+      "/styles.css",
+      "/forms",
+      "/navigation",
+      "/primitives",
+      "/primitives.css",
+      "/collections",
+      "/workflows",
+      "/motion",
+      "/motion.css",
+      "/collections.css",
+      "/workflows.css",
+      "/entry-fields",
+      "/controls.css",
+      "/patterns",
+      "/color",
+      "/avatar",
+      "/modes"
+    ],
+    "@ui-lazy-dev/ui-native": [
+      "/"
+    ],
+    "@ui-lazy-dev/tokens": [
+      "/",
+      "/styles.css",
+      "/tokens.json",
+      "/modes",
+      "/modes.css",
+      "/brands/enterprise",
+      "/brands/enterprise.css",
+      "/brands/expressive",
+      "/brands/expressive.css",
+      "/theme-css"
+    ]
+  },
+  "ownerTransitions": [
+    {
+      "file": "packages/web/src/button/binding.tsx",
+      "previousSha256": "aaa2d3afe9d090a2c5cc31a9b98c36a5e67a394325047ffee8cc9fc3e94d0d1c",
+      "previousOwners": [
+        {
+          "file": "packages/web/src/button/binding.tsx",
+          "symbol": "Button",
+          "family": "button"
+        }
+      ],
+      "currentOwners": [
+        {
+          "file": "packages/web/src/button/binding.tsx",
+          "symbol": "ButtonTarget",
+          "family": "button"
+        }
+      ]
+    },
+    {
+      "file": "packages/native/src/button/binding.tsx",
+      "previousSha256": "8144d3b7284b3be8d849e297a0e04715846c33fc06de48fea2ca45a93d9d5c04",
+      "previousOwners": [
+        {
+          "file": "packages/native/src/button/binding.tsx",
+          "symbol": "Button",
+          "family": "button"
+        }
+      ],
+      "currentOwners": [
+        {
+          "file": "packages/native/src/button/press-target.tsx",
+          "symbol": "NativePressTarget",
+          "family": "button"
+        }
+      ]
+    },
+    {
+      "file": "packages/native/src/labeled-field/binding.tsx",
+      "previousSha256": "387d34b8b720df82f280aac1ce8070ac4568c193b706b12271fcdfef295881f6",
+      "previousOwners": [
+        {
+          "file": "packages/native/src/labeled-field/binding.tsx",
+          "symbol": "FormField",
+          "family": "input"
+        }
+      ],
+      "currentOwners": [
+        {
+          "file": "packages/native/src/labeled-field/control.tsx",
+          "symbol": "NativeFieldControl",
+          "family": "input"
+        }
+      ]
+    },
+    {
+      "file": "packages/web/src/data-table/binding.tsx",
+      "previousSha256": "de67bd219bf7674d710e23a4bc2e4f16df521fc3e716ff6b42df38fe45982308",
+      "previousOwners": [],
+      "currentOwners": [
+        {
+          "file": "packages/web/src/data-table/controls.tsx",
+          "symbol": "TableField",
+          "family": "input"
+        },
+        {
+          "file": "packages/web/src/data-table/controls.tsx",
+          "symbol": "SelectionCheckbox",
+          "family": "selection"
+        }
+      ],
+      "previousExceptions": [
+        "81692527701507f940d11fb8bdb920ad5fc4e62cfb6d9834216604e7411c16e9",
+        "27244f009b7521cbb020b6ab0598ad1c49c320026a546f5f6c53b0744f364092",
+        "f3328adc18f521a59c6b8cac4081abca205b98fad22526628cf1148415429b38",
+        "6f8f544f66953920ed019c4659ea9348bcfad51c320fa9b6cd2e996d3f124a36",
+        "b943c487d1b2332ef4d2907aa45ed71abca47076067ad5b1c3f40904d2747bd2",
+        "117db889832185f90e54e41a8b395be65d182bf68b19ddedfaf157e646d62528",
+        "adc228d11c8a3f2678c66aabf064875c25e3fd693bdec4ce3520cf2e469632ff",
+        "37f5bead33f549cfee02a98859b00e6da93ab07b9a70aff3821c04135de31e60",
+        "c5db0dc892731a2d28ef04ef98695290be7dabe92c5edb6745ce8c7f13925474",
+        "0e095e03822d0cedb860dc66ef8ad7b69885256b955983d1260ff44d325b858f",
+        "ba85ce026642864a6d06c2c79f1437ade95f614a2b7e1b6aedb8956c3e86f9b3"
+      ]
+    }
+  ],
+  "registeredOwners": [
+    {
+      "entry": "@ui-lazy-dev/ui-web/breadcrumb",
+      "file": "packages/web/src/breadcrumb/trail.tsx",
+      "symbol": "BreadcrumbAnchor",
+      "family": "link"
+    },
+    {
+      "entry": "@ui-lazy-dev/ui-web/breadcrumb",
+      "file": "packages/web/src/breadcrumb/trail.tsx",
+      "symbol": "BreadcrumbOverflow",
+      "family": "disclosure"
+    }
+  ]
+}

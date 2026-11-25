@@ -1,0 +1,62 @@
+{
+  "id": "Batch progress",
+  "order": 68,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "workflows:BatchProgress"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseWorkspace.stories.tsx",
+    "test": "tests/batch-progress/workflow-status.test.tsx",
+    "ownership": "owner supplied state"
+  },
+  "depth": {
+    "representative": "workflows:BatchProgress",
+    "expectation": "Per-item states, partial failure, retry availability and stable aggregate announcements",
+    "oracle": "Resume a mixed terminal/running batch; retry only the failed item and avoid duplicate actions.",
+    "evidence": {
+      "unit": "tests/batch-progress/workflow-status.test.tsx | batch progress handles partial failure, retries a single failed item and resumes from external state"
+    },
+    "assertions": {
+      "tests/batch-progress/workflow-status.test.tsx | batch progress handles partial failure, retries a single failed item and resumes from external state": "expect(retry).toHaveBeenCalledWith('b')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/batch-progress/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/batch-progress/workflow-status.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-workspace.spec.ts",
+      "tests/browser/workflow-regressions.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseWorkspace.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/batch-progress/workflow-status.test.tsx | batch progress handles partial failure, retries a single failed item and resumes from external state",
+      "tests/batch-progress/workflow-status.test.tsx | two or more failures offer one retry for every failed operation",
+      "tests/batch-progress/workflow-status.test.tsx | the batch heading names the region, list and progress, and keeps its outline level",
+      "tests/batch-progress/workflow-status.test.tsx | retrying a failed item focuses the next failed action and preserves a vetoed action"
+    ],
+    "browser": [
+      "browser/enterprise-workspace.spec.ts | restores a saved workflow after reload and retries interrupted batch items",
+      "browser/workflow-regressions.spec.ts | completed notification and batch actions return focus to their headings"
+    ]
+  }
+}

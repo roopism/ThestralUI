@@ -1,0 +1,152 @@
+/* @uld-css-chunk motion.001 */
+@import '@ui-lazy-dev/tokens/styles.css';
+/* @uld-css-chunk motion.002 */
+
+
+.uld-motion-action {
+  appearance: none;
+  box-sizing: border-box;
+  min-block-size: var(--uld-control);
+  min-inline-size: var(--uld-control);
+  padding: 0.45em 0.9em;
+  color: var(--uld-text);
+  background: var(--uld-surface);
+  border: 1px solid var(--uld-border);
+  border-radius: var(--uld-radius);
+  font: inherit;
+  cursor: pointer;
+}
+/* @uld-css-chunk motion.003 */
+
+.uld-motion-action[data-intent='danger'] {
+  border-color: var(--uld-danger);
+  color: var(--uld-danger);
+}
+/* @uld-css-chunk motion.004 */
+
+.uld-motion-action:focus-visible,
+.uld-motion-action[data-focus-visible],
+.uld-carousel-viewport:focus-visible {
+  outline: var(--uld-focus-width) solid var(--uld-focus);
+  outline-offset: var(--uld-focus-offset);
+}
+/* @uld-css-chunk motion.005 */
+
+.uld-motion-actions,
+.uld-motion-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--uld-space-sm);
+}
+/* @uld-css-chunk motion.006 */
+
+.uld-motion-header {
+  justify-content: space-between;
+}
+/* @uld-css-chunk motion.007 */
+
+.uld-motion-header h2,
+.uld-alert-content h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+/* @uld-css-chunk motion.008 */
+
+.uld-edge-panel,
+.uld-alert-modal,
+.uld-toast {
+  box-sizing: border-box;
+  color: var(--uld-text);
+  background: var(--uld-surface);
+  border: 1px solid var(--uld-border);
+  border-radius: var(--uld-radius-lg);
+}
+/* @uld-css-chunk motion.009 */
+
+.uld-edge-panel[open] {
+  position: fixed;
+  display: grid;
+  gap: var(--uld-space-sm);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  margin: 0;
+  padding: var(--uld-space-md);
+  padding-left: max(var(--uld-space-md), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--uld-space-md), env(safe-area-inset-right, 0px));
+  max-width: none;
+  max-height: none;
+  overflow: hidden;
+}
+/* @uld-css-chunk motion.010 */
+
+.uld-edge-panel::backdrop,
+.uld-alert-modal::backdrop {
+  background: rgb(10 17 14 / 55%);
+}
+/* @uld-css-chunk motion.015 */
+
+.uld-edge-content {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+/* @uld-css-chunk motion.016 */
+
+.uld-edge-grip {
+  display: grid;
+  place-items: center;
+  touch-action: none;
+  min-height: 2rem;
+  user-select: none;
+  cursor: grab;
+}
+/* @uld-css-chunk motion.017 */
+
+.uld-edge-grip:active {
+  cursor: grabbing;
+}
+/* @uld-css-chunk motion.018 */
+
+.uld-edge-grip span {
+  width: 3rem;
+  height: 0.3rem;
+  border-radius: 1rem;
+  background: var(--uld-muted);
+}
+/* @uld-css-chunk motion.024 */
+
+@media (min-width: 40rem) {
+  .uld-edge-bottom[open] {
+    inline-size: min(40rem, 100%);
+    margin-inline: auto;
+  }
+  .uld-toast-region {
+    inset-inline: auto var(--uld-space-lg);
+    width: min(26rem, 90vw);
+  }
+}
+/* @uld-css-chunk motion.025 */
+
+@media (prefers-reduced-motion: no-preference) {
+  .uld-edge-panel:not([data-dragging]) {
+    transition: transform var(--uld-exit-duration) ease-out;
+  }
+  .uld-toast {
+    animation: uld-toast-enter var(--uld-enter-duration) ease-out;
+  }
+}
+/* @uld-css-chunk motion.026 */
+
+@keyframes uld-toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+/* @uld-css-chunk motion.037 */
+
+@media (pointer: coarse) {
+  .uld-motion-action {
+    min-block-size: var(--uld-coarse-target);
+    min-inline-size: var(--uld-coarse-target);
+  }
+}

@@ -1,0 +1,54 @@
+appId: ${APP_ID}
+name: Native dynamic type, color scheme and long content
+---
+- launchApp
+- scrollUntilVisible:
+    element:
+      id: "workspace-appearance"
+      text: "${APPEARANCE} appearance"
+    direction: DOWN
+- scrollUntilVisible:
+    element:
+      id: "workspace-scale"
+      text: "${TEXT_SCALE} text"
+    direction: DOWN
+- scrollUntilVisible:
+    element:
+      id: "workspace-help"
+      text: "Workspace name help"
+    direction: DOWN
+- tapOn:
+    id: "workspace-help"
+- scrollUntilVisible:
+    element:
+      text: "Choose a name your team will recognize."
+    direction: DOWN
+- scrollUntilVisible:
+    element:
+      id: "workspace-name"
+    direction: UP
+- tapOn:
+    id: "workspace-name"
+- inputText: "International product design and accessible mobile engineering working group"
+- pressKey: enter
+- assertVisible: "Save workspace?"
+- assertVisible:
+    id: "workspace-draft"
+    text: "International product design and accessible mobile engineering working group"
+- scrollUntilVisible:
+    element:
+      id: "workspace-save"
+    direction: DOWN
+- tapOn:
+    id: "workspace-save"
+- scrollUntilVisible:
+    element:
+      id: "workspace-finish"
+    direction: DOWN
+- tapOn:
+    id: "workspace-finish"
+- scrollUntilVisible:
+    element:
+      id: "workspace-saved"
+      text: "Saved International product design and accessible mobile engineering working group"
+    direction: DOWN

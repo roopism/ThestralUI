@@ -1,0 +1,59 @@
+{
+  "id": "Toolbar",
+  "order": 47,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "RAC"
+    ],
+    "api": [
+      "navigation:Toolbar"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseNavigation.stories.tsx",
+    "test": "tests/browser/enterprise-navigation.spec.ts",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "behaviorAnchor": "returns to the toolbar",
+  "depth": {
+    "representative": "navigation:Toolbar",
+    "expectation": "Label, orientation, roving navigation and disabled or embedded controls",
+    "oracle": "Traverse a toolbar containing a disabled action and a text input without hijacking editing keys.",
+    "evidence": {
+      "browser": "browser/enterprise-navigation.spec.ts | opens nested menu commands by keyboard and returns to the toolbar"
+    },
+    "assertions": {
+      "browser/enterprise-navigation.spec.ts | opens nested menu commands by keyboard and returns to the toolbar": "expect(trigger).toBeFocused()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/toolbar/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/navigation-labels.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-navigation.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseNavigation.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "browser": [
+      "browser/enterprise-navigation.spec.ts | opens nested menu commands by keyboard and returns to the toolbar"
+    ],
+    "vitest": [
+      "tests/navigation-labels.test.tsx | an RTL toolbar names the controls and preserves the direction of shortcut notation"
+    ]
+  }
+}

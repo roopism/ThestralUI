@@ -1,0 +1,51 @@
+{
+  "id": "Date picker",
+  "order": 36,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:DatePicker"
+    ],
+    "web": "exported",
+    "native": "planned",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "forms:DatePicker",
+    "expectation": "Segmented input and calendar overlay, selection/focus handoff and clear",
+    "oracle": "Open the calendar from a trigger; choose or cancel and verify the selected value and returned focus.",
+    "evidence": {
+      "unit": "tests/depth-controls.test.tsx | calendar distinguishes unavailable days and both picker endpoints keep independent labels"
+    },
+    "assertions": {
+      "tests/depth-controls.test.tsx | calendar distinguishes unavailable days and both picker endpoints keep independent labels": "expect(screen.getByRole('button', { name: /Choose deadline/ }).getAttribute('aria-haspopup')).toBe('dialog')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/date-picker/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/depth-controls.test.tsx",
+      "tests/form-spec-states.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/depth-controls.test.tsx | calendar distinguishes unavailable days and both picker endpoints keep independent labels",
+      "tests/form-spec-states.test.tsx | a disabled picker blocks its trigger and a readonly date range preserves both endpoints"
+    ]
+  }
+}

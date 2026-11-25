@@ -1,0 +1,81 @@
+{
+  "id": "Tabs",
+  "order": 51,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "RAC"
+    ],
+    "api": [
+      "navigation:Tabs",
+      "navigation:Tab",
+      "navigation:TabList",
+      "navigation:TabPanel"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/Controls.stories.tsx",
+    "test": "tests/tabs/advanced.test.tsx",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "navigation:Tabs",
+    "expectation": "Controlled/default selection, activation mode, orientation and disabled tabs",
+    "oracle": "Exercise manual activation and RTL arrow keys; verify exactly one selected tab and associated visible panel.",
+    "evidence": {
+      "unit": "tests/tabs/advanced.test.tsx | tabs expose the active panel and allow owner-controlled selection"
+    },
+    "assertions": {
+      "tests/tabs/advanced.test.tsx | tabs expose the active panel and allow owner-controlled selection": "expect(screen.getByRole('tabpanel').textContent).toEqual('Second panel')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/tabs/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/tabs/advanced.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/preferences.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/Controls.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/tabs/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/tabs/advanced.test.tsx | tabs expose the active panel and allow owner-controlled selection",
+      "tests/tabs/advanced.test.tsx | only the selected tab is a tab stop and its panel is labelled by that tab",
+      "tests/tabs/advanced.test.tsx | automatic activation selects the focused tab and wraps from the last tab to the first",
+      "tests/tabs/advanced.test.tsx | manual activation moves focus without changing the panel until Enter or Space",
+      "tests/tabs/advanced.test.tsx | right-to-left reading order reverses horizontal arrow keys",
+      "tests/tabs/advanced.test.tsx | vertical tabs add the up and down arrows while horizontal tabs ignore them",
+      "tests/tabs/advanced.test.tsx | disabled destinations are skipped by the keyboard and cannot be chosen by pointer",
+      "tests/tabs/advanced.test.tsx | a disabled tab set exposes every tab as unavailable",
+      "tests/tabs/advanced.test.tsx | a controlled set renders the owner key and reports requests without changing itself"
+    ],
+    "browser": [
+      "browser/preferences.spec.ts | arabic preferences retain keyboard selection and reflow at 320 CSS pixels",
+      "browser/preferences.spec.ts | english preferences retain keyboard selection and reflow at 320 CSS pixels",
+      "browser/preferences.spec.ts | expanded preferences retain keyboard selection and reflow at 320 CSS pixels",
+      "browser/preferences.spec.ts | japanese preferences retain keyboard selection and reflow at 320 CSS pixels"
+    ]
+  },
+  "budgets": [
+    {
+      "name": "@ui-lazy-dev/ui-web/navigation#Tabs",
+      "bytes": 14091,
+      "order": 12
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@ui-lazy-dev/codemods",
+  "version": "0.3.0-rc.1",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "ui-lazy-migrate": "./cli.mjs"
+  },
+  "files": [
+    "cli.mjs",
+    "migrations.mjs",
+    "button-icon-slots.mjs",
+    "README.md"
+  ],
+  "dependencies": {
+    "typescript": "6.0.3"
+  },
+  "scripts": {
+    "test": "node --test *.test.mjs"
+  }
+}

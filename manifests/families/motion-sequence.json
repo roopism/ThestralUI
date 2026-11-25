@@ -1,0 +1,62 @@
+{
+  "id": "Motion sequence",
+  "order": 75,
+  "inventory": {
+    "layer": "infrastructure",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "motion:playMotionSequence"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/MotionSequences.stories.tsx",
+    "test": "tests/motion-sequence/motion-choreography.test.tsx",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "motion:playMotionSequence",
+    "expectation": "Explicit finish/cancel/reverse, reduced-motion reaction and cleanup of listeners",
+    "oracle": "Reverse a partially played sequence, cancel on unmount and verify exactly one terminal result.",
+    "evidence": {
+      "unit": "tests/motion-sequence/motion-choreography.test.tsx | new reduced-motion preference cancels all steps and releases listeners"
+    },
+    "assertions": {
+      "tests/motion-sequence/motion-choreography.test.tsx | new reduced-motion preference cancels all steps and releases listeners": "expect(await sequence.finished).toBe('cancelled')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/motion-sequence/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/motion-sequence/motion-choreography.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/motion.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/MotionSequences.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/motion-sequence/motion-choreography.test.tsx | a new choreography supersedes the previous run on the same element",
+      "tests/motion-sequence/motion-choreography.test.tsx | a reversal that returns every step to its start reports reversed exactly once",
+      "tests/motion-sequence/motion-choreography.test.tsx | center order staggers outward from the middle and inline slides mirror in right-to-left text",
+      "tests/motion-sequence/motion-choreography.test.tsx | completion and cancellation release the identical media and abort listener functions",
+      "tests/motion-sequence/motion-choreography.test.tsx | new reduced-motion preference cancels all steps and releases listeners",
+      "tests/motion-sequence/motion-choreography.test.tsx | reverse order and per-step delays add to the stagger position"
+    ],
+    "browser": [
+      "browser/motion.spec.ts | cross-parent motion keeps work movable while sequences reverse or are interrupted"
+    ]
+  }
+}

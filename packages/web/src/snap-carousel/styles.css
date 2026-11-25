@@ -1,0 +1,38 @@
+/* @uld-css-chunk motion.027 */
+
+.uld-carousel {
+  min-inline-size: 0;
+}
+/* @uld-css-chunk motion.028 */
+
+.uld-carousel-viewport {
+  display: flex;
+  inline-size: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+/* @uld-css-chunk motion.029 */
+
+.uld-carousel-slide {
+  flex: 0 0 100%;
+  min-inline-size: 0;
+  box-sizing: border-box;
+  scroll-snap-align: start;
+}
+/* @uld-css-chunk motion.030 */
+
+.uld-carousel-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--uld-space-sm);
+  margin-block-start: var(--uld-space-md);
+}
+/* @uld-css-chunk motion.031 */
+
+.uld-carousel-controls [aria-disabled='true'] {
+  color: var(--uld-disabled);
+  cursor: default;
+}

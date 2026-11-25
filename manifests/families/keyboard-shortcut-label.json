@@ -1,0 +1,190 @@
+{
+  "id": "Keyboard shortcut label",
+  "order": 54,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "RAC"
+    ],
+    "api": [
+      "navigation:Keyboard",
+      "document:Keyboard",
+      "keyboard-shortcut-label:KeyboardShortcutLabel",
+      "keyboard-shortcut-label:useKeyboardShortcutLabel",
+      "keyboard-shortcut-label:getKeyboardShortcutLabelProps"
+    ],
+    "web": "supported",
+    "native": "excluded",
+    "story": "catalog/keyboard-shortcut-label.stories.tsx",
+    "test": "tests/keyboard-shortcut-label/shortcut-label.spec.ts",
+    "ownership": "stateless display; the containing command owns activation and platform shortcuts"
+  },
+  "behaviorAnchor": "locator('kbd')",
+  "depth": {
+    "representative": "navigation:Keyboard",
+    "expectation": "Localized visible chord label and an accessible description",
+    "oracle": "Render platform-specific chords and ensure a screen reader receives a comprehensible expansion.",
+    "evidence": {
+      "browser": "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings",
+      "packed": "document:Keyboard"
+    },
+    "assertions": {
+      "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings": "expect(page.locator('kbd')).toHaveText('Tab')"
+    },
+    "consumerTypes": {
+      "keyboard-shortcut-label:KeyboardShortcutLabel": {
+        "accept": [
+          {
+            "keys": [
+              "Ctrl",
+              "S"
+            ],
+            "spokenLabel": "Control S"
+          }
+        ],
+        "reject": [
+          {
+            "keys": false
+          }
+        ]
+      },
+      "keyboard-shortcut-label:useKeyboardShortcutLabel": {
+        "accept": [
+          {
+            "keys": [
+              "Ctrl",
+              "S"
+            ],
+            "spokenLabel": "Control S"
+          }
+        ],
+        "reject": [
+          {
+            "keys": false
+          }
+        ]
+      },
+      "keyboard-shortcut-label:getKeyboardShortcutLabelProps": {
+        "accept": [
+          {
+            "keys": [
+              "Ctrl",
+              "S"
+            ],
+            "spokenLabel": "Control S"
+          }
+        ],
+        "reject": [
+          {
+            "keys": false
+          }
+        ]
+      }
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/keyboard-shortcut-label/aria-binding.tsx",
+      "packages/web/src/keyboard-shortcut-label/server-binding.tsx",
+      "packages/web/src/keyboard-shortcut-label/index.ts",
+      "packages/web/src/keyboard-shortcut-label/shortcut-label.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/navigation-labels.test.tsx",
+      "tests/keyboard-shortcut-label/shortcut-label.test.tsx",
+      "tests/keyboard-shortcut-label/server-consumer.tsx",
+      "tests/keyboard-shortcut-label/consumer-types.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-navigation.spec.ts",
+      "tests/keyboard-shortcut-label/shortcut-label.spec.ts",
+      "tests/keyboard-shortcut-label/web-fixtures.tsx"
+    ],
+    "visual": [
+      "tests/keyboard-shortcut-label/shortcut-label.visual.ts"
+    ],
+    "story": [
+      "catalog/EnterpriseNavigation.stories.tsx",
+      "catalog/keyboard-shortcut-label.stories.tsx",
+      "catalog/keyboard-shortcut-label/Examples.tsx",
+      "catalog/keyboard-shortcut-label/catalog.css"
+    ],
+    "scenario": [
+      "docs/components/keyboard-shortcut-label.scenarios.yaml"
+    ],
+    "style": [
+      "packages/web/src/keyboard-shortcut-label/styles.css"
+    ]
+  },
+  "cases": {
+    "browser": [
+      "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings",
+      "keyboard-shortcut-label/shortcut-label.spec.ts | a native chord reads one spoken phrase and leaves keyboard input to the command owner",
+      "keyboard-shortcut-label/shortcut-label.spec.ts | an inline chord in Arabic retains its left-to-right glyph order and localized reading text",
+      "keyboard-shortcut-label/shortcut-label.spec.ts | the contextual keyboard slot describes the real menu command and Enter performs its action",
+      "keyboard-shortcut-label/shortcut-label.spec.ts | CJK and RTL guide rows reflow at double layout zoom and key borders survive forced colors"
+    ],
+    "vitest": [
+      "tests/navigation-labels.test.tsx | an RTL toolbar names the controls and preserves the direction of shortcut notation",
+      "tests/keyboard-shortcut-label/shortcut-label.test.tsx | uses nested native keyboard input semantics in its initial HTML",
+      "tests/keyboard-shortcut-label/shortcut-label.test.tsx | exposes the same headless contract used by the styled label",
+      "tests/keyboard-shortcut-label/shortcut-label.test.tsx | lets callers own host attributes and refs without adding a tab stop",
+      "tests/keyboard-shortcut-label/shortcut-label.test.tsx | omits missing keys and preserves repeated keys and custom visual separators",
+      "tests/keyboard-shortcut-label/shortcut-label.test.tsx | keeps the previous document host and React Aria navigation default direction"
+    ],
+    "visual": [
+      "keyboard-shortcut-label/shortcut-label.visual.ts | editor shortcuts at phone light",
+      "keyboard-shortcut-label/shortcut-label.visual.ts | editor shortcuts at phone dark",
+      "keyboard-shortcut-label/shortcut-label.visual.ts | editor shortcuts at desktop light",
+      "keyboard-shortcut-label/shortcut-label.visual.ts | editor shortcuts at desktop dark"
+    ]
+  },
+  "entries": [
+    {
+      "pkg": "web",
+      "path": "./keyboard-shortcut-label",
+      "target": {
+        "types": "./dist/keyboard-shortcut-label/index.d.ts",
+        "default": "./dist/keyboard-shortcut-label/index.js"
+      },
+      "order": 43
+    },
+    {
+      "pkg": "web",
+      "path": "./keyboard-shortcut-label.css",
+      "target": "./dist/keyboard-shortcut-label.css",
+      "order": 44
+    }
+  ],
+  "budgets": [
+    {
+      "name": "@ui-lazy-dev/ui-web/keyboard-shortcut-label",
+      "bytes": 560,
+      "order": 400
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/keyboard-shortcut-label#KeyboardShortcutLabel",
+      "bytes": 543,
+      "order": 401
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/keyboard-shortcut-label#useKeyboardShortcutLabel",
+      "bytes": 349,
+      "order": 402
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/keyboard-shortcut-label#getKeyboardShortcutLabelProps",
+      "bytes": 350,
+      "order": 403
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/keyboard-shortcut-label.css",
+      "bytes": 759,
+      "order": 404
+    }
+  ]
+}

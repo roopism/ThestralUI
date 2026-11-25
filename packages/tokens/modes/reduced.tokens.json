@@ -1,0 +1,9 @@
+{
+  "motion": {
+    "pressDuration": {"$type": "duration", "$value": {"value": 0, "unit": "ms"}},
+    "enterDuration": {"$type": "duration", "$value": {"value": 0, "unit": "ms"}},
+    "exitDuration": {"$type": "duration", "$value": {"value": 0, "unit": "ms"}},
+    "busyDuration": {"$type": "duration", "$value": {"value": 0, "unit": "ms"}},
+    "pressScale": {"$type": "number", "$value": 1}
+  }
+}

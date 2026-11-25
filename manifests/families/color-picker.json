@@ -1,0 +1,61 @@
+{
+  "id": "Color picker",
+  "order": 40,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "color:ColorPicker",
+      "color:ColorArea",
+      "color:ColorThumb",
+      "color:ColorSlider",
+      "color:ColorWheel",
+      "color:ColorWheelTrack"
+    ],
+    "web": "exported",
+    "native": "planned",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "color:ColorPicker",
+    "expectation": "Named channels, wheel/area/slider composition and keyboard alternatives",
+    "oracle": "Adjust hue and saturation without a pointer and verify the color value survives switching controls.",
+    "evidence": {
+      "unit": "tests/depth-controls.test.tsx | color picker channels expose a numeric control and swatches switch a named selected color"
+    },
+    "assertions": {
+      "tests/depth-controls.test.tsx | color picker channels expose a numeric control and swatches switch a named selected color": "expect(Number(slider.value)).toBe(120)"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/color-picker/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/depth-controls.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [],
+    "scenario": [],
+    "style": []
+  },
+  "budgets": [
+    {
+      "name": "@ui-lazy-dev/ui-web/color#ColorPicker",
+      "bytes": 15779,
+      "order": 31
+    }
+  ],
+  "cases": {
+    "vitest": [
+      "tests/depth-controls.test.tsx | color picker channels expose a numeric control and swatches switch a named selected color"
+    ]
+  }
+}

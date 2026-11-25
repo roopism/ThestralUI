@@ -1,0 +1,86 @@
+{
+  "family": "Keyboard Shortcut Label",
+  "scenarios": [
+    {
+      "id": "keyboard-shortcut-label.read-chord",
+      "fixture": "chord",
+      "steps": [
+        {
+          "expect": "visible",
+          "target": {
+            "role": "text",
+            "name": "Control Shift P"
+          }
+        },
+        {
+          "act": "activate",
+          "target": {
+            "role": "button",
+            "name": "Open command palette"
+          }
+        },
+        {
+          "expect": "visible",
+          "target": {
+            "role": "text",
+            "name": "Command palette opened"
+          }
+        }
+      ]
+    },
+    {
+      "id": "keyboard-shortcut-label.read-inline-help",
+      "fixture": "inline-help",
+      "steps": [
+        {
+          "act": "activate",
+          "target": {
+            "role": "button",
+            "name": "Keyboard help"
+          }
+        },
+        {
+          "expect": "visible",
+          "target": {
+            "role": "text",
+            "name": "يمكنك أيضًا اختيار البحث من القائمة."
+          }
+        }
+      ]
+    },
+    {
+      "id": "keyboard-shortcut-label.run-menu-command",
+      "fixture": "menu-command",
+      "steps": [
+        {
+          "act": "activate",
+          "target": {
+            "role": "button",
+            "name": "File actions"
+          }
+        },
+        {
+          "expect": "visible",
+          "target": {
+            "role": "menu item",
+            "name": "Rename file"
+          }
+        },
+        {
+          "act": "activate",
+          "target": {
+            "role": "menu item",
+            "name": "Rename file"
+          }
+        },
+        {
+          "expect": "visible",
+          "target": {
+            "role": "text",
+            "name": "File renamed"
+          }
+        }
+      ]
+    }
+  ]
+}

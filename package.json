@@ -1,0 +1,54 @@
+{
+  "name": "ui-lazy-dev",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": "^22.13.0 || ^24.3.0 || >=26.0.0"
+  },
+  "scripts": {
+    "build:packages": "node scripts/workers/reserve-command.mjs packages",
+    "build": "node scripts/workers/reserve-command.mjs build",
+    "catalog": "node scripts/workers/reserve-command.mjs catalog",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:browser": "node scripts/workers/reserve-command.mjs browser",
+    "pack:release": "npm run build:packages && node scripts/pack.mjs",
+    "test:native": "jest --config jest.native.config.cjs --runInBand",
+    "check:api": "node --test tests/contracts/api.test.mjs && node scripts/check-api.mjs",
+    "gate:commit": "sh .githooks/pre-commit",
+    "test:ios": "node scripts/verify-ios-simulator.mjs",
+    "gate:full": "sh .githooks/pre-commit full",
+    "qualify": "node scripts/qualify.mjs",
+    "land": "node scripts/land.mjs",
+    "test:android": "node scripts/verify-android-emulator.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@react-native/babel-preset": "0.88.1",
+    "@react-native/jest-preset": "0.88.1",
+    "@storybook/react-vite": "10.6.8",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/react-native": "14.1.0",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "axe-core": "^4.14.1",
+    "esbuild": "0.28.2",
+    "jest": "30.5.2",
+    "js-yaml": "3.15.2",
+    "jsdom": "^29.1.1",
+    "postcss": "8.5.33",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-native": "0.88.1",
+    "saxes": "6.0.0",
+    "storybook": "10.6.8",
+    "test-renderer": "1.3.1",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}

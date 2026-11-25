@@ -1,0 +1,56 @@
+{
+  "id": "Breadcrumb",
+  "order": 46,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "RAC"
+    ],
+    "api": [
+      "navigation:Breadcrumbs",
+      "navigation:Breadcrumb",
+      "navigation:Link"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseNavigation.stories.tsx",
+    "test": "tests/browser/enterprise-navigation.spec.ts",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "behaviorAnchor": "name: 'Location'",
+  "depth": {
+    "representative": "navigation:Breadcrumbs",
+    "expectation": "Separators, current item, overflow representation and standard links",
+    "oracle": "Use a long RTL path on narrow width; current page is announced and ancestors remain navigable.",
+    "evidence": {
+      "browser": "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings"
+    },
+    "assertions": {
+      "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings": "expect(page.getByRole('link', { name: 'Workspace' })).toHaveAttribute('href', '#home')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/breadcrumb/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-navigation.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseNavigation.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "browser": [
+      "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings"
+    ]
+  }
+}

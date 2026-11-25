@@ -1,0 +1,386 @@
+{
+  "id": "Modal dialog",
+  "order": 19,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "Material",
+      "Apple"
+    ],
+    "api": [
+      "dialog:Dialog",
+      "navigation:DialogTrigger",
+      "navigation:Modal",
+      "navigation:ModalOverlay",
+      "navigation:OverlayDialog",
+      "modal-dialog:Dialog",
+      "modal-dialog:useDialog",
+      "modal-dialog:DialogHeading",
+      "modal-dialog:DialogBody",
+      "modal-dialog:DialogActions"
+    ],
+    "web": "supported",
+    "native": "experimental",
+    "story": "catalog/EnterpriseNavigation.stories.tsx",
+    "test": "tests/browser/enterprise-navigation.spec.ts",
+    "nativeApi": [
+      "native:Dialog",
+      "native:useDialog",
+      "native/modal-dialog:Dialog",
+      "native/modal-dialog:useDialog"
+    ],
+    "nativeStory": "catalog/native/Gallery.tsx",
+    "nativeTest": "tests/modal-dialog/native.test.cjs",
+    "ownership": "owner supplied state"
+  },
+  "behaviorAnchor": "getByRole('dialog'",
+  "depth": {
+    "representative": "dialog:Dialog",
+    "expectation": "Named mount/open semantics, focus return, dismiss policy and themed header/body/footer composition",
+    "oracle": "Open nested dialogs through pointer and keyboard; close the top layer, restore the invoking element and preserve scroll.",
+    "evidence": {
+      "browser": "browser/catalog.spec.ts | field names, validation and modal focus work in the shipped catalog",
+      "native": "tests/modal-dialog/native.test.cjs | a native dialog exposes its localized title and delegates Back dismissal to its owner",
+      "unit": "tests/modal-dialog/modal-dialog.test.tsx | the public hook supplies native dismissal, accessible naming and a ref without presentation"
+    },
+    "assertions": {
+      "browser/catalog.spec.ts | field names, validation and modal focus work in the shipped catalog": "expect(opener).toBeFocused()",
+      "tests/modal-dialog/native.test.cjs | a native dialog exposes its localized title and delegates Back dismissal to its owner": "expect(dismiss).toHaveBeenCalledTimes(1)",
+      "tests/modal-dialog/modal-dialog.test.tsx | the public hook supplies native dismissal, accessible naming and a ref without presentation": "expect(dialog.getAttribute('aria-labelledby')).toBe('custom-name')"
+    },
+    "consumerTypes": {
+      "modal-dialog:Dialog": {
+        "accept": [
+          {
+            "labelledBy": "review",
+            "size": "lg",
+            "unstyled": true,
+            "dismissOnBackdrop": true
+          },
+          {
+            "open": false,
+            "role": "alertdialog"
+          }
+        ],
+        "reject": [
+          {
+            "size": "large"
+          },
+          {
+            "labelledBy": 3
+          }
+        ]
+      },
+      "modal-dialog:useDialog": {
+        "accept": [
+          {
+            "labelledBy": "review",
+            "role": "dialog",
+            "open": true
+          }
+        ],
+        "reject": [
+          {
+            "role": "button"
+          },
+          {
+            "open": "yes"
+          }
+        ]
+      },
+      "modal-dialog:DialogHeading": {
+        "accept": [
+          {
+            "children": "Review the draft",
+            "id": "review",
+            "className": "report"
+          }
+        ],
+        "reject": [
+          {
+            "className": 3
+          },
+          {
+            "id": false
+          }
+        ]
+      },
+      "modal-dialog:DialogBody": {
+        "accept": [
+          {
+            "children": "Review the draft",
+            "id": "review",
+            "className": "report"
+          }
+        ],
+        "reject": [
+          {
+            "className": 3
+          },
+          {
+            "id": false
+          }
+        ]
+      },
+      "modal-dialog:DialogActions": {
+        "accept": [
+          {
+            "children": "Review the draft",
+            "id": "review",
+            "className": "report"
+          }
+        ],
+        "reject": [
+          {
+            "className": 3
+          },
+          {
+            "id": false
+          }
+        ]
+      },
+      "native:useDialog": {
+        "accept": [
+          {
+            "open": true
+          }
+        ],
+        "reject": [
+          {
+            "open": "yes"
+          },
+          {
+            "onDismiss": false
+          }
+        ]
+      },
+      "native/modal-dialog:useDialog": {
+        "accept": [
+          {
+            "open": true
+          }
+        ],
+        "reject": [
+          {
+            "open": "yes"
+          },
+          {
+            "onDismiss": false
+          }
+        ]
+      },
+      "native/modal-dialog:Dialog": {
+        "accept": [
+          {
+            "title": "Review",
+            "size": "sm",
+            "unstyled": true
+          },
+          {
+            "open": false,
+            "actions": "Cancel"
+          }
+        ],
+        "reject": [
+          {
+            "size": "wide"
+          },
+          {
+            "title": 3
+          }
+        ]
+      }
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/modal-dialog/aria-binding.tsx",
+      "packages/web/src/modal-dialog/binding.tsx",
+      "packages/web/src/modal-dialog/index.tsx",
+      "packages/web/src/modal-dialog/focus.ts"
+    ],
+    "nativeSource": [
+      "packages/native/src/modal-dialog/binding.tsx"
+    ],
+    "unit": [
+      "tests/runtime-cleanup.test.tsx",
+      "tests/modal-dialog/modal-dialog.test.tsx"
+    ],
+    "nativeUnit": [
+      "tests/modal-dialog/native.test.cjs",
+      "tests/native/catalog-presentation.test.cjs"
+    ],
+    "browser": [
+      "tests/browser/enterprise-navigation.spec.ts",
+      "tests/browser/catalog.spec.ts",
+      "tests/modal-dialog/modal-dialog.spec.ts",
+      "tests/modal-dialog/legacy-return.spec.ts"
+    ],
+    "visual": [
+      "tests/modal-dialog/modal-dialog.visual.ts"
+    ],
+    "story": [
+      "catalog/EnterpriseNavigation.stories.tsx",
+      "catalog/native/Gallery.tsx",
+      "catalog/modal-dialog.stories.tsx",
+      "catalog/modal-dialog/Review.tsx",
+      "catalog/modal-dialog/Preferences.tsx",
+      "catalog/native/scenarios/ModalDialog.tsx",
+      "catalog/native/scenarios/fixtures.cjs",
+      "tests/modal-dialog/legacy-fixtures.tsx",
+      "tests/modal-dialog/web-fixtures.tsx",
+      "catalog/native/scenarios/presentation.tsx"
+    ],
+    "scenario": [
+      "docs/components/modal-dialog.scenarios.yaml"
+    ],
+    "style": [
+      "packages/web/src/modal-dialog/styles.css"
+    ]
+  },
+  "cases": {
+    "browser": [
+      "browser/catalog.spec.ts | field names, validation and modal focus work in the shipped catalog",
+      "modal-dialog/modal-dialog.spec.ts | backdrop and Escape request dismissal only when the owner accepts it",
+      "modal-dialog/modal-dialog.spec.ts | a retained dialog returns focus to the current launcher on every opening",
+      "modal-dialog/modal-dialog.spec.ts | only the top dialog dismisses and the workspace keeps its input and focus",
+      "modal-dialog/modal-dialog.spec.ts | sizes, unstyled parts and consumer CSS apply to the active dialog",
+      "modal-dialog/modal-dialog.spec.ts | long RTL content scrolls inside the modal and stays reachable at twice normal layout zoom",
+      "modal-dialog/modal-dialog.spec.ts | open dialogs pass accessibility checks in both themes on phone and desktop",
+      "modal-dialog/modal-dialog.spec.ts | the open modal inherits theme, density, brand and motion changes without losing its input",
+      "modal-dialog/modal-dialog.spec.ts | Tab wraps past unavailable controls around the editable note and final action",
+      "modal-dialog/legacy-return.spec.ts | a previously dismissed Select cannot take focus from the more recent dialog trigger",
+      "modal-dialog/legacy-return.spec.ts | two siblings dismissed before the next frame return focus to the last launcher",
+      "modal-dialog/legacy-return.spec.ts | a child and parent dismissed before the next frame return focus outside both",
+      "modal-dialog/legacy-return.spec.ts | one owner action may dismiss two controlled siblings inside the same task",
+      "modal-dialog/modal-dialog.spec.ts | a vetoed controlled dialog stays open after two consecutive Escape presses"
+    ],
+    "vitest": [
+      "tests/runtime-cleanup.test.tsx | unmount cancels a pending tooltip and restores document scroll after a modal",
+      "tests/modal-dialog/modal-dialog.test.tsx | the public hook supplies native dismissal, accessible naming and a ref without presentation",
+      "tests/modal-dialog/modal-dialog.test.tsx | server output preserves the named dialog and its parts without opening it before hydration",
+      "tests/modal-dialog/modal-dialog.test.tsx | optional actions disappear for empty slots, arrays and nested fragments"
+    ],
+    "native": [
+      "tests/modal-dialog/native.test.cjs | a native dialog exposes its localized title and delegates Back dismissal to its owner",
+      "tests/native/scenarios.test.cjs | modal-dialog.open-and-close",
+      "tests/native/scenarios.test.cjs | modal-dialog.nested-return",
+      "tests/modal-dialog/native.test.cjs | returns accessibility focus only to the mounted opener of a presented dialog",
+      "tests/modal-dialog/native.test.cjs | a custom native modal uses the headless window, heading and escape behavior",
+      "tests/modal-dialog/native.test.cjs | native parts retain accessible behavior, omit empty slots and accept consumer styles",
+      "tests/modal-dialog/native.test.cjs | the theme supplies native modal colors, spacing and corners without changing its behavior",
+      "tests/modal-dialog/native.test.cjs | Android restores nested windows in order and dismisses the keyboard before the dialog",
+      "tests/modal-dialog/native.test.cjs | a newer presentation cancels a pending accessibility focus return from the previous close",
+      "tests/native/catalog-presentation.test.cjs | gallery surfaces and readbacks pair semantic colors, preserve native text props and lay out horizontal boundaries"
+    ],
+    "visual": [
+      "modal-dialog/modal-dialog.visual.ts | modal dialog light phone",
+      "modal-dialog/modal-dialog.visual.ts | modal dialog light desktop",
+      "modal-dialog/modal-dialog.visual.ts | modal dialog dark phone",
+      "modal-dialog/modal-dialog.visual.ts | modal dialog dark desktop"
+    ]
+  },
+  "entries": [
+    {
+      "pkg": "web",
+      "path": "./dialog",
+      "target": {
+        "types": "./dist/dialog.d.ts",
+        "default": "./dist/dialog.js"
+      },
+      "order": 1
+    },
+    {
+      "pkg": "web",
+      "path": "./modal-dialog",
+      "target": {
+        "types": "./dist/modal-dialog/index.d.ts",
+        "default": "./dist/modal-dialog/index.js"
+      },
+      "order": 30
+    },
+    {
+      "pkg": "native",
+      "path": "./modal-dialog",
+      "target": {
+        "types": "./dist/modal-dialog/binding.d.ts",
+        "default": "./dist/modal-dialog/binding.js"
+      },
+      "order": 2
+    }
+  ],
+  "budgets": [
+    {
+      "name": "@ui-lazy-dev/ui-web/dialog#Dialog",
+      "bytes": 990,
+      "order": 7
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/modal-dialog",
+      "bytes": 1193,
+      "order": 300
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/modal-dialog#Dialog",
+      "bytes": 1018,
+      "order": 301
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/modal-dialog#useDialog",
+      "bytes": 903,
+      "order": 302
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/modal-dialog#DialogHeading",
+      "bytes": 201,
+      "order": 303
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/modal-dialog#DialogBody",
+      "bytes": 199,
+      "order": 304
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/modal-dialog#DialogActions",
+      "bytes": 264,
+      "order": 305
+    }
+  ],
+  "rootExports": [
+    {
+      "pkg": "native",
+      "from": "./modal-dialog/binding.js",
+      "names": [
+        "Dialog"
+      ],
+      "order": 5
+    },
+    {
+      "pkg": "native",
+      "from": "./modal-dialog/binding.js",
+      "names": [
+        "type DialogProps"
+      ],
+      "order": 6
+    },
+    {
+      "pkg": "native",
+      "from": "./modal-dialog/binding.js",
+      "names": [
+        "useDialog"
+      ],
+      "order": 9
+    },
+    {
+      "pkg": "native",
+      "from": "./modal-dialog/binding.js",
+      "names": [
+        "type UseDialogOptions",
+        "type DialogBehavior"
+      ],
+      "order": 10
+    }
+  ]
+}

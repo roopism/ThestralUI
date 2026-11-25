@@ -1,0 +1,147 @@
+{
+  "id": "Mode provider",
+  "order": 100,
+  "inventory": {
+    "layer": "infrastructure",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "modes:ModeProvider"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/mode-provider.stories.tsx",
+    "test": "tests/runtime-streams.test.tsx",
+    "ownership": "caller-owned scoped configuration"
+  },
+  "depth": {
+    "representative": "modes:ModeProvider",
+    "expectation": "Independent nested brand, scheme, density, motion and contextual overrides",
+    "oracle": "Switch a parent scope while editing a nested field and check sibling colors, focus, scroll and input state.",
+    "evidence": {
+      "unit": "tests/runtime-streams.test.tsx | overlapping streamed requests hydrate independently in reverse order and preserve distinct IDs, refs and edits",
+      "packed": "modes:ModeProvider"
+    },
+    "assertions": {
+      "tests/runtime-streams.test.tsx | overlapping streamed requests hydrate independently in reverse order and preserve distinct IDs, refs and edits": "expect(first).toContain('data-uld-brand=\"expressive\"')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/mode-provider/binding.tsx",
+      "packages/web/src/modes.ts"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/runtime-streams.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/mode-scopes.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/mode-provider.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/runtime-streams.test.tsx | overlapping streamed requests hydrate independently in reverse order and preserve distinct IDs, refs and edits"
+    ],
+    "node": [
+      "tests/contracts/token-modes.test.mjs | every mode retains the semantic schema, readable foregrounds and a coarse target",
+      "tests/contracts/token-modes.test.mjs | brand and context overrides stay local and resolve aliases after the final axis",
+      "tests/contracts/token-modes.test.mjs | compiled consumer brands and contexts agree with every ordered resolver combination",
+      "tests/contracts/token-modes.test.mjs | adding a registered brand ships its own styles without increasing default CSS"
+    ],
+    "browser": [
+      "browser/mode-scopes.spec.ts | coarse pointer | compact density preserves the minimum target for existing control sizes",
+      "browser/mode-scopes.spec.ts | nested axis and context changes preserve sibling styles, focus, input and scroll",
+      "browser/mode-scopes.spec.ts | registered brand aliases resolve in alternate schemes and nested contexts",
+      "browser/mode-scopes.spec.ts | the catalog reading flow exposes brand and contextual modes at 1100px",
+      "browser/mode-scopes.spec.ts | the catalog reading flow exposes brand and contextual modes at 390px"
+    ]
+  },
+  "entries": [
+    {
+      "pkg": "web",
+      "path": "./modes",
+      "target": {
+        "types": "./dist/modes.d.ts",
+        "default": "./dist/modes.js"
+      },
+      "order": 17
+    }
+  ],
+  "budgets": [
+    {
+      "order": 104,
+      "name": "@ui-lazy-dev/tokens/modes",
+      "bytes": 2452
+    },
+    {
+      "order": 105,
+      "name": "@ui-lazy-dev/tokens/modes#createTheme",
+      "bytes": 2284
+    },
+    {
+      "order": 106,
+      "name": "@ui-lazy-dev/tokens/modes.css",
+      "bytes": 453
+    },
+    {
+      "order": 107,
+      "name": "@ui-lazy-dev/tokens/theme-css",
+      "bytes": 3669
+    },
+    {
+      "order": 108,
+      "name": "@ui-lazy-dev/tokens/theme-css#createBrandCSS",
+      "bytes": 3522
+    },
+    {
+      "order": 109,
+      "name": "@ui-lazy-dev/tokens/brands/enterprise",
+      "bytes": 999
+    },
+    {
+      "order": 110,
+      "name": "@ui-lazy-dev/tokens/brands/enterprise#enterprise",
+      "bytes": 999
+    },
+    {
+      "order": 111,
+      "name": "@ui-lazy-dev/tokens/brands/enterprise.css",
+      "bytes": 1193
+    },
+    {
+      "order": 112,
+      "name": "@ui-lazy-dev/tokens/brands/expressive",
+      "bytes": 1018
+    },
+    {
+      "order": 113,
+      "name": "@ui-lazy-dev/tokens/brands/expressive#expressive",
+      "bytes": 1018
+    },
+    {
+      "order": 114,
+      "name": "@ui-lazy-dev/tokens/brands/expressive.css",
+      "bytes": 1204
+    },
+    {
+      "order": 124,
+      "name": "@ui-lazy-dev/ui-web/modes",
+      "bytes": 207
+    },
+    {
+      "order": 125,
+      "name": "@ui-lazy-dev/ui-web/modes#ModeProvider",
+      "bytes": 208
+    }
+  ]
+}

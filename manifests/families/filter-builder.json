@@ -1,0 +1,16 @@
+{
+  "id": "Filter builder",
+  "order": 90,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [],
+    "web": "planned",
+    "native": "planned",
+    "note": "DataTable currently provides text search rather than a nested predicate builder.",
+    "ownership": "stateless or host-managed"
+  }
+}

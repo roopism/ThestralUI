@@ -1,0 +1,1549 @@
+{
+  "revision": "2026-11-20.3",
+  "families": [
+    {
+      "id": "Box",
+      "representative": "primitives:Box",
+      "exports": ["primitives:Box"],
+      "expectation": "Token-backed logical padding on each axis",
+      "oracle": "Nest in RTL and verify logical start changes side while child focus and ref stay intact.",
+      "evidence": {
+        "packed": "primitives:Box"
+      }
+    },
+    {
+      "id": "Stack",
+      "representative": "primitives:Stack",
+      "exports": ["primitives:Stack"],
+      "expectation": "Token gap, cross-axis alignment, main-axis distribution and container-relative gap",
+      "oracle": "Keep a narrow panel on a wide viewport at its compact spacing; resize the panel and retain focused children.",
+      "evidence": {
+        "packed-priority": "primitives:Stack"
+      }
+    },
+    {
+      "id": "Inline",
+      "representative": "primitives:Inline",
+      "exports": ["primitives:Inline"],
+      "expectation": "Token gap, alignment, justification and wrapping",
+      "oracle": "Constrain width with mixed-length RTL labels and verify wrapping and source-order keyboard navigation.",
+      "evidence": {
+        "packed-priority": "primitives:Inline"
+      }
+    },
+    {
+      "id": "Surface",
+      "representative": "primitives:Surface",
+      "exports": ["primitives:Surface"],
+      "expectation": "Semantic elevation, shape and padding presets",
+      "oracle": "Check three surface levels in light, dark and forced colors; nested surfaces retain readable boundaries.",
+      "evidence": {
+        "packed": "primitives:Surface"
+      }
+    },
+    {
+      "id": "Scroll area",
+      "representative": "primitives:ScrollArea",
+      "exports": ["primitives:ScrollArea"],
+      "expectation": "Axis and accessible region name, ref and keyboard scrolling",
+      "oracle": "Scroll a horizontal RTL strip and vertical panel by keyboard, then focus an offscreen control.",
+      "evidence": {
+        "packed": "primitives:ScrollArea"
+      }
+    },
+    {
+      "id": "Text",
+      "representative": "primitives:Text",
+      "exports": ["primitives:Text"],
+      "expectation": "Semantic text styles, element choice and optional line clamp",
+      "oracle": "Verify heading semantics and display full text in the accessible name after two-line truncation.",
+      "evidence": {
+        "packed": "primitives:Text"
+      }
+    },
+    {
+      "id": "Adaptive grid",
+      "representative": ".:AdaptiveGrid",
+      "exports": [".:AdaptiveGrid", "primitives:Grid"],
+      "expectation": "Token column minimum and gap overrides with current fluid defaults",
+      "oracle": "Place the same grid in two unequal containers on one desktop viewport and verify independent columns.",
+      "evidence": {
+        "browser": "browser/adaptive.spec.ts | a shortlist adapts to the available space and supports touch, keyboard and reduced motion"
+      },
+      "assertions": {
+        "browser/adaptive.spec.ts | a shortlist adapts to the available space and supports touch, keyboard and reduced motion": "expect((await box(1))!.y).toBeGreaterThan(first.y)"
+      }
+    },
+    {
+      "id": "Separator",
+      "representative": "primitives:Divider",
+      "exports": ["primitives:Divider", "navigation:Separator", "document:Separator"],
+      "expectation": "Horizontal and vertical orientation; decorative and named use",
+      "oracle": "Inspect semantic orientation in both layouts and distinguish a decorative divider from a resizable handle.",
+      "evidence": {
+        "browser": "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings",
+        "packed": "document:Separator"
+      },
+      "assertions": {
+        "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings": "expect(page.getByRole('separator')).toBeVisible()"
+      }
+    },
+    {
+      "id": "Icon",
+      "representative": "primitives:Icon",
+      "exports": ["primitives:Icon"],
+      "expectation": "Token size, current color and distinct decorative or labeled rendering",
+      "oracle": "Render an icon inside a named action and a standalone status symbol; only the latter supplies its own name.",
+      "evidence": {
+        "packed": "primitives:Icon"
+      }
+    },
+    {
+      "id": "Badge",
+      "representative": "primitives:Badge",
+      "exports": ["primitives:Badge"],
+      "expectation": "Tone, size and optional leading decoration",
+      "oracle": "Test long labels and forced colors; important status remains available through text.",
+      "evidence": {
+        "unit": "tests/primitives.test.tsx | layout and decoration preserve accessible names and host attributes"
+      },
+      "assertions": {
+        "tests/primitives.test.tsx | layout and decoration preserve accessible names and host attributes": "expect(screen.getByText('Active').closest('#summary')).toBeTruthy()"
+      }
+    },
+    {
+      "id": "Avatar",
+      "representative": "avatar:Avatar",
+      "exports": ["avatar:Avatar"],
+      "expectation": "Token sizes, caller fallback, safe media and accessible naming",
+      "oracle": "Swap from a broken image to a valid image and check the label and dimensions throughout.",
+      "evidence": {
+        "unit": "tests/avatar/runtime-isolation.test.tsx | an invalid or unavailable avatar falls back by name and retries only a changed source",
+        "packed": "avatar:Avatar"
+      },
+      "assertions": {
+        "tests/avatar/runtime-isolation.test.tsx | an invalid or unavailable avatar falls back by name and retries only a changed source": "expect(screen.getByRole('img').getAttribute('src')).toBe('https://example.test/b.jpg')"
+      }
+    },
+    {
+      "id": "Skeleton",
+      "representative": "primitives:Skeleton",
+      "exports": ["primitives:Skeleton"],
+      "expectation": "Text and block shapes, token size and optional motion",
+      "oracle": "Ensure placeholders are hidden from screen readers and reduced motion stops animation.",
+      "evidence": {
+        "packed": "primitives:Skeleton"
+      }
+    },
+    {
+      "id": "Spinner",
+      "representative": "primitives:Spinner",
+      "exports": ["primitives:Spinner"],
+      "expectation": "Density, accessible label and decorative mode inside an already named status",
+      "oracle": "Prevent double announcements inside busy actions and retain a visible static reduced-motion indication.",
+      "evidence": {
+        "packed": "primitives:Spinner"
+      }
+    },
+    {
+      "id": "Progress",
+      "representative": "primitives:Progress",
+      "exports": ["primitives:Progress"],
+      "expectation": "Determinate and indeterminate forms plus caller formatting for unit text",
+      "oracle": "Check 0, completion, indeterminate removal of value and localized accessible value.",
+      "evidence": {
+        "packed": "primitives:Progress"
+      }
+    },
+    {
+      "id": "Live status and inline alert",
+      "representative": "primitives:Status",
+      "exports": ["primitives:Status"],
+      "expectation": "Semantic severity and urgency under caller control",
+      "oracle": "Verify success versus error announcement and identical text in separate live regions without forced focus.",
+      "evidence": {
+        "packed": "primitives:Status"
+      }
+    },
+    {
+      "id": "Button",
+      "representative": ".:Button",
+      "exports": [
+        ".:Button",
+        ".:useButton",
+        "navigation:Trigger",
+        "native:Button",
+        "native:useButton",
+        "native/button:Button",
+        "native/button:useButton"
+      ],
+      "expectation": "Small, medium and large token sizes; logical start/end icon slots; accessible icon-only action via IconButton",
+      "oracle": "Check each size with pending, disabled, keyboard activation and submit. Decorative icons leave the accessible name unchanged; RTL reverses visual placement.",
+      "evidence": {
+        "packed-priority": ".:Button",
+        "native": [
+          "tests/button/native.test.cjs | busy buttons retain their name and suppress duplicate activation",
+          "tests/button/native.test.cjs | all native button sizes retain a coarse target and the default matches the previous medium size",
+          "tests/button/native.test.cjs | native actions retain decorative slots and one accessible label while busy"
+        ]
+      },
+      "assertions": {
+        "tests/button/native.test.cjs | busy buttons retain their name and suppress duplicate activation": "expect(onPress).not.toHaveBeenCalled()",
+        "tests/button/native.test.cjs | all native button sizes retain a coarse target and the default matches the previous medium size": "expect(styles.sm.paddingHorizontal).toBeLessThan(styles.md.paddingHorizontal)",
+        "tests/button/native.test.cjs | native actions retain decorative slots and one accessible label while busy": "expect(rendered.getByTestId(id, { includeHiddenElements: true })).toBeTruthy()"
+      },
+      "consumerTypes": {
+        ".:useButton": {
+          "accept": [
+            {
+              "busy": true,
+              "type": "submit"
+            },
+            {
+              "disabled": true
+            }
+          ],
+          "reject": [
+            {
+              "busy": "yes"
+            },
+            {
+              "type": "link"
+            }
+          ]
+        },
+        "native:useButton": {
+          "accept": [
+            {
+              "label": "Save",
+              "busy": true
+            },
+            {
+              "disabled": true,
+              "accessibilityHint": "Saves the draft"
+            }
+          ],
+          "reject": [
+            {
+              "busy": "yes"
+            },
+            {
+              "label": 3
+            },
+            {
+              "onPress": 3
+            }
+          ]
+        },
+        "native/button:Button": {
+          "accept": [
+            {
+              "label": "Save",
+              "tone": "danger",
+              "pressableStyle": {
+                "borderRadius": 9
+              }
+            },
+            {
+              "labelStyle": {
+                "fontSize": 19
+              }
+            }
+          ],
+          "reject": [
+            {
+              "tone": "broken"
+            },
+            {
+              "pressableStyle": {
+                "borderRadius": false
+              }
+            }
+          ]
+        },
+        "native/button:useButton": {
+          "accept": [
+            {
+              "label": "Save",
+              "busy": true
+            },
+            {
+              "disabled": true,
+              "accessibilityHint": "Saves the draft"
+            }
+          ],
+          "reject": [
+            {
+              "busy": "yes"
+            },
+            {
+              "label": 3
+            },
+            {
+              "onPress": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Icon button",
+      "representative": "primitives:IconButton",
+      "exports": ["primitives:IconButton", "native:IconButton"],
+      "expectation": "Shared button sizes, square visual geometry and required accessible label",
+      "oracle": "Check decorative child is hidden, control remains named, busy suppresses activation and compact treatment preserves the target.",
+      "evidence": {
+        "packed-priority": "primitives:IconButton",
+        "native": "tests/icon-button/native.test.cjs | native icon-only actions have square targets and keep the caller label"
+      },
+      "assertions": {
+        "tests/icon-button/native.test.cjs | native icon-only actions have square targets and keep the caller label": "expect(style.width).toBe(style.height)"
+      }
+    },
+    {
+      "id": "Button group",
+      "representative": "primitives:ButtonGroup",
+      "exports": ["primitives:ButtonGroup"],
+      "expectation": "Named grouping, orientation, token gap and optional joined treatment",
+      "oracle": "Check vertical and horizontal sets after wrapping; independent buttons retain native tab order.",
+      "evidence": {
+        "packed": "primitives:ButtonGroup"
+      }
+    },
+    {
+      "id": "Labeled field",
+      "representative": ".:FormField",
+      "exports": [".:FormField", "native:FormField"],
+      "expectation": "Caller-owned input ref, description/error IDs, required hint and field adornments",
+      "oracle": "Verify a pre-labeled input retains all description IDs, native reset and focus on label activation.",
+      "evidence": {
+        "unit": "tests/labeled-field/controls.test.tsx | fields keep independent labels and compose help with existing descriptions and errors",
+        "native": "tests/labeled-field/native.test.cjs | a controlled field preserves its name, help, validation and caller input props",
+        "packed": ".:FormField"
+      },
+      "assertions": {
+        "tests/labeled-field/controls.test.tsx | fields keep independent labels and compose help with existing descriptions and errors": "expect(descriptions).toEqual(['Digits only', 'Four digits', 'Enter four digits'])",
+        "tests/labeled-field/native.test.cjs | a controlled field preserves its name, help, validation and caller input props": "expect(change).toHaveBeenCalledWith('山田')"
+      }
+    },
+    {
+      "id": "Modal dialog",
+      "representative": "dialog:Dialog",
+      "exports": [
+        "dialog:Dialog",
+        "navigation:DialogTrigger",
+        "navigation:Modal",
+        "navigation:ModalOverlay",
+        "navigation:OverlayDialog",
+        "modal-dialog:Dialog",
+        "modal-dialog:useDialog",
+        "modal-dialog:DialogHeading",
+        "modal-dialog:DialogBody",
+        "modal-dialog:DialogActions",
+        "native:Dialog",
+        "native:useDialog",
+        "native/modal-dialog:Dialog",
+        "native/modal-dialog:useDialog"
+      ],
+      "expectation": "Named mount/open semantics, focus return, dismiss policy and themed header/body/footer composition",
+      "oracle": "Open nested dialogs through pointer and keyboard; close the top layer, restore the invoking element and preserve scroll.",
+      "evidence": {
+        "browser": "browser/catalog.spec.ts | field names, validation and modal focus work in the shipped catalog",
+        "native": "tests/modal-dialog/native.test.cjs | a native dialog exposes its localized title and delegates Back dismissal to its owner",
+        "unit": "tests/modal-dialog/modal-dialog.test.tsx | the public hook supplies native dismissal, accessible naming and a ref without presentation"
+      },
+      "assertions": {
+        "browser/catalog.spec.ts | field names, validation and modal focus work in the shipped catalog": "expect(opener).toBeFocused()",
+        "tests/modal-dialog/native.test.cjs | a native dialog exposes its localized title and delegates Back dismissal to its owner": "expect(dismiss).toHaveBeenCalledTimes(1)",
+        "tests/modal-dialog/modal-dialog.test.tsx | the public hook supplies native dismissal, accessible naming and a ref without presentation": "expect(dialog.getAttribute('aria-labelledby')).toBe('custom-name')"
+      },
+      "consumerTypes": {
+        "modal-dialog:Dialog": {
+          "accept": [
+            {
+              "labelledBy": "review",
+              "size": "lg",
+              "unstyled": true,
+              "dismissOnBackdrop": true
+            },
+            {
+              "open": false,
+              "role": "alertdialog"
+            }
+          ],
+          "reject": [
+            {
+              "size": "large"
+            },
+            {
+              "labelledBy": 3
+            }
+          ]
+        },
+        "modal-dialog:useDialog": {
+          "accept": [
+            {
+              "labelledBy": "review",
+              "role": "dialog",
+              "open": true
+            }
+          ],
+          "reject": [
+            {
+              "role": "button"
+            },
+            {
+              "open": "yes"
+            }
+          ]
+        },
+        "modal-dialog:DialogHeading": {
+          "accept": [
+            {
+              "children": "Review the draft",
+              "id": "review",
+              "className": "report"
+            }
+          ],
+          "reject": [
+            {
+              "className": 3
+            },
+            {
+              "id": false
+            }
+          ]
+        },
+        "modal-dialog:DialogBody": {
+          "accept": [
+            {
+              "children": "Review the draft",
+              "id": "review",
+              "className": "report"
+            }
+          ],
+          "reject": [
+            {
+              "className": 3
+            },
+            {
+              "id": false
+            }
+          ]
+        },
+        "modal-dialog:DialogActions": {
+          "accept": [
+            {
+              "children": "Review the draft",
+              "id": "review",
+              "className": "report"
+            }
+          ],
+          "reject": [
+            {
+              "className": 3
+            },
+            {
+              "id": false
+            }
+          ]
+        },
+        "native:useDialog": {
+          "accept": [
+            {
+              "open": true
+            }
+          ],
+          "reject": [
+            {
+              "open": "yes"
+            },
+            {
+              "onDismiss": false
+            }
+          ]
+        },
+        "native/modal-dialog:useDialog": {
+          "accept": [
+            {
+              "open": true
+            }
+          ],
+          "reject": [
+            {
+              "open": "yes"
+            },
+            {
+              "onDismiss": false
+            }
+          ]
+        },
+        "native/modal-dialog:Dialog": {
+          "accept": [
+            {
+              "title": "Review",
+              "size": "sm",
+              "unstyled": true
+            },
+            {
+              "open": false,
+              "actions": "Cancel"
+            }
+          ],
+          "reject": [
+            {
+              "size": "wide"
+            },
+            {
+              "title": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Text field",
+      "representative": "forms:TextField",
+      "exports": [
+        "forms:TextField",
+        "forms:Input",
+        "forms:TextArea",
+        "forms:Label",
+        "forms:FieldError",
+        "forms:Text"
+      ],
+      "expectation": "Label, description, error and counter slots with controlled/default editing",
+      "oracle": "Compose input and textarea from public exports; exercise IME, native reset, validation and focus.",
+      "evidence": {
+        "unit": "tests/depth-controls.test.tsx | form validation reaches a named text input and its associated error message"
+      },
+      "assertions": {
+        "tests/depth-controls.test.tsx | form validation reaches a named text input and its associated error message": "expect(input .getAttribute('aria-describedby') ?.split(' ') .map((id) => document.getElementById(id)?.textContent)).toContain('Missing quantity')"
+      }
+    },
+    {
+      "id": "Form and field group",
+      "representative": "forms:Form",
+      "exports": ["forms:Form", "forms:Group"],
+      "expectation": "Group-level labeling, controlled error mapping and submit/reset contract",
+      "oracle": "Send field and form errors, retain values, then reset both and verify error associations.",
+      "evidence": {
+        "unit": "tests/depth-controls.test.tsx | form validation reaches a named text input and its associated error message"
+      },
+      "assertions": {
+        "tests/depth-controls.test.tsx | form validation reaches a named text input and its associated error message": "expect(input.getAttribute('aria-invalid')).toBe('true')"
+      }
+    },
+    {
+      "id": "Search",
+      "representative": "forms:SearchField",
+      "exports": ["forms:SearchField"],
+      "expectation": "Clear action, controlled query and composition-aware submit",
+      "oracle": "Clear a nonempty search by keyboard, preserve focus and avoid committing intermediate IME text.",
+      "evidence": {
+        "unit": "tests/advanced.test.tsx | selection controls report state to their owners and keep localized names"
+      },
+      "assertions": {
+        "tests/advanced.test.tsx | selection controls report state to their owners and keep localized names": "expect(screen.getByRole('searchbox', { name: '検索' })).toBeTruthy()"
+      }
+    },
+    {
+      "id": "Checkbox",
+      "representative": "forms:Checkbox",
+      "exports": ["forms:Checkbox", "forms:CheckboxGroup"],
+      "expectation": "Mixed state, readonly/disabled and selectable groups with labels",
+      "oracle": "Verify partially selected group then toggle by label and keyboard with one value callback.",
+      "evidence": {
+        "unit": "tests/checkbox/family-contracts.test.tsx | controlled selection stays owner-driven and its event does not mutate the supplied value"
+      },
+      "assertions": {
+        "tests/checkbox/family-contracts.test.tsx | controlled selection stays owner-driven and its event does not mutate the supplied value": "expect(change).toHaveBeenCalledWith(true)"
+      }
+    },
+    {
+      "id": "Radio group",
+      "representative": "forms:RadioGroup",
+      "exports": ["forms:RadioGroup", "forms:Radio"],
+      "expectation": "Controlled/default value, orientation and disabled options",
+      "oracle": "Verify RTL arrow order skips disabled options and form submission contains one value.",
+      "evidence": {
+        "unit": "tests/advanced.test.tsx | selection controls report state to their owners and keep localized names"
+      },
+      "assertions": {
+        "tests/advanced.test.tsx | selection controls report state to their owners and keep localized names": "expect((screen.getByRole('radio', { name: 'Standard' }) as HTMLInputElement).checked).toBe(true)"
+      }
+    },
+    {
+      "id": "Switch",
+      "representative": "forms:Switch",
+      "exports": ["forms:Switch"],
+      "expectation": "Controlled/default checked state, accessible label and readonly presentation",
+      "oracle": "Activate by Space and label, hold the name stable, and verify disabled inputs do not emit change.",
+      "evidence": {
+        "unit": "tests/advanced.test.tsx | selection controls report state to their owners and keep localized names"
+      },
+      "assertions": {
+        "tests/advanced.test.tsx | selection controls report state to their owners and keep localized names": "expect(screen.getByRole('switch', { name: 'Notifications' })).toBeTruthy()"
+      }
+    },
+    {
+      "id": "Toggle and segmented control",
+      "representative": "forms:ToggleButton",
+      "exports": ["forms:ToggleButton", "forms:ToggleButtonGroup"],
+      "expectation": "Single/multiple selection, disabled keys and direction-aware keyboard navigation",
+      "oracle": "Switch orientation and locale; retain stable selected keys while disabled choices stay unreachable.",
+      "evidence": {
+        "browser": "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings"
+      },
+      "assertions": {
+        "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings": "expect(compact).toBeChecked()"
+      }
+    },
+    {
+      "id": "Listbox",
+      "representative": "forms:ListBox",
+      "exports": ["forms:ListBox", "forms:ListBoxItem"],
+      "expectation": "Single/multiple selection, disabled keys, textValue typeahead and empty/loading state",
+      "oracle": "Exercise keyboard typeahead among rich labels and controlled selection after items reorder.",
+      "evidence": {
+        "browser": "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip"
+      },
+      "assertions": {
+        "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip": "expect(language).toContainText('French')"
+      }
+    },
+    {
+      "id": "Select",
+      "representative": "forms:Select",
+      "exports": ["forms:Select", "forms:SelectValue"],
+      "expectation": "Trigger, selected value, placeholder, overlay, error and empty states",
+      "oracle": "Select by keyboard, Escape without changing selection, and confirm form reset restores the default.",
+      "evidence": {
+        "browser": "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip"
+      },
+      "assertions": {
+        "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip": "expect(language).toContainText('French')"
+      }
+    },
+    {
+      "id": "Combobox",
+      "representative": "forms:ComboBox",
+      "exports": ["forms:ComboBox"],
+      "expectation": "Independent text and selected-key control, async options, validation and empty state",
+      "oracle": "Resolve old and new query results out of order in a host fixture; focus and committed key follow the latest choice.",
+      "evidence": {
+        "unit": "tests/depth-controls.test.tsx | a combobox keeps its selected label and an autocomplete narrows a collection to the entered query"
+      },
+      "assertions": {
+        "tests/depth-controls.test.tsx | a combobox keeps its selected label and an autocomplete narrows a collection to the entered query": "expect(screen.getByRole<HTMLInputElement>('combobox', { name: 'Region' }).value).toBe('East')"
+      }
+    },
+    {
+      "id": "Autocomplete",
+      "representative": "forms:Autocomplete",
+      "exports": ["forms:Autocomplete"],
+      "expectation": "Filtering and collection composition with dynamic results and IME",
+      "oracle": "Compose public input and collection, type in Japanese, clear results and regain keyboard selection.",
+      "evidence": {
+        "unit": "tests/depth-controls.test.tsx | a combobox keeps its selected label and an autocomplete narrows a collection to the entered query"
+      },
+      "assertions": {
+        "tests/depth-controls.test.tsx | a combobox keeps its selected label and an autocomplete narrows a collection to the entered query": "expect(screen.queryByRole('option', { name: 'East' })).toBeNull()"
+      }
+    },
+    {
+      "id": "Slider",
+      "representative": "forms:Slider",
+      "exports": [
+        "forms:Slider",
+        "forms:SliderTrack",
+        "forms:SliderThumb",
+        "forms:SliderFill",
+        "forms:SliderOutput"
+      ],
+      "expectation": "One or more thumbs, step, orientation, locale formatting and accessible names",
+      "oracle": "Verify distinct names, min/max clamping, keyboard stepping and RTL movement for a range.",
+      "evidence": {
+        "browser": "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip"
+      },
+      "assertions": {
+        "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip": "expect(slider).toHaveValue('3')"
+      }
+    },
+    {
+      "id": "Number field",
+      "representative": "forms:NumberField",
+      "exports": ["forms:NumberField"],
+      "expectation": "Locale-aware parsing, step, min/max, scrub or stepper buttons and validation",
+      "oracle": "Enter a locale decimal, change by step, exceed bounds and retain the error relationship.",
+      "evidence": {
+        "unit": "tests/number-field/depth-controls.test.tsx | number steppers respect the upper bound and emit the numeric value"
+      },
+      "assertions": {
+        "tests/number-field/depth-controls.test.tsx | number steppers respect the upper bound and emit the numeric value": "expect(change).toHaveBeenCalledWith(2)"
+      }
+    },
+    {
+      "id": "Date field",
+      "representative": "forms:DateField",
+      "exports": ["forms:DateField", "forms:DateInput", "forms:DateSegment"],
+      "expectation": "Localized segments, controlled value, granularity and invalid dates",
+      "oracle": "Edit segments in two calendar locales with a keyboard and distinguish missing from invalid input.",
+      "evidence": {
+        "unit": "tests/depth-controls.test.tsx | date and time fields expose independently named editable and readonly segments"
+      },
+      "assertions": {
+        "tests/depth-controls.test.tsx | date and time fields expose independently named editable and readonly segments": "expect(day?.getAttribute('contenteditable')).toBe('true')"
+      }
+    },
+    {
+      "id": "Time field",
+      "representative": "forms:TimeField",
+      "exports": ["forms:TimeField"],
+      "expectation": "Clock cycle, precision, readonly and invalid states",
+      "oracle": "Edit AM/PM or 24-hour time and preserve the intended value at a segment boundary.",
+      "evidence": {
+        "unit": "tests/depth-controls.test.tsx | date and time fields expose independently named editable and readonly segments"
+      },
+      "assertions": {
+        "tests/depth-controls.test.tsx | date and time fields expose independently named editable and readonly segments": "expect(time.getAllByRole('spinbutton').every((x) => x.getAttribute('aria-readonly') === 'true')).toBe(true)"
+      }
+    },
+    {
+      "id": "Calendar",
+      "representative": "forms:Calendar",
+      "exports": [
+        "forms:Calendar",
+        "forms:CalendarCell",
+        "forms:CalendarGrid",
+        "forms:CalendarGridHeader",
+        "forms:CalendarHeaderCell",
+        "forms:CalendarGridBody"
+      ],
+      "expectation": "Named months and days, minimum/maximum, unavailable dates and non-Gregorian locale",
+      "oracle": "Navigate month boundaries by keyboard; unavailable dates stay perceivable and cannot be selected.",
+      "evidence": {
+        "unit": "tests/depth-controls.test.tsx | calendar distinguishes unavailable days and both picker endpoints keep independent labels"
+      },
+      "assertions": {
+        "tests/depth-controls.test.tsx | calendar distinguishes unavailable days and both picker endpoints keep independent labels": "expect(dates.getAllByRole('button').some((x) => x.getAttribute('data-unavailable') !== null)).toBe(true)"
+      }
+    },
+    {
+      "id": "Date picker",
+      "representative": "forms:DatePicker",
+      "exports": ["forms:DatePicker"],
+      "expectation": "Segmented input and calendar overlay, selection/focus handoff and clear",
+      "oracle": "Open the calendar from a trigger; choose or cancel and verify the selected value and returned focus.",
+      "evidence": {
+        "unit": "tests/depth-controls.test.tsx | calendar distinguishes unavailable days and both picker endpoints keep independent labels"
+      },
+      "assertions": {
+        "tests/depth-controls.test.tsx | calendar distinguishes unavailable days and both picker endpoints keep independent labels": "expect(screen.getByRole('button', { name: /Choose deadline/ }).getAttribute('aria-haspopup')).toBe('dialog')"
+      }
+    },
+    {
+      "id": "Date range picker",
+      "representative": "forms:DateRangePicker",
+      "exports": ["forms:DateRangePicker", "forms:RangeCalendar"],
+      "expectation": "Distinct start/end naming, incomplete ranges and unavailable-day behavior",
+      "oracle": "Cross month boundaries and expose an invalid endpoint without losing the valid start.",
+      "evidence": {
+        "unit": "tests/depth-controls.test.tsx | calendar distinguishes unavailable days and both picker endpoints keep independent labels"
+      },
+      "assertions": {
+        "tests/depth-controls.test.tsx | calendar distinguishes unavailable days and both picker endpoints keep independent labels": "expect(ends.some((x) => x?.toLowerCase().includes('end date'))).toBe(true)"
+      }
+    },
+    {
+      "id": "Tag and removable chip",
+      "representative": "forms:TagGroup",
+      "exports": ["forms:TagGroup", "forms:Tag", "forms:TagList"],
+      "expectation": "Selection, localized deletion and focus after removing a key",
+      "oracle": "Delete first, last and only tag with both pointer and keyboard; verify one removal callback.",
+      "evidence": {
+        "unit": "tests/tag-and-removable-chip/authoring.test.tsx | removable tags retain an accessible collection name and report the removed key"
+      },
+      "assertions": {
+        "tests/tag-and-removable-chip/authoring.test.tsx | removable tags retain an accessible collection name and report the removed key": "expect([...remove.mock.lastCall![0]]).toEqual(['open'])"
+      }
+    },
+    {
+      "id": "Color text field",
+      "representative": "color:ColorField",
+      "exports": ["color:ColorField", "color:ColorSwatch"],
+      "expectation": "Controlled and uncontrolled color, normalized formats and a labeled swatch",
+      "oracle": "Type valid and invalid input and check the committed value, label and non-color indication.",
+      "evidence": {
+        "unit": "tests/color-text-field/authoring.test.tsx | a palette field has a localized name and emits normalized colors on commit"
+      },
+      "assertions": {
+        "tests/color-text-field/authoring.test.tsx | a palette field has a localized name and emits normalized colors on commit": "expect(change.mock.lastCall?.[0].toString('hex').toLowerCase()).toBe('#ff9900')"
+      }
+    },
+    {
+      "id": "Color picker",
+      "representative": "color:ColorPicker",
+      "exports": [
+        "color:ColorPicker",
+        "color:ColorArea",
+        "color:ColorThumb",
+        "color:ColorSlider",
+        "color:ColorWheel",
+        "color:ColorWheelTrack"
+      ],
+      "expectation": "Named channels, wheel/area/slider composition and keyboard alternatives",
+      "oracle": "Adjust hue and saturation without a pointer and verify the color value survives switching controls.",
+      "evidence": {
+        "unit": "tests/depth-controls.test.tsx | color picker channels expose a numeric control and swatches switch a named selected color"
+      },
+      "assertions": {
+        "tests/depth-controls.test.tsx | color picker channels expose a numeric control and swatches switch a named selected color": "expect(Number(slider.value)).toBe(120)"
+      }
+    },
+    {
+      "id": "Color swatch selection",
+      "representative": "color:ColorSwatchPicker",
+      "exports": ["color:ColorSwatchPicker", "color:ColorSwatchPickerItem"],
+      "expectation": "Selected state, text equivalent, custom swatches and keyboard movement",
+      "oracle": "Use identical-looking swatches with different names; differentiate selection in forced colors.",
+      "evidence": {
+        "unit": "tests/depth-controls.test.tsx | color picker channels expose a numeric control and swatches switch a named selected color"
+      },
+      "assertions": {
+        "tests/depth-controls.test.tsx | color picker channels expose a numeric control and swatches switch a named selected color": "expect(change.mock.lastCall?.[0].toString('hex').toLowerCase()).toBe('#0000cc')"
+      }
+    },
+    {
+      "id": "File upload",
+      "representative": "entry-fields:FileUpload",
+      "exports": ["entry-fields:FileUpload", "forms:DropZone", "forms:FileTrigger"],
+      "expectation": "Accepted formats, multiple selection, chooser/drop parity and rejection feedback",
+      "oracle": "Exercise cancel, unsupported file, second selection and disabled state using only public exports.",
+      "evidence": {
+        "unit": "tests/file-upload/entry-fields.test.tsx | upload forwards browser files, descriptions, disabled state and caller ownership"
+      },
+      "assertions": {
+        "tests/file-upload/entry-fields.test.tsx | upload forwards browser files, descriptions, disabled state and caller ownership": "expect(document.getElementById(input.getAttribute('aria-describedby')!)?.textContent).toBe('Plain text')"
+      }
+    },
+    {
+      "id": "PasswordField",
+      "representative": "entry-fields:PasswordField",
+      "exports": ["entry-fields:PasswordField"],
+      "expectation": "Localizable reveal/conceal, forwarded input props and unchanged selection",
+      "oracle": "Toggle visibility repeatedly and verify the input value, caret, accessible name and submit behavior.",
+      "evidence": {
+        "unit": "tests/passwordfield/entry-fields.test.tsx | revealing a password keeps its value, label and form submission behavior"
+      },
+      "assertions": {
+        "tests/passwordfield/entry-fields.test.tsx | revealing a password keeps its value, label and form submission behavior": "expect(field.type).toBe('password')"
+      }
+    },
+    {
+      "id": "CodeField",
+      "representative": "entry-fields:CodeField",
+      "exports": ["entry-fields:CodeField"],
+      "expectation": "Fixed length, paste/autofill semantics, leading zero and validation",
+      "oracle": "Enter and paste into a single focus target; retain a leading zero and prevent an extra digit.",
+      "evidence": {
+        "unit": "tests/codefield/entry-fields.test.tsx | a code uses a single editable value with browser autofill and preserves leading zeros",
+        "packed": "entry-fields:CodeField"
+      },
+      "assertions": {
+        "tests/codefield/entry-fields.test.tsx | a code uses a single editable value with browser autofill and preserves leading zeros": "expect(field.autocomplete).toBe('one-time-code')"
+      }
+    },
+    {
+      "id": "ValidationSummary",
+      "representative": "entry-fields:ValidationSummary",
+      "exports": ["entry-fields:ValidationSummary"],
+      "expectation": "Per-field errors, region labeling and focus for dynamic targets",
+      "oracle": "Activate the second error after rerender; focus its actual input while the first field retains its value.",
+      "evidence": {
+        "unit": "tests/validationsummary/entry-fields.test.tsx | a summary renders only current errors and links focus to the matching field"
+      },
+      "assertions": {
+        "tests/validationsummary/entry-fields.test.tsx | a summary renders only current errors and links focus to the matching field": "expect(document.activeElement?.id).toBe('contact:email')"
+      }
+    },
+    {
+      "id": "Breadcrumb",
+      "representative": "navigation:Breadcrumbs",
+      "exports": ["navigation:Breadcrumbs", "navigation:Breadcrumb", "navigation:Link"],
+      "expectation": "Separators, current item, overflow representation and standard links",
+      "oracle": "Use a long RTL path on narrow width; current page is announced and ancestors remain navigable.",
+      "evidence": {
+        "browser": "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings"
+      },
+      "assertions": {
+        "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings": "expect(page.getByRole('link', { name: 'Workspace' })).toHaveAttribute('href', '#home')"
+      }
+    },
+    {
+      "id": "Toolbar",
+      "representative": "navigation:Toolbar",
+      "exports": ["navigation:Toolbar"],
+      "expectation": "Label, orientation, roving navigation and disabled or embedded controls",
+      "oracle": "Traverse a toolbar containing a disabled action and a text input without hijacking editing keys.",
+      "evidence": {
+        "browser": "browser/enterprise-navigation.spec.ts | opens nested menu commands by keyboard and returns to the toolbar"
+      },
+      "assertions": {
+        "browser/enterprise-navigation.spec.ts | opens nested menu commands by keyboard and returns to the toolbar": "expect(trigger).toBeFocused()"
+      }
+    },
+    {
+      "id": "Menu and submenu",
+      "representative": "navigation:Menu",
+      "exports": [
+        "navigation:Menu",
+        "navigation:MenuItem",
+        "navigation:MenuTrigger",
+        "navigation:SubmenuTrigger"
+      ],
+      "expectation": "Actions versus selection, disabled keys, submenu focus, Escape and outside press",
+      "oracle": "Open a submenu by keyboard, cancel only that submenu, then select exactly one enabled item.",
+      "evidence": {
+        "browser": "browser/enterprise-navigation.spec.ts | opens nested menu commands by keyboard and returns to the toolbar"
+      },
+      "assertions": {
+        "browser/enterprise-navigation.spec.ts | opens nested menu commands by keyboard and returns to the toolbar": "expect(page.getByRole('status', { name: 'Action result' })).toHaveText('Plain text exported')"
+      }
+    },
+    {
+      "id": "Tooltip",
+      "representative": "navigation:Tooltip",
+      "exports": ["navigation:Tooltip", "navigation:TooltipTrigger"],
+      "expectation": "Accessible trigger description, delay, Escape and touch-equivalent help",
+      "oracle": "Show by focus/hover and dismiss; essential instructions remain available on touch-only hardware.",
+      "evidence": {
+        "browser": "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip"
+      },
+      "assertions": {
+        "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip": "expect(page.getByRole('tooltip')).toContainText('Contact the review owner')"
+      }
+    },
+    {
+      "id": "Popover",
+      "representative": "navigation:Popover",
+      "exports": ["navigation:Popover"],
+      "expectation": "Placement, safe viewport flipping, outside dismiss and trigger focus restoration",
+      "oracle": "Open near both viewport edges at large text, then dismiss without losing the original trigger.",
+      "evidence": {
+        "browser": "browser/enterprise-navigation.spec.ts | opens nested menu commands by keyboard and returns to the toolbar"
+      },
+      "assertions": {
+        "browser/enterprise-navigation.spec.ts | opens nested menu commands by keyboard and returns to the toolbar": "expect(page.getByRole('menu', { name: 'Actions', exact: true })).toBeVisible()"
+      }
+    },
+    {
+      "id": "Tabs",
+      "representative": "navigation:Tabs",
+      "exports": ["navigation:Tabs", "navigation:Tab", "navigation:TabList", "navigation:TabPanel"],
+      "expectation": "Controlled/default selection, activation mode, orientation and disabled tabs",
+      "oracle": "Exercise manual activation and RTL arrow keys; verify exactly one selected tab and associated visible panel.",
+      "evidence": {
+        "unit": "tests/tabs/advanced.test.tsx | tabs expose the active panel and allow owner-controlled selection"
+      },
+      "assertions": {
+        "tests/tabs/advanced.test.tsx | tabs expose the active panel and allow owner-controlled selection": "expect(screen.getByRole('tabpanel').textContent).toEqual('Second panel')"
+      }
+    },
+    {
+      "id": "Disclosure and accordion",
+      "representative": "navigation:Disclosure",
+      "exports": [
+        "navigation:Disclosure",
+        "navigation:DisclosureGroup",
+        "navigation:DisclosurePanel"
+      ],
+      "expectation": "Controlled/default expanded keys, heading association and single/multiple expansion",
+      "oracle": "Expand two panels with focus inside one; collapse it and check predictable focus and remaining state.",
+      "evidence": {
+        "browser": "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip"
+      },
+      "assertions": {
+        "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip": "expect(disclosure).toHaveAttribute('aria-expanded', 'true')"
+      }
+    },
+    {
+      "id": "Heading",
+      "representative": "navigation:Heading",
+      "exports": ["navigation:Heading", "document:Heading"],
+      "expectation": "Semantic level independently selectable from text styling",
+      "oracle": "Embed the same visual heading under two parent sections and inspect the resulting document outline.",
+      "evidence": {
+        "browser": "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings",
+        "packed": "document:Heading"
+      },
+      "assertions": {
+        "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings": "expect(page.getByRole('heading', { name: 'Review settings' })).toBeVisible()"
+      }
+    },
+    {
+      "id": "Keyboard shortcut label",
+      "representative": "navigation:Keyboard",
+      "exports": [
+        "navigation:Keyboard",
+        "document:Keyboard",
+        "keyboard-shortcut-label:KeyboardShortcutLabel",
+        "keyboard-shortcut-label:useKeyboardShortcutLabel",
+        "keyboard-shortcut-label:getKeyboardShortcutLabelProps"
+      ],
+      "expectation": "Localized visible chord label and an accessible description",
+      "oracle": "Render platform-specific chords and ensure a screen reader receives a comprehensible expansion.",
+      "evidence": {
+        "browser": "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings",
+        "packed": "document:Keyboard"
+      },
+      "assertions": {
+        "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings": "expect(page.locator('kbd')).toHaveText('Tab')"
+      },
+      "consumerTypes": {
+        "keyboard-shortcut-label:KeyboardShortcutLabel": {
+          "accept": [
+            {
+              "keys": [
+                "Ctrl",
+                "S"
+              ],
+              "spokenLabel": "Control S"
+            }
+          ],
+          "reject": [
+            {
+              "keys": false
+            }
+          ]
+        },
+        "keyboard-shortcut-label:useKeyboardShortcutLabel": {
+          "accept": [
+            {
+              "keys": [
+                "Ctrl",
+                "S"
+              ],
+              "spokenLabel": "Control S"
+            }
+          ],
+          "reject": [
+            {
+              "keys": false
+            }
+          ]
+        },
+        "keyboard-shortcut-label:getKeyboardShortcutLabelProps": {
+          "accept": [
+            {
+              "keys": [
+                "Ctrl",
+                "S"
+              ],
+              "spokenLabel": "Control S"
+            }
+          ],
+          "reject": [
+            {
+              "keys": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Locale provider",
+      "representative": "navigation:I18nProvider",
+      "exports": ["navigation:I18nProvider"],
+      "expectation": "Nested locales and directions with deterministic server rendering",
+      "oracle": "Render nested locales concurrently, hydrate both, and inspect independent names/dates/directions.",
+      "evidence": {
+        "unit": "tests/runtime-isolation.test.tsx | independent server renders retain their own locale, theme and field identifiers"
+      },
+      "assertions": {
+        "tests/runtime-isolation.test.tsx | independent server renders retain their own locale, theme and field identifiers": "expect(b).not.toContain('أمثلة')"
+      }
+    },
+    {
+      "id": "Data table",
+      "representative": "collections:DataTable",
+      "exports": [
+        "collections:DataTable",
+        "data-table:DataTable",
+        "data-table:useDataTable",
+        "data-table:getDataTableRow",
+        "native/data-table:DataTable",
+        "native/data-table:useDataTable"
+      ],
+      "expectation": "Client filters, sort, paging, selection and edits plus a defined external-state path for server data",
+      "oracle": "Change sort/page with selected IDs; cancel a failed edit while preserving pending row data and page bounds.",
+      "evidence": {
+        "unit": "tests/data-table/collections.test.tsx | retains selected IDs across search and pages and excludes removed records",
+        "native": "tests/data-table/native.test.cjs | archives the exact off-page and current records from the phone work queue",
+        "browser": "data-table/data-table.spec.ts | server paging, edits and cross-page bulk actions complete the same desktop and phone workflow"
+      },
+      "assertions": {
+        "tests/data-table/collections.test.tsx | retains selected IDs across search and pages and excludes removed records": "expect(apply.mock.calls[1][0]).toEqual(['c'])",
+        "tests/data-table/native.test.cjs | archives the exact off-page and current records from the phone work queue": "expect(s.getByText('Archived 2 records')).toBeVisible()",
+        "data-table/data-table.spec.ts | server paging, edits and cross-page bulk actions complete the same desktop and phone workflow": "expect(table.locator('[data-row-id=\"t29\"]')).toHaveCount(0)"
+      },
+      "consumerTypes": {
+        "data-table:DataTable": {
+          "accept": [
+            {
+              "label": "Work queue",
+              "size": "md",
+              "layout": "adaptive",
+              "loading": false
+            },
+            {
+              "rows": [
+                {
+                  "id": "a"
+                }
+              ],
+              "columns": [],
+              "readOnly": true
+            }
+          ],
+          "reject": [
+            {
+              "size": "large"
+            },
+            {
+              "label": 3
+            }
+          ]
+        },
+        "data-table:useDataTable": {
+          "accept": [
+            {
+              "pageSize": 25,
+              "defaultSort": {
+                "column": "record",
+                "ascending": true
+              }
+            },
+            {
+              "selectedIds": [
+                "a",
+                "b"
+              ],
+              "locale": "ar"
+            }
+          ],
+          "reject": [
+            {
+              "pageSize": "25"
+            },
+            {
+              "selectedIds": [
+                5
+              ]
+            }
+          ]
+        },
+        "data-table:getDataTableRow": {
+          "accept": [
+            {
+              "id": "review"
+            },
+            {
+              "cellPadding": "0"
+            }
+          ],
+          "reject": [
+            {
+              "id": false
+            },
+            {
+              "tBodies": "none"
+            }
+          ]
+        },
+        "native/data-table:DataTable": {
+          "accept": [
+            {
+              "label": "Work queue",
+              "size": "md",
+              "layout": "adaptive",
+              "loading": false
+            },
+            {
+              "rows": [
+                {
+                  "id": "a"
+                }
+              ],
+              "columns": [],
+              "readOnly": true
+            }
+          ],
+          "reject": [
+            {
+              "size": "large"
+            },
+            {
+              "label": 3
+            }
+          ]
+        },
+        "native/data-table:useDataTable": {
+          "accept": [
+            {
+              "pageSize": 25,
+              "defaultSort": {
+                "column": "record",
+                "ascending": true
+              }
+            },
+            {
+              "selectedIds": [
+                "a",
+                "b"
+              ],
+              "locale": "ar"
+            }
+          ],
+          "reject": [
+            {
+              "pageSize": "25"
+            },
+            {
+              "selectedIds": [
+                5
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Virtual data grid",
+      "representative": "collections:VirtualDataGrid",
+      "exports": ["collections:VirtualDataGrid"],
+      "expectation": "Stable row and column keys, row action and bounded virtualization with keyboard focus",
+      "oracle": "Jump to the final record, select it and reorder source data; verify mounted cells stay bounded.",
+      "evidence": {
+        "browser": "virtual-data-grid/enterprise-collections.spec.ts | grid recycles rows and reveals the final record by keyboard"
+      },
+      "assertions": {
+        "virtual-data-grid/enterprise-collections.spec.ts | grid recycles rows and reveals the final record by keyboard": "expect(grid.getByText('Event 5000', { exact: true })).toBeVisible()"
+      }
+    },
+    {
+      "id": "Virtual treegrid",
+      "representative": "collections:VirtualTree",
+      "exports": ["collections:VirtualTree"],
+      "expectation": "Controlled expansion and selection, hierarchy semantics, and disabled rows",
+      "oracle": "Expand and collapse a large subtree by keyboard, asserting parent focus and persisted selection.",
+      "evidence": {
+        "browser": "virtual-treegrid/enterprise-collections.spec.ts | tree expands, selects and collapses with the keyboard"
+      },
+      "assertions": {
+        "virtual-treegrid/enterprise-collections.spec.ts | tree expands, selects and collapses with the keyboard": "expect(team).toHaveAttribute('aria-expanded', 'false')"
+      }
+    },
+    {
+      "id": "Application shell",
+      "representative": "workflows:AppShell",
+      "exports": ["workflows:AppShell"],
+      "expectation": "Header, navigation and content slots, skip navigation and mobile-to-desktop transitions",
+      "oracle": "Tab into the main region and resize a workspace without remounting active page content.",
+      "evidence": {
+        "unit": "tests/application-shell/workflow-shell.test.tsx | links the skip target to the main region and preserves the navigation markup"
+      },
+      "assertions": {
+        "tests/application-shell/workflow-shell.test.tsx | links the skip target to the main region and preserves the navigation markup": "expect(screen.getByRole('link', { name: 'Skip to workspace' }).getAttribute('href')).toBe('#' + main.id)"
+      }
+    },
+    {
+      "id": "Navigation bar and rail",
+      "representative": "workflows:AppNavigation",
+      "exports": ["workflows:AppNavigation"],
+      "expectation": "Current route, disabled/unavailable destination treatment and custom router rendering",
+      "oracle": "Check active and unavailable links in both layouts; unsafe addresses cannot reach a host link renderer.",
+      "evidence": {
+        "unit": "tests/navigation-bar-and-rail/runtime-isolation.test.tsx | invalid navigation destinations stay inert and never reach a custom router"
+      },
+      "assertions": {
+        "tests/navigation-bar-and-rail/runtime-isolation.test.tsx | invalid navigation destinations stay inert and never reach a custom router": "expect(router).not.toHaveBeenCalled()"
+      }
+    },
+    {
+      "id": "Page composition",
+      "representative": "workflows:WorkspacePage",
+      "exports": ["workflows:WorkspacePage"],
+      "expectation": "Header, actions and content slots with ordered heading and responsive actions",
+      "oracle": "Embed long localized actions in a narrow panel and confirm reachable controls and coherent heading order.",
+      "evidence": {
+        "packed": "workflows:WorkspacePage"
+      }
+    },
+    {
+      "id": "Record selection",
+      "representative": "workflows:RecordList",
+      "exports": ["workflows:RecordList"],
+      "expectation": "Named list, stable keys, selection changes and disabled or empty records",
+      "oracle": "Remove or reorder the focused record and verify external selection state and focus remain coherent.",
+      "evidence": {
+        "unit": "tests/workflow-shell.test.tsx | navigation retains real destinations and marks the current page, and list selection belongs to the host"
+      },
+      "assertions": {
+        "tests/workflow-shell.test.tsx | navigation retains real destinations and marks the current page, and list selection belongs to the host": "expect(update).toHaveBeenCalledWith('b')"
+      }
+    },
+    {
+      "id": "Resizable list and detail",
+      "representative": "workflows:SplitView",
+      "exports": ["workflows:SplitView"],
+      "expectation": "Keyboard and pointer resizing, pane limits, narrow fallback and optional persisted split",
+      "oracle": "Resize at both limits while editing; restore the selected row, draft, list scroll and focused pane.",
+      "evidence": {
+        "unit": "tests/resizable-list-and-detail/workflow-shell.test.tsx | clamps resize commands and preserves input state and focus between panes"
+      },
+      "assertions": {
+        "tests/resizable-list-and-detail/workflow-shell.test.tsx | clamps resize commands and preserves input state and focus between panes": "expect((draft as HTMLInputElement).value).toBe('Unsaved')"
+      }
+    },
+    {
+      "id": "Form wizard",
+      "representative": "workflows:Wizard",
+      "exports": ["workflows:Wizard"],
+      "expectation": "Caller-owned current step, validation, pending completion and restored form input",
+      "oracle": "Race a double finish with a step transition and verify a single completion and retained draft on failure.",
+      "evidence": {
+        "unit": "tests/form-wizard/workflow-commands.test.tsx | retains draft controls across steps and focuses the new step heading"
+      },
+      "assertions": {
+        "tests/form-wizard/workflow-commands.test.tsx | retains draft controls across steps and focuses the new step heading": "expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('Mei')"
+      }
+    },
+    {
+      "id": "Command palette",
+      "representative": "workflows:CommandPalette",
+      "exports": ["workflows:CommandPalette"],
+      "expectation": "Query, grouped results, disabled commands, no results and precise focus return",
+      "oracle": "Search quickly, invoke by keyboard and restore the originating trigger across nested overlays.",
+      "evidence": {
+        "browser": "browser/enterprise-workspace.spec.ts | command dialog supports keyboard activation and returns focus on dismissal"
+      },
+      "assertions": {
+        "browser/enterprise-workspace.spec.ts | command dialog supports keyboard activation and returns focus on dismissal": "expect(trigger).toBeFocused()"
+      }
+    },
+    {
+      "id": "Notification center",
+      "representative": "workflows:NotificationCenter",
+      "exports": ["workflows:NotificationCenter"],
+      "expectation": "Read/unread ownership, bulk operation, recovery, empty and restricted states",
+      "oracle": "Mark some items read, refresh their order, and retry a failed load without losing the logical target.",
+      "evidence": {
+        "unit": "tests/notification-center/workflow-status.test.tsx | loading, permission denial, retrieval failure and empty notifications are distinct"
+      },
+      "assertions": {
+        "tests/notification-center/workflow-status.test.tsx | loading, permission denial, retrieval failure and empty notifications are distinct": "expect(retry).toHaveBeenCalledOnce()"
+      }
+    },
+    {
+      "id": "Settings",
+      "representative": "workflows:SettingsPanel",
+      "exports": ["workflows:SettingsPanel"],
+      "expectation": "Controlled state, group descriptions, disabled reasons and restart/error feedback",
+      "oracle": "Toggle an allowed setting and reject a denied one, then recover from a failed save.",
+      "evidence": {
+        "unit": "tests/workflow-status.test.tsx | notification actions target unread IDs and settings convey restrictions and descriptions"
+      },
+      "assertions": {
+        "tests/workflow-status.test.tsx | notification actions target unread IDs and settings convey restrictions and descriptions": "expect(update).toHaveBeenCalledWith('daily', false)"
+      }
+    },
+    {
+      "id": "Batch progress",
+      "representative": "workflows:BatchProgress",
+      "exports": ["workflows:BatchProgress"],
+      "expectation": "Per-item states, partial failure, retry availability and stable aggregate announcements",
+      "oracle": "Resume a mixed terminal/running batch; retry only the failed item and avoid duplicate actions.",
+      "evidence": {
+        "unit": "tests/batch-progress/workflow-status.test.tsx | batch progress handles partial failure, retries a single failed item and resumes from external state"
+      },
+      "assertions": {
+        "tests/batch-progress/workflow-status.test.tsx | batch progress handles partial failure, retries a single failed item and resumes from external state": "expect(retry).toHaveBeenCalledWith('b')"
+      }
+    },
+    {
+      "id": "Drawer",
+      "representative": "motion:Drawer",
+      "exports": ["motion:Drawer"],
+      "expectation": "Controlled visibility, logical leading/trailing side, nested focus and safe-area layout",
+      "oracle": "Open/dismiss in RTL and on a short viewport; focus and body scroll restore to the launcher.",
+      "evidence": {
+        "unit": "tests/motion-overlays.test.tsx | Drawer provides a named modal, close button, and Escape"
+      },
+      "assertions": {
+        "tests/motion-overlays.test.tsx | Drawer provides a named modal, close button, and Escape": "expect(dismiss).toHaveBeenCalledTimes(2)"
+      }
+    },
+    {
+      "id": "Gesture sheet",
+      "representative": "motion:GestureSheet",
+      "exports": ["motion:GestureSheet"],
+      "expectation": "Named dismiss action, drag threshold/cancellation, nested scrolling and keyboard-safe footer",
+      "oracle": "Scroll content, cancel a drag, dismiss with a button and repeat with reduced motion.",
+      "evidence": {
+        "browser": "gesture-sheet/motion.spec.ts | sheet grip dismisses only after an outward drag; a cancelled drag and content scroll stay open"
+      },
+      "assertions": {
+        "gesture-sheet/motion.spec.ts | sheet grip dismisses only after an outward drag; a cancelled drag and content scroll stay open": "expect(sheet).toHaveCount(0)"
+      }
+    },
+    {
+      "id": "Alert dialog",
+      "representative": "motion:AlertDialog",
+      "exports": ["motion:AlertDialog"],
+      "expectation": "Safe initial focus, clear destructive action, scoped cancellation and repeated activation",
+      "oracle": "Open from another modal and cancel using Escape; a double confirm emits one owner action.",
+      "evidence": {
+        "unit": "tests/alert-dialog/motion-overlays.test.tsx | confirmation keeps dismissal and destructive decisions separate"
+      },
+      "assertions": {
+        "tests/alert-dialog/motion-overlays.test.tsx | confirmation keeps dismissal and destructive decisions separate": "expect(confirm).not.toHaveBeenCalled()"
+      }
+    },
+    {
+      "id": "Toast and snackbar",
+      "representative": "motion:ToastRegion",
+      "exports": ["motion:ToastRegion", "motion:createToastQueue"],
+      "expectation": "Queue cap, localized action/close, announcement priority and pause/focus behavior",
+      "oracle": "Queue a burst, focus an action and remove it; announcements and remaining items preserve ordering.",
+      "evidence": {
+        "unit": "tests/toast-and-snackbar/motion-overlays.test.tsx | bounded toast region shows the latest message and retains prior notifications",
+        "packed": "motion:createToastQueue"
+      },
+      "assertions": {
+        "tests/toast-and-snackbar/motion-overlays.test.tsx | bounded toast region shows the latest message and retains prior notifications": "expect(screen.getByText('Available offline')).toBeTruthy()"
+      }
+    },
+    {
+      "id": "Snap carousel",
+      "representative": "motion:Carousel",
+      "exports": ["motion:Carousel"],
+      "expectation": "Accessible slide identity, prev/next labels, touch scrolling and externally synchronized position when needed",
+      "oracle": "Check active slide after swipe/resize and after deleting the selected item; inactive controls stay out of tab order.",
+      "evidence": {
+        "unit": "tests/snap-carousel/motion-media.test.tsx | carousel keeps selection by id and exposes only the selected slide to keyboard users"
+      },
+      "assertions": {
+        "tests/snap-carousel/motion-media.test.tsx | carousel keeps selection by id and exposes only the selected slide to keyboard users": "expect(screen.getByRole('status').textContent).toBe('1 of 2')"
+      }
+    },
+    {
+      "id": "Expanding media card",
+      "representative": "motion:ExpandableMediaCard",
+      "exports": ["motion:ExpandableMediaCard"],
+      "expectation": "Labeled disclosure, accessible expanded content, reversible optional transition and owner synchronization",
+      "oracle": "Interrupt expansion at 200% text size and verify focus and expanded state match final display.",
+      "evidence": {
+        "unit": "tests/expanding-media-card/motion-media.test.tsx | media disclosure preserves media state during repeated reversals"
+      },
+      "assertions": {
+        "tests/expanding-media-card/motion-media.test.tsx | media disclosure preserves media state during repeated reversals": "expect(screen.getByTestId('media')).toBe(media)"
+      }
+    },
+    {
+      "id": "Motion sequence",
+      "representative": "motion:playMotionSequence",
+      "exports": ["motion:playMotionSequence"],
+      "expectation": "Explicit finish/cancel/reverse, reduced-motion reaction and cleanup of listeners",
+      "oracle": "Reverse a partially played sequence, cancel on unmount and verify exactly one terminal result.",
+      "evidence": {
+        "unit": "tests/motion-sequence/motion-choreography.test.tsx | new reduced-motion preference cancels all steps and releases listeners"
+      },
+      "assertions": {
+        "tests/motion-sequence/motion-choreography.test.tsx | new reduced-motion preference cancels all steps and releases listeners": "expect(await sequence.finished).toBe('cancelled')"
+      }
+    },
+    {
+      "id": "Shared element transition",
+      "representative": "motion:animateSharedElement",
+      "exports": ["motion:animateSharedElement", "motion:captureSharedElement"],
+      "expectation": "Bounded source/destination geometry, interruption, reduced motion and stable result",
+      "oracle": "Move an element between differently positioned containers; detached targets and zero-size bounds resolve safely.",
+      "evidence": {
+        "unit": "tests/shared-element-transition/motion-choreography.test.tsx | shared element maps the new bounds back to its source before animating"
+      },
+      "assertions": {
+        "tests/shared-element-transition/motion-choreography.test.tsx | shared element maps the new bounds back to its source before animating": "expect(target.animate.mock.calls[0]).toContainEqual(expect.arrayContaining([ expect.objectContaining({ transform: 'translate(-40px, -60px) scale(0.5, 0.5)' }), ]))"
+      }
+    },
+    {
+      "id": "EmptyState",
+      "representative": "patterns:EmptyState",
+      "exports": ["patterns:EmptyState"],
+      "expectation": "Heading level, description, decorative illustration and optional action",
+      "oracle": "Render separate search-empty/permission-empty messages; each has the intended heading and focusable actions.",
+      "evidence": {
+        "unit": "tests/emptystate/patterns.test.tsx | empty states accept product actions and keep heading levels in the surrounding outline",
+        "packed": "patterns:EmptyState"
+      },
+      "assertions": {
+        "tests/emptystate/patterns.test.tsx | empty states accept product actions and keep heading levels in the surrounding outline": "expect(act).toHaveBeenCalledOnce()"
+      }
+    },
+    {
+      "id": "PanelHeader",
+      "representative": "patterns:PanelHeader",
+      "exports": ["patterns:PanelHeader"],
+      "expectation": "Heading/content/actions layout and wrap behavior in small containers",
+      "oracle": "Embed short and long titles with trailing actions in multiple panels and verify reading order.",
+      "evidence": {
+        "unit": "tests/family-contracts.test.tsx | public host refs point at the interactive element and detach on unmount"
+      },
+      "assertions": {
+        "tests/family-contracts.test.tsx | public host refs point at the interactive element and detach on unmount": "expect(panel.current).toBe(screen.getByText('Contract'))"
+      }
+    },
+    {
+      "id": "ResourceCard",
+      "representative": "patterns:ResourceCard",
+      "exports": ["patterns:ResourceCard"],
+      "expectation": "Media, metadata, single accessible action and owner-controlled selected state",
+      "oracle": "Use the same card in shortlist and document list; ensure nested content does not cause duplicate selection.",
+      "evidence": {
+        "unit": "tests/resourcecard/patterns.test.tsx | a resource keeps the caller in control of selection and exposes a stable action name",
+        "packed": "patterns:ResourceCard"
+      },
+      "assertions": {
+        "tests/resourcecard/patterns.test.tsx | a resource keeps the caller in control of selection and exposes a stable action name": "expect(button.getAttribute('aria-pressed')).toBe('false')"
+      }
+    },
+    {
+      "id": "DocumentPreview",
+      "representative": "patterns:DocumentPreview",
+      "exports": ["patterns:DocumentPreview"],
+      "expectation": "Named section and supplied viewer with host-owned loading/error and actions",
+      "oracle": "Swap from loading to content to retryable errors; keep toolbar focus stable through rerenders.",
+      "evidence": {
+        "unit": "tests/documentpreview/patterns.test.tsx | a preview accepts the host renderer and loading state without replacing its contents",
+        "packed": "patterns:DocumentPreview"
+      },
+      "assertions": {
+        "tests/documentpreview/patterns.test.tsx | a preview accepts the host renderer and loading state without replacing its contents": "expect(screen.getByDisplayValue('reviewed')).toBe(input)"
+      }
+    },
+    {
+      "id": "Mode provider",
+      "representative": "modes:ModeProvider",
+      "exports": ["modes:ModeProvider"],
+      "expectation": "Independent nested brand, scheme, density, motion and contextual overrides",
+      "oracle": "Switch a parent scope while editing a nested field and check sibling colors, focus, scroll and input state.",
+      "evidence": {
+        "unit": "tests/runtime-streams.test.tsx | overlapping streamed requests hydrate independently in reverse order and preserve distinct IDs, refs and edits",
+        "packed": "modes:ModeProvider"
+      },
+      "assertions": {
+        "tests/runtime-streams.test.tsx | overlapping streamed requests hydrate independently in reverse order and preserve distinct IDs, refs and edits": "expect(first).toContain('data-uld-brand=\"expressive\"')"
+      }
+    }
+  ]
+}

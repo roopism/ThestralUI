@@ -1,0 +1,18 @@
+{
+  "family": "Stack",
+  "scenarios": [
+    {
+      "id": "stack.child-order",
+      "fixture": "child-order",
+      "steps": [
+        { "expect": "visible", "target": { "role": "text", "name": "First" } },
+        { "expect": "visible", "target": { "role": "text", "name": "Second" } },
+        {
+          "expect": "before",
+          "target": { "role": "text", "name": "First" },
+          "other": { "role": "text", "name": "Second" }
+        }
+      ]
+    }
+  ]
+}

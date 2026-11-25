@@ -1,0 +1,67 @@
+{
+  "id": "Text field",
+  "order": 20,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:TextField",
+      "forms:Input",
+      "forms:TextArea",
+      "forms:Label",
+      "forms:FieldError",
+      "forms:Text"
+    ],
+    "web": "exported",
+    "native": "planned",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "forms:TextField",
+    "expectation": "Label, description, error and counter slots with controlled/default editing",
+    "oracle": "Compose input and textarea from public exports; exercise IME, native reset, validation and focus.",
+    "evidence": {
+      "unit": "tests/depth-controls.test.tsx | form validation reaches a named text input and its associated error message"
+    },
+    "assertions": {
+      "tests/depth-controls.test.tsx | form validation reaches a named text input and its associated error message": "expect(input .getAttribute('aria-describedby') ?.split(' ') .map((id) => document.getElementById(id)?.textContent)).toContain('Missing quantity')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/text-field/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/family-contracts.test.tsx",
+      "tests/depth-controls.test.tsx",
+      "tests/form-spec-states.test.tsx",
+      "tests/autocomplete/form-spec-states.test.tsx",
+      "tests/foundation-specs.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [],
+    "scenario": [],
+    "style": [
+      "packages/web/src/text-field/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/autocomplete/form-spec-states.test.tsx | clearing an empty autocomplete query restores the collection and its accessible searchbox",
+      "tests/depth-controls.test.tsx | form validation reaches a named text input and its associated error message",
+      "tests/family-contracts.test.tsx | layout, loading, image and grouping slots preserve native roles, names, and caller content",
+      "tests/form-spec-states.test.tsx | a named form submits enabled fields through its submit action and skips a disabled editor",
+      "tests/form-spec-states.test.tsx | listbox disabled keys, disabled select and readonly combobox keep distinct interaction contracts",
+      "tests/form-spec-states.test.tsx | readonly numbers, disabled thumbs and readonly temporal segments expose state on the editing target",
+      "tests/form-spec-states.test.tsx | text and search fields distinguish a focusable readonly input from a disabled editor",
+      "tests/foundation-specs.test.tsx | neutral layout and text preserve the requested host refs, reading direction and content"
+    ]
+  }
+}

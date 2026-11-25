@@ -1,0 +1,68 @@
+{
+  "id": "Shared element transition",
+  "order": 76,
+  "inventory": {
+    "layer": "infrastructure",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "motion:animateSharedElement",
+      "motion:captureSharedElement"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/MotionSequences.stories.tsx",
+    "test": "tests/shared-element-transition/motion-choreography.test.tsx",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "motion:animateSharedElement",
+    "expectation": "Bounded source/destination geometry, interruption, reduced motion and stable result",
+    "oracle": "Move an element between differently positioned containers; detached targets and zero-size bounds resolve safely.",
+    "evidence": {
+      "unit": "tests/shared-element-transition/motion-choreography.test.tsx | shared element maps the new bounds back to its source before animating"
+    },
+    "assertions": {
+      "tests/shared-element-transition/motion-choreography.test.tsx | shared element maps the new bounds back to its source before animating": "expect(target.animate.mock.calls[0]).toContainEqual(expect.arrayContaining([ expect.objectContaining({ transform: 'translate(-40px, -60px) scale(0.5, 0.5)' }), ]))"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/shared-element-transition/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/shared-element-transition/motion-choreography.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/motion.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/MotionSequences.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/shared-element-transition/motion-choreography.test.tsx | capture records the source corner radius from its computed style",
+      "tests/shared-element-transition/motion-choreography.test.tsx | captured corners morph into the destination and a long journey lasts at most twice the entrance",
+      "tests/shared-element-transition/motion-choreography.test.tsx | shared element maps the new bounds back to its source before animating",
+      "tests/shared-element-transition/motion-choreography.test.tsx | shared elements skip zero-size bounds and unsupported browsers"
+    ],
+    "browser": [
+      "browser/motion.spec.ts | cross-parent motion keeps work movable while sequences reverse or are interrupted"
+    ]
+  },
+  "budgets": [
+    {
+      "name": "@ui-lazy-dev/ui-web/motion#animateSharedElement",
+      "bytes": 1373,
+      "order": 23
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "name": "@ui-lazy-dev/tokens",
+  "version": "0.3.0-rc.1",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist",
+    "tokens.json"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./tokens.json": "./tokens.json",
+    "./modes": {
+      "types": "./dist/modes/index.d.ts",
+      "default": "./dist/modes/index.js"
+    },
+    "./modes.css": "./dist/modes.css",
+    "./brands/enterprise": {
+      "types": "./dist/modes/brands/enterprise.d.ts",
+      "default": "./dist/modes/brands/enterprise.js"
+    },
+    "./brands/enterprise.css": "./dist/brands/enterprise.css",
+    "./brands/expressive": {
+      "types": "./dist/modes/brands/expressive.d.ts",
+      "default": "./dist/modes/brands/expressive.js"
+    },
+    "./brands/expressive.css": "./dist/brands/expressive.css",
+    "./theme-css": {
+      "types": "./dist/theme-css.d.ts",
+      "default": "./dist/theme-css.js"
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs"
+  }
+}

@@ -1,0 +1,25 @@
+/* @uld-css-chunk controls.009 */
+
+.uld-controls :where(.react-aria-Label) {
+  font-weight: var(--uld-strong-weight);
+}
+/* @uld-css-chunk controls.010 */
+
+.uld-controls :where(.react-aria-Input, .react-aria-TextArea) {
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: var(--uld-control);
+  color: var(--uld-text);
+  background: var(--uld-surface);
+  border: 1px solid var(--uld-muted);
+  border-radius: var(--uld-radius-md);
+  font: inherit;
+  padding: 0.5em 0.75em;
+}
+/* @uld-css-chunk controls */
+
+.uld-controls .react-aria-NumberField .react-aria-Group {
+  display: flex;
+  gap: var(--uld-gap);
+}

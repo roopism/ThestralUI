@@ -1,0 +1,47 @@
+{
+  "id": "Text",
+  "order": 5,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "primitives:Text"
+    ],
+    "web": "exported",
+    "native": "planned",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "primitives:Text",
+    "expectation": "Semantic text styles, element choice and optional line clamp",
+    "oracle": "Verify heading semantics and display full text in the accessible name after two-line truncation.",
+    "evidence": {
+      "packed": "primitives:Text"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/text/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/family-contracts.test.tsx",
+      "tests/foundation-specs.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/family-contracts.test.tsx | layout, loading, image and grouping slots preserve native roles, names, and caller content",
+      "tests/foundation-specs.test.tsx | neutral layout and text preserve the requested host refs, reading direction and content"
+    ]
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "id": "Surface",
+  "order": 3,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "primitives:Surface"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/Primitives.stories.tsx",
+    "test": "tests/primitives.test.tsx",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "primitives:Surface",
+    "expectation": "Semantic elevation, shape and padding presets",
+    "oracle": "Check three surface levels in light, dark and forced colors; nested surfaces retain readable boundaries.",
+    "evidence": {
+      "packed": "primitives:Surface"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/surface/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/primitives.test.tsx",
+      "tests/foundation-specs.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/Primitives.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/surface/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/foundation-specs.test.tsx | a surface and badge add style hooks without injecting a region or live announcement"
+    ]
+  }
+}

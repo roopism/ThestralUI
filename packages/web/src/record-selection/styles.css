@@ -1,0 +1,39 @@
+/* @uld-css-chunk workflows.044 */
+
+.uld-record-list {
+  border: 1px solid var(--uld-border, GrayText);
+  border-radius: var(--uld-radius, 0.3rem);
+}
+/* @uld-css-chunk workflows.045 */
+
+.uld-record-option {
+  padding: 0.4rem 0.75rem;
+  display: grid;
+  align-content: center;
+  min-block-size: 2.75rem;
+  box-sizing: border-box;
+  border-block-end: 1px solid var(--uld-border, GrayText);
+  cursor: pointer;
+}
+/* @uld-css-chunk workflows.046 */
+
+.uld-record-option:last-child {
+  border-block-end: none;
+}
+/* @uld-css-chunk workflows.047 */
+
+.uld-record-option[data-selected] {
+  background: var(--uld-accent, Highlight);
+  color: var(--uld-on-accent, HighlightText);
+}
+/* @uld-css-chunk workflows.048 */
+
+.uld-record-option[data-focus-visible] {
+  outline: 2px solid currentColor;
+  outline-offset: -3px;
+}
+/* @uld-css-chunk workflows.049 */
+
+.uld-record-option[data-disabled] {
+  color: GrayText;
+}

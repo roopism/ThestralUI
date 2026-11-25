@@ -1,0 +1,16 @@
+{
+  "id": "Pagination",
+  "order": 85,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [],
+    "web": "equivalent",
+    "native": "planned",
+    "note": "DataTable owns local page controls. A server-driven pager is planned.",
+    "ownership": "stateless or host-managed"
+  }
+}

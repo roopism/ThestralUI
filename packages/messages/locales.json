@@ -1,0 +1,52 @@
+{
+  "ar": {
+    "direction": "rtl",
+    "complete": true,
+    "status": "draft"
+  },
+  "de": {
+    "direction": "ltr",
+    "complete": true,
+    "status": "draft"
+  },
+  "en": {
+    "direction": "ltr",
+    "complete": true,
+    "status": "source"
+  },
+  "es": {
+    "direction": "ltr",
+    "complete": true,
+    "status": "draft"
+  },
+  "fr": {
+    "direction": "ltr",
+    "complete": true,
+    "status": "draft"
+  },
+  "he": {
+    "direction": "rtl",
+    "complete": true,
+    "status": "draft"
+  },
+  "hi": {
+    "direction": "ltr",
+    "complete": true,
+    "status": "draft"
+  },
+  "ja": {
+    "direction": "ltr",
+    "complete": true,
+    "status": "draft"
+  },
+  "pt-BR": {
+    "direction": "ltr",
+    "complete": true,
+    "status": "draft"
+  },
+  "zh-Hans": {
+    "direction": "ltr",
+    "complete": true,
+    "status": "draft"
+  }
+}

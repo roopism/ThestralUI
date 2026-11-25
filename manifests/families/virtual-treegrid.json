@@ -1,0 +1,57 @@
+{
+  "id": "Virtual treegrid",
+  "order": 58,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "Roadmap"
+    ],
+    "api": [
+      "collections:VirtualTree"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseCollections.stories.tsx",
+    "test": "tests/virtual-treegrid/enterprise-collections.spec.ts",
+    "ownership": "owner supplied state"
+  },
+  "behaviorAnchor": "tree expands, selects",
+  "depth": {
+    "representative": "collections:VirtualTree",
+    "expectation": "Controlled expansion and selection, hierarchy semantics, and disabled rows",
+    "oracle": "Expand and collapse a large subtree by keyboard, asserting parent focus and persisted selection.",
+    "evidence": {
+      "browser": "virtual-treegrid/enterprise-collections.spec.ts | tree expands, selects and collapses with the keyboard"
+    },
+    "assertions": {
+      "virtual-treegrid/enterprise-collections.spec.ts | tree expands, selects and collapses with the keyboard": "expect(team).toHaveAttribute('aria-expanded', 'false')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/virtual-treegrid/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [],
+    "nativeUnit": [],
+    "browser": [
+      "tests/virtual-treegrid/enterprise-collections.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseCollections.stories.tsx",
+      "catalog/collection-events.ts"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/virtual-treegrid/styles.css"
+    ]
+  },
+  "cases": {
+    "browser": [
+      "virtual-treegrid/enterprise-collections.spec.ts | tree expands, selects and collapses with the keyboard"
+    ]
+  }
+}

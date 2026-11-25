@@ -1,0 +1,54 @@
+{
+  "id": "Combobox",
+  "order": 29,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:ComboBox"
+    ],
+    "web": "exported",
+    "native": "planned",
+    "story": "catalog/Authoring.stories.tsx",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "forms:ComboBox",
+    "expectation": "Independent text and selected-key control, async options, validation and empty state",
+    "oracle": "Resolve old and new query results out of order in a host fixture; focus and committed key follow the latest choice.",
+    "evidence": {
+      "unit": "tests/depth-controls.test.tsx | a combobox keeps its selected label and an autocomplete narrows a collection to the entered query"
+    },
+    "assertions": {
+      "tests/depth-controls.test.tsx | a combobox keeps its selected label and an autocomplete narrows a collection to the entered query": "expect(screen.getByRole<HTMLInputElement>('combobox', { name: 'Region' }).value).toBe('East')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/combobox/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/depth-controls.test.tsx",
+      "tests/form-spec-states.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/Authoring.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/depth-controls.test.tsx | a combobox keeps its selected label and an autocomplete narrows a collection to the entered query",
+      "tests/form-spec-states.test.tsx | listbox disabled keys, disabled select and readonly combobox keep distinct interaction contracts"
+    ]
+  }
+}

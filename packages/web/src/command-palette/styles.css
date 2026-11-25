@@ -1,0 +1,42 @@
+/* @uld-css-chunk workflows.016 */
+
+.uld-commands {
+  max-inline-size: min(34rem, calc(100% - 2rem));
+  min-inline-size: min(20rem, calc(100% - 2rem));
+  box-sizing: border-box;
+}
+/* @uld-css-chunk workflows.017 */
+
+.uld-commands input {
+  inline-size: 100%;
+  box-sizing: border-box;
+}
+/* @uld-css-chunk workflows.018 */
+
+.uld-commands ul {
+  max-block-size: 45dvh;
+  overflow: auto;
+  padding: 0;
+}
+/* @uld-css-chunk workflows.019 */
+
+.uld-commands [role='option'] {
+  display: flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+  padding-inline: 0.5rem;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+/* @uld-css-chunk workflows.020 */
+
+.uld-commands [aria-selected='true'] {
+  background: Highlight;
+  color: HighlightText;
+}
+/* @uld-css-chunk workflows.021 */
+
+.uld-commands [aria-disabled='true'] {
+  color: GrayText;
+  cursor: default;
+}

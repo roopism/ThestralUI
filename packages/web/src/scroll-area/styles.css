@@ -1,0 +1,7 @@
+/* @uld-css-chunk primitives.027 */
+
+.uld-scroll {
+  overflow: auto;
+  max-block-size: 100%;
+  overscroll-behavior: contain;
+}

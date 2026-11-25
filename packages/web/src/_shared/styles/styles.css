@@ -1,0 +1,21 @@
+/* @uld-css-chunk styles.001 */
+@import '@ui-lazy-dev/tokens/styles.css';
+/* @uld-css-chunk styles.002 */
+
+.uld-button,
+.uld-field input,
+.uld-field textarea,
+.uld-field select {
+  box-sizing: border-box;
+  font: inherit;
+  min-height: var(--uld-control);
+  border: 1px solid var(--uld-border);
+  border-radius: var(--uld-radius);
+}
+/* @uld-css-chunk styles.010 */
+
+.uld-button:focus-visible,
+.uld-field :focus-visible {
+  outline: var(--uld-focus-width) solid var(--uld-focus);
+  outline-offset: var(--uld-focus-offset);
+}

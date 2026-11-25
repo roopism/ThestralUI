@@ -1,0 +1,59 @@
+{
+  "id": "Inline",
+  "order": 2,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "primitives:Inline"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/StackInline.stories.tsx",
+    "test": "tests/browser/stack-inline.spec.ts",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "primitives:Inline",
+    "expectation": "Token gap, alignment, justification and wrapping",
+    "oracle": "Constrain width with mixed-length RTL labels and verify wrapping and source-order keyboard navigation.",
+    "evidence": {
+      "packed-priority": "primitives:Inline"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/inline/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/family-contracts.test.tsx",
+      "tests/stack-inline.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/stack-inline.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/StackInline.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/inline/styles.css"
+    ]
+  },
+  "cases": {
+    "browser": [
+      "browser/stack-inline.spec.ts | Stack and Inline resolve gaps from independent parents and retain focus while resizing",
+      "browser/stack-inline.spec.ts | logical RTL alignment, wrapping, nested defaults and keyboard order survive tight layouts"
+    ],
+    "vitest": [
+      "tests/family-contracts.test.tsx | layout, loading, image and grouping slots preserve native roles, names, and caller content",
+      "tests/stack-inline.test.tsx | layout token and distribution contracts preserve the host, class and ref"
+    ]
+  }
+}

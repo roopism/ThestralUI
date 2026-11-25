@@ -1,0 +1,56 @@
+{
+  "id": "File upload",
+  "order": 42,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "entry-fields:FileUpload",
+      "forms:DropZone",
+      "forms:FileTrigger"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EntryFields.stories.tsx",
+    "test": "tests/file-upload/entry-fields.test.tsx",
+    "ownership": "browser control and owner"
+  },
+  "depth": {
+    "representative": "entry-fields:FileUpload",
+    "expectation": "Accepted formats, multiple selection, chooser/drop parity and rejection feedback",
+    "oracle": "Exercise cancel, unsupported file, second selection and disabled state using only public exports.",
+    "evidence": {
+      "unit": "tests/file-upload/entry-fields.test.tsx | upload forwards browser files, descriptions, disabled state and caller ownership"
+    },
+    "assertions": {
+      "tests/file-upload/entry-fields.test.tsx | upload forwards browser files, descriptions, disabled state and caller ownership": "expect(document.getElementById(input.getAttribute('aria-describedby')!)?.textContent).toBe('Plain text')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/file-upload/aria-binding.tsx",
+      "packages/web/src/file-upload/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/file-upload/entry-fields.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/EntryFields.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/file-upload/entry-fields.test.tsx | upload forwards browser files, descriptions, disabled state and caller ownership"
+    ]
+  }
+}

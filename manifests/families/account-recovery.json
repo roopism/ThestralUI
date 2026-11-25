@@ -1,0 +1,16 @@
+{
+  "id": "Account recovery",
+  "order": 88,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [],
+    "web": "equivalent",
+    "native": "planned",
+    "note": "Compose app-owned identity flow with CodeField, PasswordField and ValidationSummary.",
+    "ownership": "stateless or host-managed"
+  }
+}

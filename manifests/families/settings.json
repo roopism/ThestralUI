@@ -1,0 +1,57 @@
+{
+  "id": "Settings",
+  "order": 67,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "workflows:SettingsPanel"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseWorkspace.stories.tsx",
+    "test": "tests/workflow-status.test.tsx",
+    "ownership": "owner supplied state"
+  },
+  "depth": {
+    "representative": "workflows:SettingsPanel",
+    "expectation": "Controlled state, group descriptions, disabled reasons and restart/error feedback",
+    "oracle": "Toggle an allowed setting and reject a denied one, then recover from a failed save.",
+    "evidence": {
+      "unit": "tests/workflow-status.test.tsx | notification actions target unread IDs and settings convey restrictions and descriptions"
+    },
+    "assertions": {
+      "tests/workflow-status.test.tsx | notification actions target unread IDs and settings convey restrictions and descriptions": "expect(update).toHaveBeenCalledWith('daily', false)"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/settings/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/workflow-status.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseWorkspace.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/settings/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/workflow-status.test.tsx | notification actions target unread IDs and settings convey restrictions and descriptions",
+      "tests/workflow-status.test.tsx | settings groups name their switches, describe the group and omit groups without settings",
+      "tests/workflow-status.test.tsx | a restricted setting keeps its value and name but ignores activation",
+      "tests/workflow-status.test.tsx | availability and empty states replace the groups with an announced message"
+    ]
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "id": "ValidationSummary",
+  "order": 45,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "entry-fields:ValidationSummary"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EntryFields.stories.tsx",
+    "test": "tests/validationsummary/entry-fields.test.tsx",
+    "ownership": "owner supplied state"
+  },
+  "depth": {
+    "representative": "entry-fields:ValidationSummary",
+    "expectation": "Per-field errors, region labeling and focus for dynamic targets",
+    "oracle": "Activate the second error after rerender; focus its actual input while the first field retains its value.",
+    "evidence": {
+      "unit": "tests/validationsummary/entry-fields.test.tsx | a summary renders only current errors and links focus to the matching field"
+    },
+    "assertions": {
+      "tests/validationsummary/entry-fields.test.tsx | a summary renders only current errors and links focus to the matching field": "expect(document.activeElement?.id).toBe('contact:email')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/validationsummary/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/validationsummary/entry-fields.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/preferences.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EntryFields.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/validationsummary/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/validationsummary/entry-fields.test.tsx | a summary renders only current errors and links focus to the matching field"
+    ],
+    "browser": [
+      "browser/preferences.spec.ts | recovery summary focuses the field in forced colors"
+    ]
+  }
+}

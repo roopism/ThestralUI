@@ -1,0 +1,25 @@
+/* @uld-css-chunk motion.012 */
+
+.uld-edge-start[open],
+.uld-edge-end[open] {
+  inset: 0 auto;
+  inline-size: min(90vw, 28rem);
+  block-size: 100dvh;
+  padding-block: max(var(--uld-space-md), env(safe-area-inset-top))
+    max(var(--uld-space-md), env(safe-area-inset-bottom));
+  transform: translateX(var(--uld-drag-offset, 0px));
+}
+/* @uld-css-chunk motion.013 */
+
+.uld-edge-start[open] {
+  inset-inline-start: 0;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+/* @uld-css-chunk motion.014 */
+
+.uld-edge-end[open] {
+  inset-inline-end: 0;
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}

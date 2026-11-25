@@ -1,0 +1,58 @@
+{
+  "id": "Navigation bar and rail",
+  "order": 60,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "workflows:AppNavigation"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseWorkspace.stories.tsx",
+    "test": "tests/workflow-shell.test.tsx",
+    "ownership": "owner supplied state"
+  },
+  "depth": {
+    "representative": "workflows:AppNavigation",
+    "expectation": "Current route, disabled/unavailable destination treatment and custom router rendering",
+    "oracle": "Check active and unavailable links in both layouts; unsafe addresses cannot reach a host link renderer.",
+    "evidence": {
+      "unit": "tests/navigation-bar-and-rail/runtime-isolation.test.tsx | invalid navigation destinations stay inert and never reach a custom router"
+    },
+    "assertions": {
+      "tests/navigation-bar-and-rail/runtime-isolation.test.tsx | invalid navigation destinations stay inert and never reach a custom router": "expect(router).not.toHaveBeenCalled()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/navigation-bar-and-rail/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/workflow-shell.test.tsx",
+      "tests/navigation-bar-and-rail/runtime-isolation.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseWorkspace.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/navigation-bar-and-rail/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/navigation-bar-and-rail/runtime-isolation.test.tsx | invalid navigation destinations stay inert and never reach a custom router",
+      "tests/navigation-bar-and-rail/runtime-isolation.test.tsx | destinations keep their order in one list and only the current one is marked as the page",
+      "tests/navigation-bar-and-rail/runtime-isolation.test.tsx | decorative icons stay out of the name and unavailable destinations render as inert text",
+      "tests/navigation-bar-and-rail/runtime-isolation.test.tsx | a custom router receives the safe destination, current marker and content for valid links only"
+    ]
+  }
+}

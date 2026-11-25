@@ -1,0 +1,47 @@
+{
+  "id": "Box",
+  "order": 0,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "primitives:Box"
+    ],
+    "web": "exported",
+    "native": "planned",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "primitives:Box",
+    "expectation": "Token-backed logical padding on each axis",
+    "oracle": "Nest in RTL and verify logical start changes side while child focus and ref stay intact.",
+    "evidence": {
+      "packed": "primitives:Box"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/box/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/family-contracts.test.tsx",
+      "tests/foundation-specs.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/family-contracts.test.tsx | layout, loading, image and grouping slots preserve native roles, names, and caller content",
+      "tests/foundation-specs.test.tsx | neutral layout and text preserve the requested host refs, reading direction and content"
+    ]
+  }
+}

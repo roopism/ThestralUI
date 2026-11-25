@@ -1,0 +1,90 @@
+.shortlist-page {
+  min-height: 100svh;
+  background: #f1eee6;
+  color: #211e24;
+  padding: clamp(1rem, 5vw, 5rem);
+  box-sizing: border-box;
+  font:
+    1rem/1.4 system-ui,
+    sans-serif;
+}
+.shortlist {
+  max-inline-size: 76rem;
+  margin-inline: auto;
+}
+.shortlist h1 {
+  font:
+    500 clamp(2.65rem, 7vw, 6.25rem)/0.98 Georgia,
+    serif;
+  letter-spacing: -0.06em;
+  max-inline-size: 15ch;
+  margin-block: 0 0.55em;
+}
+.shortlist .uld-adaptive-grid {
+  --uld-column-min: 21rem;
+  --uld-grid-gap: clamp(1rem, 2vw, 2rem);
+}
+.opportunity {
+  --paper: #172826;
+  --ink: #d6f9be;
+  --print: #a3cd96;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 1.25rem;
+}
+.opportunity[data-palette='orchid'] {
+  --paper: #372541;
+  --ink: #ffddf7;
+  --print: #d893d9;
+}
+.opportunity-print {
+  min-block-size: clamp(8rem, 18vw, 16rem);
+  background: repeating-radial-gradient(
+    ellipse at 100% 115%,
+    var(--paper) 0 8%,
+    var(--print) 8.4% 11%,
+    var(--paper) 11.4% 13%
+  );
+}
+.opportunity[data-palette='orchid'] .opportunity-print {
+  background: repeating-conic-gradient(
+    from -16deg at 20% 132%,
+    var(--paper) 0 5deg,
+    var(--print) 5.2deg 11deg,
+    var(--paper) 11.2deg 13deg
+  );
+}
+.opportunity-copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+}
+.opportunity p {
+  margin: 0;
+}
+.opportunity h2 {
+  font:
+    500 clamp(1.8rem, 3.4vw, 3.6rem)/1 Georgia,
+    serif;
+  letter-spacing: -0.04em;
+  margin: 0.4em 0 0.8em;
+}
+.opportunity .uld-button {
+  margin-block-start: auto;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 2rem;
+  border-color: var(--ink);
+}
+.opportunity .uld-button[aria-pressed='true'] {
+  background: var(--paper);
+  color: var(--ink);
+}
+.opportunity .uld-button:focus-visible {
+  outline-color: var(--ink);
+}

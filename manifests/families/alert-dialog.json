@@ -1,0 +1,63 @@
+{
+  "id": "Alert dialog",
+  "order": 71,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "Apple"
+    ],
+    "api": [
+      "motion:AlertDialog"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/MotionGallery.stories.tsx",
+    "test": "tests/alert-dialog/motion-overlays.test.tsx",
+    "ownership": "owner supplied state"
+  },
+  "depth": {
+    "representative": "motion:AlertDialog",
+    "expectation": "Safe initial focus, clear destructive action, scoped cancellation and repeated activation",
+    "oracle": "Open from another modal and cancel using Escape; a double confirm emits one owner action.",
+    "evidence": {
+      "unit": "tests/alert-dialog/motion-overlays.test.tsx | confirmation keeps dismissal and destructive decisions separate"
+    },
+    "assertions": {
+      "tests/alert-dialog/motion-overlays.test.tsx | confirmation keeps dismissal and destructive decisions separate": "expect(confirm).not.toHaveBeenCalled()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/alert-dialog/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/alert-dialog/motion-overlays.test.tsx",
+      "tests/motion-overlays.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/motion.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/MotionGallery.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/alert-dialog/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/alert-dialog/motion-overlays.test.tsx | confirmation keeps dismissal and destructive decisions separate",
+      "tests/motion-overlays.test.tsx | nested cancellation dismisses the active alert and leaves its parent mounted"
+    ],
+    "browser": [
+      "browser/motion.spec.ts | save and remove a publication in the editorial theme",
+      "browser/motion.spec.ts | save and remove a publication in the enterprise theme"
+    ]
+  }
+}

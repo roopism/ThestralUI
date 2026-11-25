@@ -1,0 +1,50 @@
+{
+  "id": "Color swatch selection",
+  "order": 41,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "color:ColorSwatchPicker",
+      "color:ColorSwatchPickerItem"
+    ],
+    "web": "exported",
+    "native": "planned",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "color:ColorSwatchPicker",
+    "expectation": "Selected state, text equivalent, custom swatches and keyboard movement",
+    "oracle": "Use identical-looking swatches with different names; differentiate selection in forced colors.",
+    "evidence": {
+      "unit": "tests/depth-controls.test.tsx | color picker channels expose a numeric control and swatches switch a named selected color"
+    },
+    "assertions": {
+      "tests/depth-controls.test.tsx | color picker channels expose a numeric control and swatches switch a named selected color": "expect(change.mock.lastCall?.[0].toString('hex').toLowerCase()).toBe('#0000cc')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/color-swatch-selection/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/depth-controls.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/depth-controls.test.tsx | color picker channels expose a numeric control and swatches switch a named selected color"
+    ]
+  }
+}

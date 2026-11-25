@@ -1,0 +1,13 @@
+/* @uld-css-chunk controls.026 */
+
+.uld-controls .uld-validation {
+  border-inline-start: 0.25rem solid var(--uld-danger);
+  padding-inline-start: 1em;
+}
+/* @uld-css-chunk controls.027 */
+
+.uld-controls .uld-validation a {
+  display: inline-block;
+  min-block-size: var(--uld-compact-target);
+  color: var(--uld-danger);
+}

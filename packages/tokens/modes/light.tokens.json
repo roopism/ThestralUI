@@ -1,0 +1,19 @@
+{
+  "color": {
+    "$type": "color",
+    "canvas": {"$value": "{light.canvas}"},
+    "surface": {"$value": "{light.surface}"},
+    "text": {"$value": "{light.text}"},
+    "muted": {"$value": "{light.muted}"},
+    "border": {"$value": "{light.border}"},
+    "accent": {"$value": "{light.accent}"},
+    "onAccent": {"$value": "{light.onAccent}"},
+    "focus": {"$value": "{light.focus}"},
+    "danger": {"$value": "{light.danger}"},
+    "success": {"$value": "{light.success}"},
+    "warning": {"$value": "{light.warning}"},
+    "selected": {"$value": "{light.selected}"},
+    "disabled": {"$value": "{light.disabled}"},
+    "shadowColor": {"$value": "{light.shadowColor}"}
+  }
+}

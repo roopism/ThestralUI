@@ -1,0 +1,62 @@
+{
+  "id": "EmptyState",
+  "order": 77,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "patterns:EmptyState"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/DocumentReview.stories.tsx",
+    "test": "tests/emptystate/patterns.test.tsx",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "patterns:EmptyState",
+    "expectation": "Heading level, description, decorative illustration and optional action",
+    "oracle": "Render separate search-empty/permission-empty messages; each has the intended heading and focusable actions.",
+    "evidence": {
+      "unit": "tests/emptystate/patterns.test.tsx | empty states accept product actions and keep heading levels in the surrounding outline",
+      "packed": "patterns:EmptyState"
+    },
+    "assertions": {
+      "tests/emptystate/patterns.test.tsx | empty states accept product actions and keep heading levels in the surrounding outline": "expect(act).toHaveBeenCalledOnce()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/emptystate/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/emptystate/patterns.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/DocumentReview.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/emptystate/patterns.test.tsx | empty states accept product actions and keep heading levels in the surrounding outline",
+      "tests/emptystate/patterns.test.tsx | optional slots collapse without leaving empty paragraphs or extra headings",
+      "tests/emptystate/patterns.test.tsx | reading order runs illustration, heading, description, then the action, and caller attributes are kept"
+    ]
+  },
+  "budgets": [
+    {
+      "name": "@ui-lazy-dev/ui-web/patterns#EmptyState",
+      "bytes": 271,
+      "order": 29
+    }
+  ]
+}

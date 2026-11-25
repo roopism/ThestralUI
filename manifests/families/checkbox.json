@@ -1,0 +1,74 @@
+{
+  "id": "Checkbox",
+  "order": 23,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:Checkbox",
+      "forms:CheckboxGroup"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/Controls.stories.tsx",
+    "test": "tests/advanced.test.tsx",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "forms:Checkbox",
+    "expectation": "Mixed state, readonly/disabled and selectable groups with labels",
+    "oracle": "Verify partially selected group then toggle by label and keyboard with one value callback.",
+    "evidence": {
+      "unit": "tests/checkbox/family-contracts.test.tsx | controlled selection stays owner-driven and its event does not mutate the supplied value"
+    },
+    "assertions": {
+      "tests/checkbox/family-contracts.test.tsx | controlled selection stays owner-driven and its event does not mutate the supplied value": "expect(change).toHaveBeenCalledWith(true)"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/checkbox/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/advanced.test.tsx",
+      "tests/checkbox/family-contracts.test.tsx",
+      "tests/form-spec-states.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/preferences.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/Controls.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/checkbox/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/checkbox/family-contracts.test.tsx | controlled selection stays owner-driven and its event does not mutate the supplied value",
+      "tests/form-spec-states.test.tsx | checkbox and radio groups retain selection in readonly mode and expose unavailable choices"
+    ],
+    "browser": [
+      "browser/preferences.spec.ts | arabic preferences retain keyboard selection and reflow at 320 CSS pixels",
+      "browser/preferences.spec.ts | english preferences retain keyboard selection and reflow at 320 CSS pixels",
+      "browser/preferences.spec.ts | expanded preferences retain keyboard selection and reflow at 320 CSS pixels",
+      "browser/preferences.spec.ts | japanese preferences retain keyboard selection and reflow at 320 CSS pixels"
+    ]
+  },
+  "budgets": [
+    {
+      "name": "@ui-lazy-dev/ui-web/forms#Checkbox",
+      "bytes": 14884,
+      "order": 10
+    }
+  ]
+}

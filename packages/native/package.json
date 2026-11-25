@@ -1,0 +1,36 @@
+{
+  "name": "@ui-lazy-dev/ui-native",
+  "version": "0.3.0-rc.1",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./button": {
+      "types": "./dist/button/binding.d.ts",
+      "default": "./dist/button/binding.js"
+    },
+    "./modal-dialog": {
+      "types": "./dist/modal-dialog/binding.d.ts",
+      "default": "./dist/modal-dialog/binding.js"
+    },
+    "./data-table": {
+      "types": "./dist/data-table/binding.d.ts",
+      "default": "./dist/data-table/binding.js"
+    }
+  },
+  "peerDependencies": {
+    "react": "^19.3.0",
+    "react-native": "0.88.x",
+    "@ui-lazy-dev/tokens": "0.3.0-rc.1"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  }
+}

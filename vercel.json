@@ -1,0 +1,43 @@
+{
+  "framework": null,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/catalog",
+  "installCommand": "npm ci",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    },
+    {
+      "source": "/((?!iframe[.]html$).*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'sha256-03ojAQwBGj7LM6M8l6Rz6Xmdl4c/cYEivuK1cIzcaTU=' 'sha256-1pKwVQSPbS2izSj7W8RJQl/x0MTPVnKFEhIT8MQvmPE=' 'sha256-5LdnYNkPlTVtgflz80/5kG45VvlWGC3c5QYlAXyDjOI=' 'sha256-9uH6lxIMkZ9BbH/KGU7cX3qG7DCarU5zjDI96iEvyQA=' 'sha256-mAvqqY/nWr6XTiU6UIE2lOMrI9ljKmt+Bj4wyaky08o='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+        }
+      ]
+    },
+    {
+      "source": "/iframe.html",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'sha256-03ojAQwBGj7LM6M8l6Rz6Xmdl4c/cYEivuK1cIzcaTU=' 'sha256-1pKwVQSPbS2izSj7W8RJQl/x0MTPVnKFEhIT8MQvmPE=' 'sha256-5LdnYNkPlTVtgflz80/5kG45VvlWGC3c5QYlAXyDjOI=' 'sha256-9uH6lxIMkZ9BbH/KGU7cX3qG7DCarU5zjDI96iEvyQA=' 'sha256-mAvqqY/nWr6XTiU6UIE2lOMrI9ljKmt+Bj4wyaky08o='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
+        }
+      ]
+    }
+  ]
+}

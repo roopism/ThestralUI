@@ -1,0 +1,42 @@
+{
+  "motion": {
+    "pressDuration": {
+      "$type": "duration",
+      "$value": {
+        "value": 140,
+        "unit": "ms"
+      }
+    },
+    "pressScale": {
+      "$type": "number",
+      "$value": 0.97
+    },
+    "pressOpacity": {
+      "$type": "number",
+      "$description": "Opacity of a pressed control where the platform highlights instead of drawing a ripple.",
+      "$value": 0.7
+    },
+    "enterDuration": {
+      "$type": "duration",
+      "$value": {
+        "value": 220,
+        "unit": "ms"
+      }
+    },
+    "exitDuration": {
+      "$type": "duration",
+      "$value": {
+        "value": 160,
+        "unit": "ms"
+      }
+    },
+    "busyDuration": {
+      "$type": "duration",
+      "$description": "One cycle of a busy indicator.",
+      "$value": {
+        "value": 800,
+        "unit": "ms"
+      }
+    }
+  }
+}

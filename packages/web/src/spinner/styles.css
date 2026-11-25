@@ -1,0 +1,22 @@
+/* @uld-css-chunk primitives.032 */
+
+.uld-spinner {
+  display: inline-block;
+  inline-size: 1em;
+  block-size: 1em;
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+}
+/* @uld-css-chunk primitives.035 */
+
+@media (prefers-reduced-motion: no-preference) {
+  .uld-spinner {
+    animation: uld-turn 800ms linear infinite;
+  }
+  @keyframes uld-turn {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+}

@@ -1,0 +1,11 @@
+/* @uld-css-chunk controls.013 */
+
+.uld-controls .react-aria-Checkbox[data-selected]::before {
+  content: '✓' / '';
+  display: inline-grid;
+  place-content: center;
+  line-height: 1;
+  color: var(--uld-on-accent);
+  background: var(--uld-accent);
+  border-color: var(--uld-accent);
+}

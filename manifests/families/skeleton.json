@@ -1,0 +1,47 @@
+{
+  "id": "Skeleton",
+  "order": 11,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "primitives:Skeleton"
+    ],
+    "web": "exported",
+    "native": "planned",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "primitives:Skeleton",
+    "expectation": "Text and block shapes, token size and optional motion",
+    "oracle": "Ensure placeholders are hidden from screen readers and reduced motion stops animation.",
+    "evidence": {
+      "packed": "primitives:Skeleton"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/skeleton/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/family-contracts.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [],
+    "scenario": [],
+    "style": [
+      "packages/web/src/skeleton/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/family-contracts.test.tsx | layout, loading, image and grouping slots preserve native roles, names, and caller content"
+    ]
+  }
+}

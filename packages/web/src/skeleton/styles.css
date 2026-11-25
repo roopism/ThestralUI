@@ -1,0 +1,7 @@
+/* @uld-css-chunk primitives.031 */
+
+.uld-skeleton {
+  min-block-size: 1em;
+  background: var(--uld-border);
+  border-radius: var(--uld-radius);
+}

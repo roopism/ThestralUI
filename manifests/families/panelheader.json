@@ -1,0 +1,53 @@
+{
+  "id": "PanelHeader",
+  "order": 78,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "patterns:PanelHeader"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/DocumentReview.stories.tsx",
+    "test": "tests/documentpreview/patterns.test.tsx",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "patterns:PanelHeader",
+    "expectation": "Heading/content/actions layout and wrap behavior in small containers",
+    "oracle": "Embed short and long titles with trailing actions in multiple panels and verify reading order.",
+    "evidence": {
+      "unit": "tests/family-contracts.test.tsx | public host refs point at the interactive element and detach on unmount"
+    },
+    "assertions": {
+      "tests/family-contracts.test.tsx | public host refs point at the interactive element and detach on unmount": "expect(panel.current).toBe(screen.getByText('Contract'))"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/panelheader/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/documentpreview/patterns.test.tsx",
+      "tests/family-contracts.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/DocumentReview.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/family-contracts.test.tsx | public host refs point at the interactive element and detach on unmount"
+    ]
+  }
+}

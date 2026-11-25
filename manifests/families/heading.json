@@ -1,0 +1,62 @@
+{
+  "id": "Heading",
+  "order": 53,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "RAC"
+    ],
+    "api": [
+      "navigation:Heading",
+      "document:Heading"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseNavigation.stories.tsx",
+    "test": "tests/browser/enterprise-navigation.spec.ts",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "behaviorAnchor": "name: 'Review settings'",
+  "depth": {
+    "representative": "navigation:Heading",
+    "expectation": "Semantic level independently selectable from text styling",
+    "oracle": "Embed the same visual heading under two parent sections and inspect the resulting document outline.",
+    "evidence": {
+      "browser": "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings",
+      "packed": "document:Heading"
+    },
+    "assertions": {
+      "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings": "expect(page.getByRole('heading', { name: 'Review settings' })).toBeVisible()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/heading/aria-binding.tsx",
+      "packages/web/src/heading/server-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/heading/navigation-labels.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-navigation.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseNavigation.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "browser": [
+      "browser/enterprise-navigation.spec.ts | exposes named destinations, separators, headings and segmented settings"
+    ],
+    "vitest": [
+      "tests/heading/navigation-labels.test.tsx | an exported heading uses the requested outline level and forwards its ref"
+    ]
+  }
+}

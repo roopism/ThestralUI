@@ -1,0 +1,67 @@
+{
+  "id": "Gesture sheet",
+  "order": 70,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Apple",
+      "Material",
+      "Roadmap"
+    ],
+    "api": [
+      "motion:GestureSheet"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/MotionGallery.stories.tsx",
+    "test": "tests/motion-overlays.test.tsx",
+    "ownership": "owner supplied state"
+  },
+  "depth": {
+    "representative": "motion:GestureSheet",
+    "expectation": "Named dismiss action, drag threshold/cancellation, nested scrolling and keyboard-safe footer",
+    "oracle": "Scroll content, cancel a drag, dismiss with a button and repeat with reduced motion.",
+    "evidence": {
+      "browser": "gesture-sheet/motion.spec.ts | sheet grip dismisses only after an outward drag; a cancelled drag and content scroll stay open"
+    },
+    "assertions": {
+      "gesture-sheet/motion.spec.ts | sheet grip dismisses only after an outward drag; a cancelled drag and content scroll stay open": "expect(sheet).toHaveCount(0)"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/gesture-sheet/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/motion-overlays.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/gesture-sheet/motion.spec.ts",
+      "tests/browser/motion.spec.ts",
+      "tests/gesture-sheet/quality.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/MotionGallery.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/gesture-sheet/styles.css"
+    ]
+  },
+  "cases": {
+    "browser": [
+      "browser/motion.spec.ts | save and remove a publication in the editorial theme",
+      "browser/motion.spec.ts | save and remove a publication in the enterprise theme",
+      "gesture-sheet/motion.spec.ts | sheet grip dismisses only after an outward drag; a cancelled drag and content scroll stay open",
+      "gesture-sheet/quality.spec.ts | keeps sheet controls above the keyboard and inside safe areas on resize"
+    ],
+    "vitest": [
+      "tests/motion-overlays.test.tsx | GestureSheet provides a named modal, close button, and Escape",
+      "tests/motion-overlays.test.tsx | nested cancellation dismisses the active alert and leaves its parent mounted"
+    ]
+  }
+}

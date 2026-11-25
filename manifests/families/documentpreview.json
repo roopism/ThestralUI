@@ -1,0 +1,56 @@
+{
+  "id": "DocumentPreview",
+  "order": 80,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "patterns:DocumentPreview"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/DocumentReview.stories.tsx",
+    "test": "tests/documentpreview/patterns.test.tsx",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "patterns:DocumentPreview",
+    "expectation": "Named section and supplied viewer with host-owned loading/error and actions",
+    "oracle": "Swap from loading to content to retryable errors; keep toolbar focus stable through rerenders.",
+    "evidence": {
+      "unit": "tests/documentpreview/patterns.test.tsx | a preview accepts the host renderer and loading state without replacing its contents",
+      "packed": "patterns:DocumentPreview"
+    },
+    "assertions": {
+      "tests/documentpreview/patterns.test.tsx | a preview accepts the host renderer and loading state without replacing its contents": "expect(screen.getByDisplayValue('reviewed')).toBe(input)"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/documentpreview/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/documentpreview/patterns.test.tsx",
+      "tests/documentpreview/runtime-cleanup.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/DocumentReview.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/documentpreview/patterns.test.tsx | a preview accepts the host renderer and loading state without replacing its contents",
+      "tests/documentpreview/runtime-cleanup.test.tsx | a user-provided document string stays text while the explicitly supplied rich-content slot renders",
+      "tests/documentpreview/runtime-cleanup.test.tsx | the preview is one named region that forwards its ref, attributes and host-owned viewer"
+    ]
+  }
+}

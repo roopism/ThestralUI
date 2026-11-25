@@ -1,0 +1,28 @@
+{
+  "name": "@ui-lazy-dev/policy",
+  "version": "0.3.0-rc.1",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "ui-lazy-policy": "./cli.mjs"
+  },
+  "exports": {
+    ".": "./index.mjs"
+  },
+  "files": [
+    "cli.mjs",
+    "index.mjs",
+    "ownership.mjs",
+    "owner-transitions.mjs",
+    "architecture.mjs",
+    "public-family-entries.mjs",
+    "rendering.mjs",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "typescript": ">=6.0.0 <7"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

@@ -1,0 +1,4 @@
+[
+  "scripts/gates/no-weakening.mjs",
+  "scripts/selection/staged-tree.mjs"
+]

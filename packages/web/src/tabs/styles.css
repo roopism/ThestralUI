@@ -1,0 +1,46 @@
+/* @uld-css-chunk controls.005 */
+
+.uld-controls :where(.react-aria-Tabs) {
+  padding: clamp(0.75rem, 3vw, 1.75rem);
+  max-inline-size: 36rem;
+  border: 1px solid var(--uld-border);
+  background: var(--uld-surface);
+  border-radius: var(--uld-radius-lg);
+}
+/* @uld-css-chunk controls.006 */
+
+.uld-controls :where(.react-aria-TabList) {
+  display: flex;
+  overflow-x: auto;
+  gap: 0.25rem;
+  padding-block-end: 0.375rem;
+  border-block-end: 1px solid var(--uld-border);
+}
+/* @uld-css-chunk controls.007 */
+
+.uld-controls :where(.react-aria-Tab) {
+  box-sizing: border-box;
+  display: grid;
+  align-items: center;
+  flex: none;
+  min-block-size: var(--uld-control);
+  padding: 0.375em 0.8em;
+  border: 1px solid transparent;
+  border-radius: var(--uld-radius-md);
+  cursor: pointer;
+}
+/* @uld-css-chunk controls.008 */
+
+.uld-controls :where(.react-aria-Tab[data-selected]) {
+  color: var(--uld-accent);
+  background: var(--uld-selected);
+  border-color: var(--uld-accent);
+  font-weight: var(--uld-strong-weight);
+}
+/* @uld-css-chunk controls */
+.uld-controls :where([aria-orientation='vertical']) {
+  flex-direction: column;
+}
+.uld-controls :where(.react-aria-Tabs[data-orientation='vertical']) {
+  grid-template-columns: auto 1fr;
+}

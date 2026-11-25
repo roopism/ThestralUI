@@ -1,0 +1,62 @@
+{
+  "id": "Virtual data grid",
+  "order": 57,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "Roadmap"
+    ],
+    "api": [
+      "collections:VirtualDataGrid"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseCollections.stories.tsx",
+    "test": "tests/virtual-data-grid/enterprise-collections.spec.ts",
+    "ownership": "owner supplied state"
+  },
+  "behaviorAnchor": "grid recycles rows",
+  "depth": {
+    "representative": "collections:VirtualDataGrid",
+    "expectation": "Stable row and column keys, row action and bounded virtualization with keyboard focus",
+    "oracle": "Jump to the final record, select it and reorder source data; verify mounted cells stay bounded.",
+    "evidence": {
+      "browser": "virtual-data-grid/enterprise-collections.spec.ts | grid recycles rows and reveals the final record by keyboard"
+    },
+    "assertions": {
+      "virtual-data-grid/enterprise-collections.spec.ts | grid recycles rows and reveals the final record by keyboard": "expect(grid.getByText('Event 5000', { exact: true })).toBeVisible()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/virtual-data-grid/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/virtual-data-grid/runtime-cleanup.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/virtual-data-grid/enterprise-collections.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseCollections.stories.tsx",
+      "catalog/collection-events.ts"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/virtual-data-grid/styles.css"
+    ]
+  },
+  "cases": {
+    "browser": [
+      "virtual-data-grid/enterprise-collections.spec.ts | grid recycles rows and reveals the final record by keyboard"
+    ],
+    "vitest": [
+      "tests/virtual-data-grid/runtime-cleanup.test.tsx | unmount disconnects collection observers and removes observed targets"
+    ]
+  }
+}

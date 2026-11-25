@@ -1,0 +1,63 @@
+{
+  "id": "Toast and snackbar",
+  "order": 72,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Material",
+      "Roadmap"
+    ],
+    "api": [
+      "motion:ToastRegion",
+      "motion:createToastQueue"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/MotionGallery.stories.tsx",
+    "test": "tests/toast-and-snackbar/motion-overlays.test.tsx",
+    "ownership": "owner supplied state"
+  },
+  "depth": {
+    "representative": "motion:ToastRegion",
+    "expectation": "Queue cap, localized action/close, announcement priority and pause/focus behavior",
+    "oracle": "Queue a burst, focus an action and remove it; announcements and remaining items preserve ordering.",
+    "evidence": {
+      "unit": "tests/toast-and-snackbar/motion-overlays.test.tsx | bounded toast region shows the latest message and retains prior notifications",
+      "packed": "motion:createToastQueue"
+    },
+    "assertions": {
+      "tests/toast-and-snackbar/motion-overlays.test.tsx | bounded toast region shows the latest message and retains prior notifications": "expect(screen.getByText('Available offline')).toBeTruthy()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/toast-and-snackbar/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/toast-and-snackbar/motion-overlays.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/motion.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/MotionGallery.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/toast-and-snackbar/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/toast-and-snackbar/motion-overlays.test.tsx | bounded toast region shows the latest message and retains prior notifications"
+    ],
+    "browser": [
+      "browser/motion.spec.ts | save and remove a publication in the editorial theme",
+      "browser/motion.spec.ts | save and remove a publication in the enterprise theme"
+    ]
+  }
+}

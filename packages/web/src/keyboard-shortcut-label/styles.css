@@ -1,0 +1,11 @@
+/* @uld-css-chunk keyboard-shortcut-label */
+@import '@ui-lazy-dev/tokens/styles.css';
+
+[data-uld-shortcut] {
+  border: thin solid var(--uld-border);
+  border-radius: var(--uld-radius-sm);
+  background: var(--uld-surface);
+  color: var(--uld-text);
+  padding-inline: var(--uld-space-xs);
+  overflow-wrap: anywhere;
+}

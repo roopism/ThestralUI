@@ -1,0 +1,41 @@
+/* @uld-css-chunk workflows.004 */
+
+.uld-shell-skip {
+  position: absolute;
+  z-index: 1;
+  inset-inline-start: 0.5rem;
+  inset-block-start: 0.5rem;
+  padding: 0.65rem;
+  background: Canvas;
+  color: CanvasText;
+}
+/* @uld-css-chunk workflows.005 */
+
+.uld-shell-skip:not(:focus) {
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  padding: 0;
+}
+/* @uld-css-chunk workflows.034 */
+
+.uld-shell {
+  background: var(--uld-canvas, Canvas);
+  color: var(--uld-text, CanvasText);
+  font:
+    1rem/1.45 system-ui,
+    sans-serif;
+}
+/* @uld-css-chunk workflows.036 */
+
+.uld-shell > header,
+.uld-shell-layout > nav {
+  border-block-end: 1px solid var(--uld-border, GrayText);
+}
+/* @uld-css-chunk workflows */
+@container (min-width: 64rem) {
+  .uld-shell-layout:has(> aside) {
+    grid-template-columns: fit-content(18rem) minmax(0, 1fr) fit-content(20rem);
+  }
+}

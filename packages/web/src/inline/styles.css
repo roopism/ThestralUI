@@ -1,0 +1,23 @@
+/* @uld-css-chunk primitives.002 */
+
+.uld-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--uld-gap);
+}
+/* @uld-css-chunk primitives.022 */
+
+.uld-inline[data-uld-align] {
+  align-items: var(--uld-layout-align);
+}
+/* @uld-css-chunk primitives.024 */
+
+.uld-inline[data-uld-justify] {
+  justify-content: var(--uld-layout-justify);
+}
+/* @uld-css-chunk primitives.025 */
+
+.uld-inline[data-uld-nowrap] {
+  flex-wrap: nowrap;
+}

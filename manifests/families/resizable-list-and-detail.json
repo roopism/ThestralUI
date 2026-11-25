@@ -1,0 +1,63 @@
+{
+  "id": "Resizable list and detail",
+  "order": 63,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "workflows:SplitView"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseWorkspace.stories.tsx",
+    "test": "tests/resizable-list-and-detail/workflow-shell.test.tsx",
+    "ownership": "internal with owner callbacks"
+  },
+  "depth": {
+    "representative": "workflows:SplitView",
+    "expectation": "Keyboard and pointer resizing, pane limits, narrow fallback and optional persisted split",
+    "oracle": "Resize at both limits while editing; restore the selected row, draft, list scroll and focused pane.",
+    "evidence": {
+      "unit": "tests/resizable-list-and-detail/workflow-shell.test.tsx | clamps resize commands and preserves input state and focus between panes"
+    },
+    "assertions": {
+      "tests/resizable-list-and-detail/workflow-shell.test.tsx | clamps resize commands and preserves input state and focus between panes": "expect((draft as HTMLInputElement).value).toBe('Unsaved')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/resizable-list-and-detail/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/resizable-list-and-detail/workflow-shell.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-workspace.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseWorkspace.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/resizable-list-and-detail/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/resizable-list-and-detail/workflow-shell.test.tsx | clamps resize commands and preserves input state and focus between panes",
+      "tests/resizable-list-and-detail/workflow-shell.test.tsx | the handle is a named vertical separator that reports its range and controls the list",
+      "tests/resizable-list-and-detail/workflow-shell.test.tsx | Enter collapses the list to its minimum and a second Enter restores the previous size",
+      "tests/resizable-list-and-detail/workflow-shell.test.tsx | a controlled size follows the owner and only reports requested changes",
+      "tests/resizable-list-and-detail/workflow-shell.test.tsx | right-to-left content reverses the arrow keys and ignores modified F6"
+    ],
+    "browser": [
+      "browser/enterprise-workspace.spec.ts | a review retains its draft, focus, selection and list scroll when resized mid-task"
+    ]
+  }
+}

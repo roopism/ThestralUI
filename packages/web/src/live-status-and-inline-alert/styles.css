@@ -1,0 +1,19 @@
+/* @uld-css-chunk primitives.033 */
+
+.uld-status {
+  padding: var(--uld-gap);
+  border-inline-start: 0.2rem solid var(--uld-accent);
+}
+/* @uld-css-chunk primitives.034 */
+
+.uld-status[data-tone='error'] {
+  border-color: var(--uld-danger);
+}
+/* @uld-css-chunk primitives */
+
+.uld-status[data-tone='success'] {
+  border-color: var(--uld-success);
+}
+.uld-status[data-tone='warning'] {
+  border-color: var(--uld-warning);
+}

@@ -1,0 +1,58 @@
+{
+  "id": "Date field",
+  "order": 33,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:DateField",
+      "forms:DateInput",
+      "forms:DateSegment"
+    ],
+    "web": "exported",
+    "native": "planned",
+    "story": "catalog/Authoring.stories.tsx",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "forms:DateField",
+    "expectation": "Localized segments, controlled value, granularity and invalid dates",
+    "oracle": "Edit segments in two calendar locales with a keyboard and distinguish missing from invalid input.",
+    "evidence": {
+      "unit": "tests/depth-controls.test.tsx | date and time fields expose independently named editable and readonly segments"
+    },
+    "assertions": {
+      "tests/depth-controls.test.tsx | date and time fields expose independently named editable and readonly segments": "expect(day?.getAttribute('contenteditable')).toBe('true')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/date-field/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/depth-controls.test.tsx",
+      "tests/form-spec-states.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/Authoring.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/depth-controls.test.tsx | date and time fields expose independently named editable and readonly segments",
+      "tests/form-spec-states.test.tsx | a disabled picker blocks its trigger and a readonly date range preserves both endpoints",
+      "tests/form-spec-states.test.tsx | an available calendar date becomes selected and a time field exposes editable clock segments",
+      "tests/form-spec-states.test.tsx | readonly numbers, disabled thumbs and readonly temporal segments expose state on the editing target"
+    ]
+  }
+}

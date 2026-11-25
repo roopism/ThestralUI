@@ -1,0 +1,83 @@
+{
+  "family": "Button",
+  "scenarios": [
+    {
+      "id": "button.save-once",
+      "fixture": "save-once",
+      "steps": [
+        {
+          "expect": "visible",
+          "target": {
+            "role": "button",
+            "name": "Save"
+          }
+        },
+        {
+          "act": "activate",
+          "target": {
+            "role": "button",
+            "name": "Save"
+          }
+        },
+        {
+          "expect": "visible",
+          "target": {
+            "role": "text",
+            "name": "Saved once"
+          }
+        }
+      ],
+      "webKeyboardFocus": {
+        "role": "button",
+        "name": "Save"
+      }
+    },
+    {
+      "id": "button.pending-keeps-name",
+      "fixture": "pending-once",
+      "steps": [
+        {
+          "act": "activate",
+          "target": {
+            "role": "button",
+            "name": "Save"
+          }
+        },
+        {
+          "expect": "visible",
+          "target": {
+            "role": "text",
+            "name": "Saved once"
+          }
+        },
+        {
+          "expect": "busy",
+          "target": {
+            "role": "button",
+            "name": "Save"
+          }
+        }
+      ]
+    },
+    {
+      "id": "button.disabled-named",
+      "fixture": "disabled-skip",
+      "steps": [
+        {
+          "expect": "visible",
+          "target": {
+            "role": "button",
+            "name": "Archive"
+          }
+        },
+        {
+          "expect": "visible",
+          "target": {
+            "role": "text",
+            "name": "Not archived"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "id": "Command palette",
+  "order": 65,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "workflows:CommandPalette"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseWorkspace.stories.tsx",
+    "test": "tests/command-palette/workflow-commands.test.tsx",
+    "ownership": "internal with owner callbacks"
+  },
+  "depth": {
+    "representative": "workflows:CommandPalette",
+    "expectation": "Query, grouped results, disabled commands, no results and precise focus return",
+    "oracle": "Search quickly, invoke by keyboard and restore the originating trigger across nested overlays.",
+    "evidence": {
+      "browser": "browser/enterprise-workspace.spec.ts | command dialog supports keyboard activation and returns focus on dismissal"
+    },
+    "assertions": {
+      "browser/enterprise-workspace.spec.ts | command dialog supports keyboard activation and returns focus on dismissal": "expect(trigger).toBeFocused()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/command-palette/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/command-palette/workflow-commands.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-workspace.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseWorkspace.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/command-palette/styles.css"
+    ]
+  },
+  "cases": {
+    "browser": [
+      "browser/enterprise-workspace.spec.ts | command dialog supports keyboard activation and returns focus on dismissal"
+    ],
+    "vitest": [
+      "tests/command-palette/workflow-commands.test.tsx | searches labels and keywords, skips disabled commands and respects composing text"
+    ]
+  }
+}

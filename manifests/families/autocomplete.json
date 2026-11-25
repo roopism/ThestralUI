@@ -1,0 +1,51 @@
+{
+  "id": "Autocomplete",
+  "order": 30,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:Autocomplete"
+    ],
+    "web": "exported",
+    "native": "planned",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "forms:Autocomplete",
+    "expectation": "Filtering and collection composition with dynamic results and IME",
+    "oracle": "Compose public input and collection, type in Japanese, clear results and regain keyboard selection.",
+    "evidence": {
+      "unit": "tests/depth-controls.test.tsx | a combobox keeps its selected label and an autocomplete narrows a collection to the entered query"
+    },
+    "assertions": {
+      "tests/depth-controls.test.tsx | a combobox keeps its selected label and an autocomplete narrows a collection to the entered query": "expect(screen.queryByRole('option', { name: 'East' })).toBeNull()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/autocomplete/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/depth-controls.test.tsx",
+      "tests/autocomplete/form-spec-states.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/autocomplete/form-spec-states.test.tsx | clearing an empty autocomplete query restores the collection and its accessible searchbox",
+      "tests/depth-controls.test.tsx | a combobox keeps its selected label and an autocomplete narrows a collection to the entered query"
+    ]
+  }
+}

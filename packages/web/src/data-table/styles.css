@@ -1,0 +1,132 @@
+/* @uld-css-chunk data-table */
+@scope (.uld-data) to ([data-uld-table]) {
+  :scope {
+    container-type: inline-size;
+    display: grid;
+    gap: var(--uld-space-md, 16px);
+    min-inline-size: 0;
+  }
+
+  .uld-data-scroll {
+    position: relative;
+    overflow: auto;
+    max-inline-size: 100%;
+  }
+
+  :scope table {
+    border-collapse: collapse;
+    inline-size: 100%;
+  }
+
+  :scope :is(th, td) {
+    border-block-end: thin solid currentColor;
+    padding: var(--uld-space-xs, 4px) var(--uld-space-sm, 8px);
+    text-align: start;
+    overflow-wrap: anywhere;
+  }
+
+  :scope :is(input, button) {
+    font: inherit;
+  }
+
+  :scope button,
+  .uld-data-tools input:not([type='checkbox']) {
+    min-block-size: var(--uld-control, 44px);
+  }
+
+  :scope :is(th, .uld-cell-edit) button,
+  .uld-cell-edit {
+    color: inherit;
+  }
+
+  :scope :is(.uld-data-tools, .uld-data-pages) {
+    display: flex;
+    gap: var(--uld-gap, 8px);
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .uld-data-tools label {
+    display: grid;
+    gap: var(--uld-space-xs, 4px);
+    max-inline-size: 100%;
+  }
+
+  :scope input {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    box-sizing: border-box;
+  }
+
+  :scope .uld-data-tools {
+    align-items: end;
+  }
+
+  :scope button:enabled {
+    cursor: pointer;
+  }
+
+  :scope :focus-visible {
+    outline: var(--uld-focus-width, 3px) solid var(--uld-focus, Highlight);
+    outline-offset: var(--uld-focus-offset, 3px);
+  }
+
+  :scope input[type='checkbox'] {
+    block-size: 1.25rem;
+    inline-size: 1.25rem;
+    margin: 0;
+    vertical-align: middle;
+  }
+
+  /* Keep existing rows in place while the data owner is fetching the next result. */
+  .uld-data-scroll > [data-part='status'] {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-end: 0;
+    padding: var(--uld-space-xs, 4px) var(--uld-space-sm, 8px);
+    background: var(--uld-surface, Canvas);
+    color: var(--uld-text, CanvasText);
+    pointer-events: none;
+  }
+  :scope [data-part='selector'] {
+    display: inline-grid;
+    place-items: center;
+    min-inline-size: var(--uld-control, 44px);
+    min-block-size: var(--uld-control, 44px);
+  }
+  :scope :is([data-part='search'], [data-part='edit'], [data-part='sort'], [data-part='bulk-action'], [data-part='pagination'] button) {
+    color: var(--uld-text, CanvasText);
+    background: var(--uld-surface, Canvas);
+    border: thin solid var(--uld-border, ButtonBorder);
+    border-radius: var(--uld-radius, 7px);
+    padding-inline: var(--uld-space-sm, 8px);
+  }
+  :scope [data-part='bulk-action']:enabled {
+    color: var(--uld-on-accent, ButtonFace);
+    background: var(--uld-accent, ButtonText);
+  }
+  :scope button:disabled { color: var(--uld-disabled, GrayText); }
+  .uld-data-cell-label { display: none; }
+  :scope[data-size='sm'] :is(th, td) { padding-block: 0; }
+  :scope[data-size='lg'] :is(th, td) { padding-block: var(--uld-space-md, 16px); }
+
+  @container (max-width: 38rem) {
+    :scope[data-layout='adaptive'] table,
+    :scope[data-layout='adaptive'] :is(thead, tbody) { display: block; }
+    :scope[data-layout='adaptive'] thead tr { display: flex; flex-wrap: wrap; align-items: center; }
+    :scope[data-layout='adaptive'] tbody tr {
+      display: grid;
+      gap: var(--uld-gap, 8px);
+      margin-block: var(--uld-space-sm, 8px);
+      padding: var(--uld-space-md, 16px);
+      border: thin solid var(--uld-border, currentColor);
+      border-radius: var(--uld-radius, 7px);
+    }
+    :scope[data-layout='adaptive'] tbody td { border: 0; padding: 0; }
+    :scope[data-layout='adaptive'] .uld-data-cell-label {
+      display: block; color: var(--uld-muted, inherit); font-size: var(--uld-caption-size, 13px);
+    }
+  }
+}
+/* @uld-css-chunk collections.001 */
+@import './data-table.css';

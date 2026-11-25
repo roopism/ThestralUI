@@ -1,0 +1,60 @@
+{
+  "id": "ResourceCard",
+  "order": 79,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "patterns:ResourceCard"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/DocumentReview.stories.tsx",
+    "test": "tests/resourcecard/patterns.test.tsx",
+    "ownership": "owner supplied state"
+  },
+  "depth": {
+    "representative": "patterns:ResourceCard",
+    "expectation": "Media, metadata, single accessible action and owner-controlled selected state",
+    "oracle": "Use the same card in shortlist and document list; ensure nested content does not cause duplicate selection.",
+    "evidence": {
+      "unit": "tests/resourcecard/patterns.test.tsx | a resource keeps the caller in control of selection and exposes a stable action name",
+      "packed": "patterns:ResourceCard"
+    },
+    "assertions": {
+      "tests/resourcecard/patterns.test.tsx | a resource keeps the caller in control of selection and exposes a stable action name": "expect(button.getAttribute('aria-pressed')).toBe('false')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/resourcecard/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/resourcecard/patterns.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/adaptive.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/DocumentReview.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/resourcecard/patterns.test.tsx | a resource keeps the caller in control of selection and exposes a stable action name",
+      "tests/resourcecard/patterns.test.tsx | the title names the article, metadata and artwork collapse, and the heading follows the outline",
+      "tests/resourcecard/patterns.test.tsx | a selected card toggles off through the same action and forwards article attributes"
+    ],
+    "browser": [
+      "browser/adaptive.spec.ts | touch input | shortlist saves by tap on a narrow screen"
+    ]
+  }
+}

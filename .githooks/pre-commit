@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+mode=${1:-commit}
+case "$mode" in
+  commit)
+    git cat-file -e ':package-lock.json' 2>/dev/null || { echo 'Staged gate requires package-lock.json' >&2; exit 1; }
+    exec node packages/policy/quality/check-staged.mjs commit;;
+  full)
+    exec node packages/policy/quality/check-staged.mjs full;;
+  message)
+    subject=$(sed -n '1p' "$2")
+    printf '%s\n' "$subject" | grep -Eq '^(feat|fix|chore|docs|test|refactor|perf|revert|build|ci)(\([a-z0-9-]+\))?: [^ ]' \
+      || { echo 'Use a Conventional Commit subject, for example: feat(button): add a link tone' >&2; exit 1; }
+    ! grep -iq 'codex' "$2" || { echo 'The commit message contains a forbidden word (rule R1)' >&2; exit 1; };;
+  *) echo "Unknown check mode $mode" >&2; exit 1;;
+esac

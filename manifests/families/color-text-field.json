@@ -1,0 +1,54 @@
+{
+  "id": "Color text field",
+  "order": 39,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "color:ColorField",
+      "color:ColorSwatch"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/Authoring.stories.tsx",
+    "test": "tests/color-text-field/authoring.test.tsx",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "color:ColorField",
+    "expectation": "Controlled and uncontrolled color, normalized formats and a labeled swatch",
+    "oracle": "Type valid and invalid input and check the committed value, label and non-color indication.",
+    "evidence": {
+      "unit": "tests/color-text-field/authoring.test.tsx | a palette field has a localized name and emits normalized colors on commit"
+    },
+    "assertions": {
+      "tests/color-text-field/authoring.test.tsx | a palette field has a localized name and emits normalized colors on commit": "expect(change.mock.lastCall?.[0].toString('hex').toLowerCase()).toBe('#ff9900')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/color-text-field/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/color-text-field/authoring.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/Authoring.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/color-text-field/authoring.test.tsx | a palette field has a localized name and emits normalized colors on commit"
+    ]
+  }
+}

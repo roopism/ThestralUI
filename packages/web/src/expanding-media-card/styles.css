@@ -1,0 +1,36 @@
+/* @uld-css-chunk motion.032 */
+
+.uld-media-card {
+  display: grid;
+  gap: var(--uld-space-md);
+  box-sizing: border-box;
+  padding: var(--uld-space-md);
+  color: var(--uld-text);
+  background: var(--uld-surface);
+  border: 1px solid var(--uld-border);
+  border-radius: var(--uld-radius-lg);
+}
+/* @uld-css-chunk motion.033 */
+
+.uld-media-visual {
+  aspect-ratio: 16 / 6;
+  overflow: hidden;
+  border-radius: var(--uld-radius);
+}
+/* @uld-css-chunk motion.034 */
+
+.uld-media-card[data-expanded] .uld-media-visual {
+  aspect-ratio: 16 / 9;
+}
+/* @uld-css-chunk motion.035 */
+
+.uld-media-visual > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* @uld-css-chunk motion.036 */
+
+.uld-media-details > :first-child {
+  margin-block-start: 0;
+}

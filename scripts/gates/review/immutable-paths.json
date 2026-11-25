@@ -1,0 +1,18 @@
+[
+  "scripts/gates/immutable-paths.json",
+  "scripts/gates/no-weakening.mjs",
+  "scripts/gates/qualification-attempt.mjs",
+  "scripts/gates/review/control-context.mjs",
+  "scripts/gates/review/data-entries.mjs",
+  "scripts/gates/review/immutable-paths.json",
+  "scripts/gates/review/qualification-policy.mjs",
+  "scripts/manifests/depth-registry.mjs",
+  "scripts/manifests/family-manifest-input.mjs",
+  "scripts/manifests/generate.mjs",
+  "scripts/manifests/product-registrations.mjs",
+  "scripts/manifests/reviewed-bundle-budgets.mjs",
+  "scripts/package-workspaces.mjs",
+  "scripts/selection/native-tier-two.mjs",
+  "scripts/selection/staged-tree.mjs",
+  "tests/android/profiles.json"
+]

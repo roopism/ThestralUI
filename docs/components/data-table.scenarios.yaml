@@ -1,0 +1,232 @@
+{
+  "family": "Data table",
+  "scenarios": [
+    {
+      "id": "data-table.sort-column",
+      "fixture": "queue",
+      "steps": [
+        {
+          "expect": "before",
+          "target": {
+            "role": "checkbox",
+            "name": "Select Gamma"
+          },
+          "other": {
+            "role": "checkbox",
+            "name": "Select Beta"
+          }
+        },
+        {
+          "act": "activate",
+          "target": {
+            "role": "button",
+            "name": "Name"
+          }
+        },
+        {
+          "expect": "before",
+          "target": {
+            "role": "checkbox",
+            "name": "Select Alpha"
+          },
+          "other": {
+            "role": "checkbox",
+            "name": "Select Gamma"
+          }
+        }
+      ]
+    },
+    {
+      "id": "data-table.select-record",
+      "fixture": "queue",
+      "steps": [
+        {
+          "expect": "visible",
+          "target": {
+            "role": "text",
+            "name": "0 selected"
+          }
+        },
+        {
+          "act": "activate",
+          "target": {
+            "role": "checkbox",
+            "name": "Select Beta"
+          }
+        },
+        {
+          "expect": "checked",
+          "target": {
+            "role": "checkbox",
+            "name": "Select Beta"
+          }
+        },
+        {
+          "expect": "mixed",
+          "target": {
+            "role": "checkbox",
+            "name": "Select page"
+          }
+        },
+        {
+          "expect": "visible",
+          "target": {
+            "role": "text",
+            "name": "1 selected"
+          }
+        }
+      ]
+    },
+    {
+      "id": "data-table.archive-across-pages",
+      "fixture": "work-queue",
+      "steps": [
+        {
+          "act": "activate",
+          "target": {
+            "role": "checkbox",
+            "name": "Select Atlas audit"
+          }
+        },
+        {
+          "act": "activate",
+          "target": {
+            "role": "button",
+            "name": "Next page"
+          }
+        },
+        {
+          "act": "activate",
+          "target": {
+            "role": "checkbox",
+            "name": "Select Cedar audit"
+          }
+        },
+        {
+          "expect": "visible",
+          "target": {
+            "role": "text",
+            "name": "2 selected"
+          }
+        },
+        {
+          "act": "activate",
+          "target": {
+            "role": "button",
+            "name": "Archive selected"
+          }
+        },
+        {
+          "expect": "visible",
+          "target": {
+            "role": "text",
+            "name": "Archived 2 records"
+          }
+        }
+      ]
+    },
+    {
+      "id": "data-table.empty-results",
+      "fixture": "empty-queue",
+      "steps": [
+        {
+          "act": "activate",
+          "target": {
+            "role": "button",
+            "name": "Show unassigned"
+          }
+        },
+        {
+          "expect": "visible",
+          "target": {
+            "role": "text",
+            "name": "No matching records"
+          }
+        }
+      ]
+    },
+    {
+      "id": "data-table.retry-edit",
+      "fixture": "edit-queue",
+      "steps": [
+        {
+          "act": "activate",
+          "target": {
+            "role": "button",
+            "name": "Edit Title, Atlas audit"
+          }
+        },
+        {
+          "expect": "visible",
+          "target": {
+            "role": "button",
+            "name": "Cancel"
+          }
+        },
+        {
+          "act": "activate",
+          "target": {
+            "role": "button",
+            "name": "Save"
+          }
+        },
+        {
+          "expect": "busy",
+          "target": {
+            "role": "button",
+            "name": "Save"
+          }
+        },
+        {
+          "expect": "visible",
+          "target": {
+            "role": "text",
+            "name": "Waiting for connection"
+          }
+        },
+        {
+          "act": "activate",
+          "target": {
+            "role": "button",
+            "name": "Work offline"
+          }
+        },
+        {
+          "expect": "visible",
+          "target": {
+            "role": "alert",
+            "name": "Could not save changes. Try again."
+          }
+        },
+        {
+          "act": "activate",
+          "target": {
+            "role": "button",
+            "name": "Save"
+          }
+        },
+        {
+          "expect": "busy",
+          "target": {
+            "role": "button",
+            "name": "Save"
+          }
+        },
+        {
+          "act": "activate",
+          "target": {
+            "role": "button",
+            "name": "Reconnect"
+          }
+        },
+        {
+          "expect": "visible",
+          "target": {
+            "role": "text",
+            "name": "Saved Atlas audit"
+          }
+        }
+      ]
+    }
+  ]
+}

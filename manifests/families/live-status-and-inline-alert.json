@@ -1,0 +1,56 @@
+{
+  "id": "Live status and inline alert",
+  "order": 14,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "primitives:Status"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/Primitives.stories.tsx",
+    "test": "tests/primitives.test.tsx",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "primitives:Status",
+    "expectation": "Semantic severity and urgency under caller control",
+    "oracle": "Verify success versus error announcement and identical text in separate live regions without forced focus.",
+    "evidence": {
+      "packed": "primitives:Status"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/live-status-and-inline-alert/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/primitives.test.tsx",
+      "tests/live-status-and-inline-alert/foundation-specs.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/Primitives.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/live-status-and-inline-alert/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/live-status-and-inline-alert/foundation-specs.test.tsx | ordinary updates stay polite and an error becomes an alert while its real message remains readable",
+      "tests/primitives.test.tsx | icon actions are named, suppress duplicate input while busy, and error feedback is announced",
+      "tests/live-status-and-inline-alert/foundation-specs.test.tsx | a warning stays a polite status and keeps its readable message",
+      "tests/live-status-and-inline-alert/foundation-specs.test.tsx | the live region persists across message updates so each change is announced in place",
+      "tests/live-status-and-inline-alert/foundation-specs.test.tsx | a status forwards its ref, caller class and attributes without adding a tab stop"
+    ]
+  }
+}

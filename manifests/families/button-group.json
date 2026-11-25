@@ -1,0 +1,49 @@
+{
+  "id": "Button group",
+  "order": 17,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "primitives:ButtonGroup"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/Primitives.stories.tsx",
+    "test": "tests/family-contracts.test.tsx",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "primitives:ButtonGroup",
+    "expectation": "Named grouping, orientation, token gap and optional joined treatment",
+    "oracle": "Check vertical and horizontal sets after wrapping; independent buttons retain native tab order.",
+    "evidence": {
+      "packed": "primitives:ButtonGroup"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/button-group/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/family-contracts.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/Primitives.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/family-contracts.test.tsx | layout, loading, image and grouping slots preserve native roles, names, and caller content"
+    ]
+  }
+}

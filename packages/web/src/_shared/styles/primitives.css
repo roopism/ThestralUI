@@ -1,0 +1,131 @@
+/* @uld-css-chunk primitives.001 */
+.uld-stack,
+.uld-surface {
+  display: grid;
+  gap: var(--uld-gap);
+  min-inline-size: 0;
+}
+/* @uld-css-chunk primitives.003 */
+
+/* Override only explicitly configured layout properties. Nested layouts retain their defaults. */
+/* @uld-css-chunk primitives.004 */
+
+[data-uld-gap='xs'] {
+  gap: var(--uld-space-xs);
+}
+/* @uld-css-chunk primitives.005 */
+
+[data-uld-gap='sm'] {
+  gap: var(--uld-space-sm);
+}
+/* @uld-css-chunk primitives.006 */
+
+[data-uld-gap='md'] {
+  gap: var(--uld-space-md);
+}
+/* @uld-css-chunk primitives.007 */
+
+[data-uld-gap='lg'] {
+  gap: var(--uld-space-lg);
+}
+/* @uld-css-chunk primitives.008 */
+
+[data-uld-gap='xl'] {
+  gap: var(--uld-space-xl);
+}
+/* @uld-css-chunk primitives.009 */
+
+@container (inline-size >= 36rem) {
+  [data-uld-wide-gap='xs'] {
+    gap: var(--uld-space-xs);
+  }
+  [data-uld-wide-gap='sm'] {
+    gap: var(--uld-space-sm);
+  }
+  [data-uld-wide-gap='md'] {
+    gap: var(--uld-space-md);
+  }
+  [data-uld-wide-gap='lg'] {
+    gap: var(--uld-space-lg);
+  }
+  [data-uld-wide-gap='xl'] {
+    gap: var(--uld-space-xl);
+  }
+}
+/* @uld-css-chunk primitives.010 */
+
+[data-uld-align='start'] {
+  --uld-layout-align: start;
+}
+/* @uld-css-chunk primitives.011 */
+
+[data-uld-align='center'] {
+  --uld-layout-align: center;
+}
+/* @uld-css-chunk primitives.012 */
+
+[data-uld-align='end'] {
+  --uld-layout-align: end;
+}
+/* @uld-css-chunk primitives.013 */
+
+[data-uld-align='stretch'] {
+  --uld-layout-align: stretch;
+}
+/* @uld-css-chunk primitives.014 */
+
+[data-uld-align='baseline'] {
+  --uld-layout-align: baseline;
+}
+/* @uld-css-chunk primitives.015 */
+
+[data-uld-justify='start'] {
+  --uld-layout-justify: start;
+}
+/* @uld-css-chunk primitives.016 */
+
+[data-uld-justify='center'] {
+  --uld-layout-justify: center;
+}
+/* @uld-css-chunk primitives.017 */
+
+[data-uld-justify='end'] {
+  --uld-layout-justify: end;
+}
+/* @uld-css-chunk primitives.018 */
+
+[data-uld-justify='space-between'] {
+  --uld-layout-justify: space-between;
+}
+/* @uld-css-chunk primitives.019 */
+
+[data-uld-justify='space-around'] {
+  --uld-layout-justify: space-around;
+}
+/* @uld-css-chunk primitives.020 */
+
+[data-uld-justify='space-evenly'] {
+  --uld-layout-justify: space-evenly;
+}
+/* @uld-css-chunk primitives.028 */
+
+.uld-badge,
+.uld-avatar {
+  display: inline-grid;
+  place-items: center;
+  background: var(--uld-surface);
+  color: var(--uld-text);
+  border: 1px solid var(--uld-border);
+  border-radius: 100vmax;
+}
+/* @uld-css-chunk primitives.036 */
+
+@media (forced-colors: active) {
+  .uld-scroll:focus-visible,
+  .uld-button:focus-visible {
+    outline: 2px solid Highlight;
+  }
+  .uld-skeleton {
+    border: 1px solid CanvasText;
+  }
+}

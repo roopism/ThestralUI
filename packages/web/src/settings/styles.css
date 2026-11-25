@@ -1,0 +1,26 @@
+/* @uld-css-chunk workflows.030 */
+
+.uld-setting {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.25rem;
+}
+/* @uld-css-chunk workflows.031 */
+
+.uld-setting label {
+  display: flex;
+  align-items: center;
+}
+/* @uld-css-chunk workflows.032 */
+
+.uld-setting input {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  margin: 0.75rem;
+}
+/* @uld-css-chunk workflows.033 */
+
+.uld-setting > div {
+  grid-column: 1/-1;
+}

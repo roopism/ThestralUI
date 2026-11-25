@@ -1,0 +1,16 @@
+{
+  "id": "Stepper",
+  "order": 87,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [],
+    "web": "equivalent",
+    "native": "planned",
+    "note": "Wizard provides a labeled current step and navigation.",
+    "ownership": "stateless or host-managed"
+  }
+}

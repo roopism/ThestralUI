@@ -1,0 +1,71 @@
+{
+  "id": "Stack",
+  "order": 1,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "primitives:Stack"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/StackInline.stories.tsx",
+    "test": "tests/browser/stack-inline.spec.ts",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "primitives:Stack",
+    "expectation": "Token gap, cross-axis alignment, main-axis distribution and container-relative gap",
+    "oracle": "Keep a narrow panel on a wide viewport at its compact spacing; resize the panel and retain focused children.",
+    "evidence": {
+      "packed-priority": "primitives:Stack"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/stack/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/stack-inline.test.tsx"
+    ],
+    "nativeUnit": [
+      "tests/native/scenarios.test.cjs"
+    ],
+    "browser": [
+      "tests/browser/stack-inline.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/StackInline.stories.tsx"
+    ],
+    "scenario": [
+      "docs/components/stack.scenarios.yaml"
+    ],
+    "style": [
+      "packages/web/src/stack/styles.css"
+    ]
+  },
+  "cases": {
+    "browser": [
+      "browser/stack-inline.spec.ts | Stack and Inline resolve gaps from independent parents and retain focus while resizing",
+      "browser/stack-inline.spec.ts | logical RTL alignment, wrapping, nested defaults and keyboard order survive tight layouts"
+    ],
+    "vitest": [
+      "tests/stack-inline.test.tsx | layout token and distribution contracts preserve the host, class and ref"
+    ],
+    "native": [
+      "tests/native/scenarios.test.cjs | stack.child-order"
+    ]
+  },
+  "budgets": [
+    {
+      "name": "@ui-lazy-dev/ui-web/primitives#Stack",
+      "bytes": 264,
+      "order": 14
+    }
+  ]
+}

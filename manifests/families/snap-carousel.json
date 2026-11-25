@@ -1,0 +1,77 @@
+{
+  "id": "Snap carousel",
+  "order": 73,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "Roadmap"
+    ],
+    "api": [
+      "motion:Carousel"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/MotionGallery.stories.tsx",
+    "test": "tests/snap-carousel/motion-media.test.tsx",
+    "ownership": "internal with owner callbacks"
+  },
+  "depth": {
+    "representative": "motion:Carousel",
+    "expectation": "Accessible slide identity, prev/next labels, touch scrolling and externally synchronized position when needed",
+    "oracle": "Check active slide after swipe/resize and after deleting the selected item; inactive controls stay out of tab order.",
+    "evidence": {
+      "unit": "tests/snap-carousel/motion-media.test.tsx | carousel keeps selection by id and exposes only the selected slide to keyboard users"
+    },
+    "assertions": {
+      "tests/snap-carousel/motion-media.test.tsx | carousel keeps selection by id and exposes only the selected slide to keyboard users": "expect(screen.getByRole('status').textContent).toBe('1 of 2')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/snap-carousel/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/snap-carousel/motion-media.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/motion.spec.ts"
+    ],
+    "visual": [
+      "tests/browser/motion.visual.ts"
+    ],
+    "story": [
+      "catalog/MotionGallery.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/snap-carousel/styles.css"
+    ]
+  },
+  "cases": {
+    "visual": [
+      "browser/motion.visual.ts | editorial dark desktop",
+      "browser/motion.visual.ts | editorial dark phone",
+      "browser/motion.visual.ts | editorial light desktop",
+      "browser/motion.visual.ts | editorial light phone",
+      "browser/motion.visual.ts | enterprise dark desktop",
+      "browser/motion.visual.ts | enterprise dark phone",
+      "browser/motion.visual.ts | enterprise light desktop",
+      "browser/motion.visual.ts | enterprise light phone"
+    ],
+    "vitest": [
+      "tests/snap-carousel/motion-media.test.tsx | carousel keeps selection by id and exposes only the selected slide to keyboard users",
+      "tests/snap-carousel/motion-media.test.tsx | the carousel and each slide carry their role descriptions and only the current slide is exposed",
+      "tests/snap-carousel/motion-media.test.tsx | arrow keys follow the reading direction, Home and End reach the ends and the ends disable their control",
+      "tests/snap-carousel/motion-media.test.tsx | a controlled carousel shows the owner slide and reports requests without moving on its own"
+    ],
+    "browser": [
+      "browser/motion.spec.ts | native scroll, RTL keys and reduced-motion disclosures work without horizontal page overflow",
+      "browser/motion.spec.ts | save and remove a publication in the editorial theme",
+      "browser/motion.spec.ts | save and remove a publication in the enterprise theme"
+    ]
+  }
+}

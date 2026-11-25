@@ -1,0 +1,46 @@
+# Gate definitions and acceptance limits require the repository owner's approval.
+# Use root-anchored literal files or directories. The gate path check reads this list.
+/.github/ @thetechgeeek
+/.githooks/ @thetechgeeek
+/packages/policy/ @thetechgeeek
+# Exact generated data. The frozen check verifies its bytes and keeps prior contracts.
+/packages/policy/quality/api-depth/families.json
+/packages/style-policy/ @thetechgeeek
+/scripts/ @thetechgeeek
+/manifests/shared.json @thetechgeeek
+/tests/android/ @thetechgeeek
+/tests/simulator/ @thetechgeeek
+/tests/browser/quality-perf-baseline.json @thetechgeeek
+/tests/browser/quality-perf-check.mjs @thetechgeeek
+/tests/browser/quality-perf-policy.mjs @thetechgeeek
+/tests/browser/quality-perf.mjs @thetechgeeek
+/tests/browser/quality-style-scope.mjs @thetechgeeek
+/tests/browser/quality.spec.ts @thetechgeeek
+/tests/browser/motion.visual.config.ts @thetechgeeek
+# Story inputs for the calibrated performance journeys.
+/catalog/MotionGallery.stories.tsx @thetechgeeek
+/catalog/EnterpriseWorkspace.stories.tsx @thetechgeeek
+/catalog/EnterpriseCollections.stories.tsx @thetechgeeek
+/catalog/collection-events.ts @thetechgeeek
+# Shared cross-platform scenario interpreters and their dedicated regression suites.
+/tests/native/scenarios.test.cjs @thetechgeeek
+/tests/scenarios/android.test.cjs @thetechgeeek
+/tests/scenarios/read.test.cjs @thetechgeeek
+/tests/scenarios/web/adapter-regressions.spec.ts @thetechgeeek
+/tests/scenarios/web/adapter.ts @thetechgeeek
+/tests/scenarios/web/playwright.config.ts @thetechgeeek
+# The public stylesheet composition contract validates emitted cascade layers.
+/tests/contracts/cascade-layers.test.mjs @thetechgeeek
+/tests/packaging/default-ceiling.json @thetechgeeek
+/tests/packaging/baseline/ @thetechgeeek
+/docs/ui-ownership-exceptions.json @thetechgeeek
+/ui-policy.json @thetechgeeek
+/package.json @thetechgeeek
+/package-lock.json @thetechgeeek
+/.npmrc @thetechgeeek
+/.nvmrc @thetechgeeek
+/babel.config.cjs @thetechgeeek
+/tsconfig.json @thetechgeeek
+/playwright.config.ts @thetechgeeek
+/vitest.config.ts @thetechgeeek
+/jest.native.config.cjs @thetechgeeek

@@ -1,0 +1,152 @@
+/* @uld-css-chunk styles.003 */
+
+.uld-button {
+  padding: 0.55em 1em;
+  color: var(--uld-on-accent);
+  background: var(--uld-accent);
+  cursor: pointer;
+  font-weight: 600;
+}
+/* @uld-css-chunk styles.004 */
+
+.uld-button[data-size='sm'] {
+  --uld-control: var(--uld-compact-target);
+}
+/* @uld-css-chunk styles.005 */
+
+.uld-button[data-size='lg'] {
+  --uld-control: var(--uld-large-target);
+}
+/* @uld-css-chunk styles.006 */
+
+.uld-button:has(> [inert]) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--uld-gap);
+}
+/* @uld-css-chunk styles.007 */
+
+@media (any-pointer: coarse) {
+  .uld-button[data-size='sm'] {
+    --uld-control: var(--uld-coarse-target);
+  }
+}
+/* @uld-css-chunk styles.008 */
+
+.uld-button[data-tone='secondary'] {
+  color: var(--uld-text);
+  background: var(--uld-surface);
+}
+/* @uld-css-chunk styles.009 */
+
+.uld-button:disabled {
+  cursor: default;
+  opacity: 0.62;
+}
+/* @uld-css-chunk styles.020 */
+
+@media (prefers-reduced-motion: no-preference) {
+  .uld-button[data-motion='press'] {
+    transition: transform var(--uld-press-duration) ease-out;
+  }
+  .uld-button[data-motion='press']:enabled:active {
+    transform: scale(var(--uld-press-scale));
+  }
+}
+/* @uld-css-chunk primitives.037 */
+
+
+.uld-button[data-icon-only] {
+  inline-size: var(--uld-control);
+  block-size: var(--uld-control);
+  padding: 0;
+}
+/* @uld-css-chunk styles */
+
+.uld-button {
+  position: relative;
+}
+
+.uld-button[data-full-width] {
+  inline-size: 100%;
+}
+
+/* Touch screens get the coarse target in every density, matching native. */
+@media (any-pointer: coarse) {
+  .uld-button[data-size='md'],
+  .uld-button:not([data-size]) {
+    --uld-control: var(--uld-coarse-target);
+  }
+}
+
+.uld-button[data-tone='danger'] {
+  color: var(--uld-on-accent);
+  background: var(--uld-danger);
+  border-color: var(--uld-danger);
+}
+
+.uld-button:is([data-tone='ghost'], [data-tone='link']) {
+  color: var(--uld-text);
+  background: transparent;
+  border-color: transparent;
+}
+
+.uld-button[data-tone='link'] {
+  color: var(--uld-accent);
+  text-decoration: underline;
+}
+
+@media (hover: hover) {
+  .uld-button:enabled:not([aria-disabled='true']):hover {
+    filter: brightness(0.94);
+  }
+  .uld-button[data-tone='ghost']:enabled:not([aria-disabled='true']):hover {
+    background: var(--uld-selected);
+    filter: none;
+  }
+}
+
+/* Busy keeps the label in place, so the button keeps its width and its accessible name. */
+.uld-button[aria-busy='true'] {
+  cursor: progress;
+}
+
+.uld-button[aria-busy='true'] > :not(.uld-button-busy-indicator) {
+  opacity: 0;
+}
+
+.uld-button > .uld-button-busy-indicator {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  inline-size: var(--uld-space-md);
+  block-size: var(--uld-space-md);
+  border: var(--uld-indicator-stroke) solid;
+  /* Half of the indicator size or more draws a circle. */
+  border-radius: var(--uld-radius-lg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .uld-button > .uld-button-busy-indicator {
+    animation: uld-button-busy var(--uld-busy-duration) ease-in-out infinite alternate;
+  }
+}
+
+@keyframes uld-button-busy {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (forced-colors: active) {
+  /* Use the system's control colors together. HighlightText can disappear against a forced text backplate. */
+  .uld-button:is([data-tone='primary'], [data-tone='danger']) {
+    color: ButtonText;
+    background-color: ButtonFace;
+  }
+
+  .uld-button:disabled {
+    color: GrayText;
+    opacity: 1;
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "id": "Locale provider",
+  "order": 55,
+  "inventory": {
+    "layer": "infrastructure",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC"
+    ],
+    "api": [
+      "navigation:I18nProvider"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/Controls.stories.tsx",
+    "test": "tests/runtime-isolation.test.tsx",
+    "ownership": "owner supplied state"
+  },
+  "depth": {
+    "representative": "navigation:I18nProvider",
+    "expectation": "Nested locales and directions with deterministic server rendering",
+    "oracle": "Render nested locales concurrently, hydrate both, and inspect independent names/dates/directions.",
+    "evidence": {
+      "unit": "tests/runtime-isolation.test.tsx | independent server renders retain their own locale, theme and field identifiers"
+    },
+    "assertions": {
+      "tests/runtime-isolation.test.tsx | independent server renders retain their own locale, theme and field identifiers": "expect(b).not.toContain('أمثلة')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/locale-provider/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/checkbox/family-contracts.test.tsx",
+      "tests/runtime-isolation.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/preferences.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/Controls.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/runtime-isolation.test.tsx | independent server renders retain their own locale, theme and field identifiers"
+    ],
+    "browser": [
+      "browser/preferences.spec.ts | arabic preferences retain keyboard selection and reflow at 320 CSS pixels",
+      "browser/preferences.spec.ts | english preferences retain keyboard selection and reflow at 320 CSS pixels",
+      "browser/preferences.spec.ts | expanded preferences retain keyboard selection and reflow at 320 CSS pixels",
+      "browser/preferences.spec.ts | japanese preferences retain keyboard selection and reflow at 320 CSS pixels"
+    ]
+  }
+}

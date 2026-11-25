@@ -1,0 +1,43 @@
+/* @uld-css-chunk workflows.006 */
+
+.uld-split-pane {
+  overflow: auto;
+  overscroll-behavior: contain;
+  overflow-anchor: none;
+  max-block-size: var(--uld-pane-max-height, none);
+}
+/* @uld-css-chunk workflows.007 */
+
+.uld-split-handle {
+  display: none;
+  cursor: col-resize;
+  touch-action: none;
+  align-self: stretch;
+  min-block-size: 2.75rem;
+  background: linear-gradient(
+    to right,
+    transparent calc(50% - 1px),
+    currentColor calc(50% - 1px),
+    currentColor calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+}
+/* @uld-css-chunk workflows.008 */
+
+.uld-split-handle:focus-visible,
+.uld-split-pane:focus-visible {
+  outline: 2px solid Highlight;
+  outline-offset: -2px;
+}
+/* @uld-css-chunk workflows.010 */
+
+@media (pointer: coarse) {
+  .uld-split-handle {
+    min-inline-size: 2.75rem;
+  }
+  @container (min-width:48rem) {
+    .uld-split-frame {
+      grid-template-columns: minmax(0, var(--uld-list-size)) 2.75rem minmax(0, 1fr);
+    }
+  }
+}

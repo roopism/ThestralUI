@@ -1,0 +1,671 @@
+{
+  "revision": "2026-11-20.2",
+  "references": {
+    "APG": "https://www.w3.org/WAI/ARIA/apg/patterns/",
+    "RAC": "https://react-aria.adobe.com/",
+    "Material": "https://m3.material.io/components",
+    "Apple": "https://developer.apple.com/design/human-interface-guidelines/components",
+    "Roadmap": "system-roadmap.md"
+  },
+  "depthRevision": "2026-11-20.3",
+  "projects": [
+    "chromium",
+    "firefox",
+    "webkit"
+  ],
+  "entries": [
+    {
+      "pkg": "tokens",
+      "path": ".",
+      "target": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "order": 0
+    },
+    {
+      "pkg": "tokens",
+      "path": "./styles.css",
+      "target": "./dist/styles.css",
+      "order": 1
+    },
+    {
+      "pkg": "tokens",
+      "path": "./tokens.json",
+      "target": "./tokens.json",
+      "order": 2
+    },
+    {
+      "pkg": "web",
+      "path": ".",
+      "target": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "order": 0
+    },
+    {
+      "pkg": "web",
+      "path": "./styles.css",
+      "target": "./dist/styles.css",
+      "order": 2
+    },
+    {
+      "pkg": "web",
+      "path": "./forms",
+      "target": {
+        "types": "./dist/forms.d.ts",
+        "default": "./dist/forms.js"
+      },
+      "order": 3
+    },
+    {
+      "pkg": "web",
+      "path": "./navigation",
+      "target": {
+        "types": "./dist/navigation.d.ts",
+        "default": "./dist/navigation.js"
+      },
+      "order": 4
+    },
+    {
+      "pkg": "web",
+      "path": "./primitives",
+      "target": {
+        "types": "./dist/primitives.d.ts",
+        "default": "./dist/primitives.js"
+      },
+      "order": 5
+    },
+    {
+      "pkg": "web",
+      "path": "./primitives.css",
+      "target": "./dist/primitives.css",
+      "order": 6
+    },
+    {
+      "pkg": "web",
+      "path": "./collections",
+      "target": {
+        "types": "./dist/collections.d.ts",
+        "default": "./dist/collections.js"
+      },
+      "order": 7
+    },
+    {
+      "pkg": "web",
+      "path": "./workflows",
+      "target": {
+        "types": "./dist/workflows.d.ts",
+        "default": "./dist/workflows.js"
+      },
+      "order": 8
+    },
+    {
+      "pkg": "web",
+      "path": "./motion",
+      "target": {
+        "types": "./dist/motion.d.ts",
+        "default": "./dist/motion.js"
+      },
+      "order": 9
+    },
+    {
+      "pkg": "web",
+      "path": "./motion.css",
+      "target": "./dist/motion.css",
+      "order": 10
+    },
+    {
+      "pkg": "web",
+      "path": "./collections.css",
+      "target": "./dist/collections.css",
+      "order": 11
+    },
+    {
+      "pkg": "web",
+      "path": "./workflows.css",
+      "target": "./dist/workflows.css",
+      "order": 12
+    },
+    {
+      "pkg": "web",
+      "path": "./entry-fields",
+      "target": {
+        "types": "./dist/entry-fields.d.ts",
+        "default": "./dist/entry-fields.js"
+      },
+      "order": 13
+    },
+    {
+      "pkg": "web",
+      "path": "./controls.css",
+      "target": "./dist/controls.css",
+      "order": 14
+    },
+    {
+      "pkg": "web",
+      "path": "./patterns",
+      "target": {
+        "types": "./dist/patterns.d.ts",
+        "default": "./dist/patterns.js"
+      },
+      "order": 15
+    },
+    {
+      "pkg": "web",
+      "path": "./color",
+      "target": {
+        "types": "./dist/color.d.ts",
+        "default": "./dist/color.js"
+      },
+      "order": 16
+    },
+    {
+      "pkg": "native",
+      "path": ".",
+      "target": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "order": 0
+    },
+    {
+      "pkg": "policy",
+      "path": ".",
+      "target": "./index.mjs",
+      "order": 0
+    },
+    {
+      "pkg": "style-policy",
+      "path": ".",
+      "target": "./policy.mjs",
+      "order": 0
+    },
+    {
+      "pkg": "tokens",
+      "path": "./modes",
+      "target": {
+        "types": "./dist/modes/index.d.ts",
+        "default": "./dist/modes/index.js"
+      },
+      "order": 3
+    },
+    {
+      "pkg": "tokens",
+      "path": "./modes.css",
+      "target": "./dist/modes.css",
+      "order": 4
+    },
+    {
+      "pkg": "tokens",
+      "path": "./brands/enterprise",
+      "target": {
+        "types": "./dist/modes/brands/enterprise.d.ts",
+        "default": "./dist/modes/brands/enterprise.js"
+      },
+      "order": 5
+    },
+    {
+      "pkg": "tokens",
+      "path": "./brands/enterprise.css",
+      "target": "./dist/brands/enterprise.css",
+      "order": 6
+    },
+    {
+      "pkg": "tokens",
+      "path": "./brands/expressive",
+      "target": {
+        "types": "./dist/modes/brands/expressive.d.ts",
+        "default": "./dist/modes/brands/expressive.js"
+      },
+      "order": 7
+    },
+    {
+      "pkg": "tokens",
+      "path": "./brands/expressive.css",
+      "target": "./dist/brands/expressive.css",
+      "order": 8
+    },
+    {
+      "pkg": "tokens",
+      "path": "./theme-css",
+      "target": {
+        "types": "./dist/theme-css.d.ts",
+        "default": "./dist/theme-css.js"
+      },
+      "order": 9
+    },
+    {
+      "pkg": "web",
+      "path": "./document",
+      "target": {
+        "types": "./dist/document.d.ts",
+        "default": "./dist/document.js"
+      },
+      "order": 29
+    }
+  ],
+  "budgets": [
+    {
+      "name": "@ui-lazy-dev/tokens",
+      "bytes": 527,
+      "order": 0
+    },
+    {
+      "name": "@ui-lazy-dev/tokens#tokens",
+      "bytes": 527,
+      "order": 1
+    },
+    {
+      "name": "@ui-lazy-dev/tokens/styles.css",
+      "bytes": 615,
+      "order": 2
+    },
+    {
+      "name": "@ui-lazy-dev/tokens/tokens.json",
+      "bytes": 1156,
+      "order": 3
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web",
+      "bytes": 844,
+      "order": 4
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/dialog",
+      "bytes": 991,
+      "order": 6
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/styles.css",
+      "bytes": 1735,
+      "order": 8
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/forms",
+      "bytes": 146258,
+      "order": 9
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/navigation",
+      "bytes": 62722,
+      "order": 11
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/primitives",
+      "bytes": 1135,
+      "order": 13
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/primitives.css",
+      "bytes": 862,
+      "order": 15
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/collections",
+      "bytes": 81433,
+      "order": 16
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/collections.css",
+      "bytes": 1290,
+      "order": 18
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/workflows",
+      "bytes": 39729,
+      "order": 19
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/workflows.css",
+      "bytes": 1502,
+      "order": 21
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/motion",
+      "bytes": 23817,
+      "order": 22
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/motion.css",
+      "bytes": 1886,
+      "order": 24
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/entry-fields",
+      "bytes": 1337,
+      "order": 25
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/controls.css",
+      "bytes": 1620,
+      "order": 27
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/patterns",
+      "bytes": 979,
+      "order": 28
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/color",
+      "bytes": 78181,
+      "order": 30
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/avatar",
+      "bytes": 472,
+      "order": 32
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/document",
+      "bytes": 223,
+      "order": 245
+    },
+    {
+      "name": "@ui-lazy-dev/ui-web/document#Heading",
+      "bytes": 143,
+      "order": 246
+    }
+  ],
+  "cases": {
+    "browser": [
+      "browser/cascade-layers.spec.ts | an embedded control isolates hostile host rules and accepts local consumer styles",
+      "browser/cascade-layers.spec.ts | an unlayered consumer can override a component with zero selector specificity",
+      "browser/cascade-layers.spec.ts | host resets and library controls coexist without changing unrelated buttons",
+      "browser/catalog-headers.spec.ts | the deployed headers allow the catalog manager to display an interactive story",
+      "browser/enterprise-privacy.spec.ts | recovery interactions keep confidential values out of requests, logs, URLs and persistent storage",
+      "browser/motion.spec.ts | reflows with doubled text size and preserves keyboard focus in system colors",
+      "browser/quality.spec.ts | audits regional content, nested themes and focus across landscape, tablet and constrained desktop",
+      "browser/quality.spec.ts | failed saves retain input and stale or unmounted submissions cannot replace the latest result",
+      "browser/quality.spec.ts | interrupting editorial motion by leaving the feature allows fresh keyboard interaction after return",
+      "browser/quality.spec.ts | retains navigation, focus and reflow at 200 and 400 percent magnification"
+    ],
+    "visual": [],
+    "vitest": [
+      "tests/patterns/class-composer.test.tsx | pattern components share the class composer and retain caller classes",
+      "tests/runtime-streams.test.tsx | overlapping streamed requests hydrate independently in reverse order and preserve distinct IDs, refs and edits"
+    ],
+    "native": [
+      "tests/native/scenarios.test.cjs | a registered third fixture runs through the native renderer",
+      "tests/native/scenarios.test.cjs | a static text duplicate cannot satisfy a named live alert observation",
+      "tests/native/scenarios.test.cjs | explicit native accessibility order overrides JSX sibling order"
+    ],
+    "node": [
+      "packages/policy/test/protected-inputs.test.mjs | Android hardware profiles require a recorded owner decision to change",
+      "packages/policy/test/protected-inputs.test.mjs | protected Maestro flows retain every registered step",
+      "packages/policy/test/protected-inputs.test.mjs | the measured catalog fixtures participate in protected input checks",
+      "packages/policy/test/protected-inputs.test.mjs | Git and deployment ignore linked worker checkouts",
+      "packages/policy/test/protected-inputs.test.mjs | workflow pins retain the trusted action and every registered step input",
+      "packages/codemods/fixtures.test.mjs | a compatible additive codemod cannot account for an unrelated breaking change",
+      "packages/codemods/fixtures.test.mjs | button-icon-slots matches its before/after fixture and is safe to repeat",
+      "packages/policy/test/host-attributes.test.mjs | a spec may omit standard platform attributes but never a library property",
+      "packages/policy/test/host-attributes.test.mjs | standard platform attributes are counted, and the library contract stays listed",
+      "packages/policy/test/rules.test.mjs | TypeScript path aliases, destructured namespaces, and spread click handlers retain their owners",
+      "packages/policy/test/rules.test.mjs | allows only the assigned implementation symbol and explains a new workflow button",
+      "packages/policy/test/rules.test.mjs | an existing reviewed input cannot grant permission for the next input in the same component",
+      "packages/policy/test/rules.test.mjs | an owner cannot lend its name to an unrelated local implementation in the same file",
+      "packages/policy/test/rules.test.mjs | client ownership follows hook aliases and permits React server memoization",
+      "packages/policy/test/rules.test.mjs | consumers count eligible uses from public imports, local bridges, and raw inputs by screen",
+      "packages/policy/test/rules.test.mjs | exact reviewed fingerprints cannot hide changed nodes, duplicates, stale or expired exceptions",
+      "packages/policy/test/rules.test.mjs | finds a local alias of a runtime factory and a direct re-export of a native host",
+      "packages/policy/test/rules.test.mjs | follows aliases, namespaces, barrel reexports, host strings and local wrappers including RN",
+      "packages/policy/test/rules.test.mjs | pure visual native views are allowed; accessible and pressable native views need an interaction owner",
+      "packages/policy/test/rules.test.mjs | foundation helpers retain dependency and cycle checks through relative and public family routes",
+      "packages/policy/test/rules.test.mjs | registered family imports need a matching package target, public binding and owned source",
+      "packages/policy/test/rules.test.mjs | moving a private host preserves the old owner and rejects raw or missing replacements",
+      "packages/policy/test/rules.test.mjs | reports private imports, reversed layers, catalog dependencies, cross-platform imports and cycles",
+      "packages/policy/test/rules.test.mjs | server-safe leaves and mixed re-exports reject a blanket client boundary",
+      "packages/policy/test/rules.test.mjs | type-only imports do not create runtime cycles; package aliases cannot invert the layering",
+      "packages/policy/test/size-ceiling.test.mjs | the default install ceiling is 60 KB gzip",
+      "packages/policy/test/size-ceiling.test.mjs | the default install total counts each default import once and enforces the ceiling",
+      "packages/style-policy/test/bin.test.mjs | the package-manager bin symlink executes the gate and cannot pass an invalid profile",
+      "packages/style-policy/test/policy.test.mjs | CSS-in-JSX, animations and RN style aliases share literal enforcement",
+      "packages/style-policy/test/policy.test.mjs | a forged baseline with an impossible date or a line-count ceiling is rejected",
+      "packages/style-policy/test/policy.test.mjs | accepts the keyboard height and safe-area geometry, rejecting arbitrary environment names and nonzero fallbacks",
+      "packages/style-policy/test/policy.test.mjs | checks colors, typography, spacing, radius, focus, elevation and motion",
+      "packages/style-policy/test/policy.test.mjs | checks each selector branch and prevents selectors escaping to siblings",
+      "packages/style-policy/test/policy.test.mjs | component color reads use semantic tokens across imports, destructuring and CSS",
+      "packages/style-policy/test/policy.test.mjs | distinguishes tokens from raw and computed inline RN/JSX styles and SVG paints",
+      "packages/style-policy/test/policy.test.mjs | exact scoped exceptions expire and duplicate violations consume independent allowances",
+      "packages/style-policy/test/policy.test.mjs | rejects a literal appended to the real workflow or Elevate admin component",
+      "packages/style-policy/test/policy.test.mjs | rejects bad types, missing aliases, cycles and incomplete themes",
+      "packages/style-policy/test/policy.test.mjs | requires native shadow and elevation values to use semantic tokens",
+      "packages/style-policy/test/policy.test.mjs | unknown JS token references and unknown CSS aliases fail despite a valid import shape",
+      "tests/browser/quality-perf-check.mjs | runtime budgets reject regressions, missing measurements and invalid budgets",
+      "tests/contracts/api-depth-routing.test.mjs | a planned case or a different engine cannot replace a passed family-specific behavior",
+      "tests/contracts/api-depth-routing.test.mjs | published depth increments require a matched API spec and public story with the reviewed properties",
+      "tests/contracts/api-depth-routing.test.mjs | the frozen depth policy assigns an executed minimum to every family and every native implementation",
+      "tests/contracts/api-depth.test.mjs | an absent family or an unowned companion export fails",
+      "tests/contracts/api-depth.test.mjs | erased prop, widened prop, or any component fails consumer contracts",
+      "tests/contracts/api-depth.test.mjs | every export needs its own executed and mutation-sensitive probe",
+      "tests/contracts/api-depth.test.mjs | missing per-family type case blocks the release",
+      "tests/contracts/api-depth.test.mjs | missing props and narrowed unions fail positive consumers",
+      "tests/contracts/api-depth.test.mjs | real public import accepts all valid cases and rejects invalid ones",
+      "tests/contracts/api-depth.test.mjs | the packed native root and a subpath keep distinct exports with the same name",
+      "tests/contracts/api.test.mjs | accepts additive exports and rejects a removed export or a newly required prop",
+      "tests/contracts/cascade-layers.test.mjs | every published web and token stylesheet places its rules inside the public cascade layers",
+      "tests/contracts/commit-hook.test.mjs | Git uses the staged bootstrap and blocks a commit when its lockfile is missing",
+      "tests/contracts/commit-hook.test.mjs | an unborn or partially staged repository tests only its index with a working Git context",
+      "tests/contracts/commit-hook.test.mjs | uses the original staged diff for simulator selection before creating the validation snapshot",
+      "tests/contracts/component-specs.test.mjs | a server-safe contract exercises its exact packed export in the foundation route",
+      "tests/contracts/component-specs.test.mjs | a state may draw light and dark values from different existing tokens in one cell",
+      "tests/contracts/component-specs.test.mjs | a visual filename outside project testMatch cannot qualify the family fails qualification",
+      "tests/contracts/component-specs.test.mjs | absent family spec fails in the full denominator",
+      "tests/contracts/component-specs.test.mjs | an internal peer type keeps its package-qualified name in sibling and hoisted installs",
+      "tests/contracts/component-specs.test.mjs | an unregistered nested visual fixture cannot qualify the family fails qualification",
+      "tests/contracts/component-specs.test.mjs | controlled and initial properties have distinct ownership when both are exported",
+      "tests/contracts/component-specs.test.mjs | documented default drift fails qualification",
+      "tests/contracts/component-specs.test.mjs | documented type drift fails qualification",
+      "tests/contracts/component-specs.test.mjs | duplicate slot fails qualification",
+      "tests/contracts/component-specs.test.mjs | empty section fails qualification",
+      "tests/contracts/component-specs.test.mjs | foreign family scenario ID fails qualification",
+      "tests/contracts/component-specs.test.mjs | foreign family scenario file fails qualification",
+      "tests/contracts/component-specs.test.mjs | framework term in contract fails qualification",
+      "tests/contracts/component-specs.test.mjs | incorrect import path fails qualification",
+      "tests/contracts/component-specs.test.mjs | invalid platform status fails qualification",
+      "tests/contracts/component-specs.test.mjs | invented public prop fails qualification",
+      "tests/contracts/component-specs.test.mjs | invented token fails qualification",
+      "tests/contracts/component-specs.test.mjs | line link outside the test fails qualification",
+      "tests/contracts/component-specs.test.mjs | markup in contract fails qualification",
+      "tests/contracts/component-specs.test.mjs | matching stable spec qualifies and a matching draft passes without counting",
+      "tests/contracts/component-specs.test.mjs | missing Slots table fails qualification",
+      "tests/contracts/component-specs.test.mjs | missing binding section fails qualification",
+      "tests/contracts/component-specs.test.mjs | missing native binding fails qualification",
+      "tests/contracts/component-specs.test.mjs | missing required section fails qualification",
+      "tests/contracts/component-specs.test.mjs | missing stable scenario link fails qualification",
+      "tests/contracts/component-specs.test.mjs | missing web binding fails qualification",
+      "tests/contracts/component-specs.test.mjs | multiline N/A reason fails qualification",
+      "tests/contracts/component-specs.test.mjs | native evidence cannot qualify the web visual test fails qualification",
+      "tests/contracts/component-specs.test.mjs | non-test link in a binding Tests section fails qualification",
+      "tests/contracts/component-specs.test.mjs | only draft specs can describe an outstanding scenario with a reason",
+      "tests/contracts/component-specs.test.mjs | optional fallback without a reason fails qualification",
+      "tests/contracts/component-specs.test.mjs | optional placeholder without a reason fails qualification",
+      "tests/contracts/component-specs.test.mjs | optional slots may use explained fallbacks and placeholders",
+      "tests/contracts/component-specs.test.mjs | ownership drift fails qualification",
+      "tests/contracts/component-specs.test.mjs | packed declarations include host props, variant-specific props and every helper parameter",
+      "tests/contracts/component-specs.test.mjs | packed defaults and ref targets are rendered and detect hand-edited generated rows",
+      "tests/contracts/component-specs.test.mjs | pending binding work in stable spec fails qualification",
+      "tests/contracts/component-specs.test.mjs | platform name in contract fails qualification",
+      "tests/contracts/component-specs.test.mjs | platform property in contract fails qualification",
+      "tests/contracts/component-specs.test.mjs | raw token size fails qualification",
+      "tests/contracts/component-specs.test.mjs | ref drift fails qualification",
+      "tests/contracts/component-specs.test.mjs | reference to missing test file fails qualification",
+      "tests/contracts/component-specs.test.mjs | slot owns its own spacing fails qualification",
+      "tests/contracts/component-specs.test.mjs | stable missing visual coverage fails qualification",
+      "tests/contracts/component-specs.test.mjs | test-named file without a test fails qualification",
+      "tests/contracts/component-specs.test.mjs | the portable scenario project cannot qualify the web browser journey fails qualification",
+      "tests/contracts/component-specs.test.mjs | the same packed type has a portable name across private and public module layouts",
+      "tests/contracts/component-specs.test.mjs | token literals are rejected even in a headless explanation and outside a table",
+      "tests/contracts/component-specs.test.mjs | unclassified stable web export fails qualification",
+      "tests/contracts/component-specs.test.mjs | undocumented public prop fails qualification",
+      "tests/contracts/component-specs.test.mjs | undocumented required slot omission fails qualification",
+      "tests/contracts/component-specs.test.mjs | unexplained N/A fails qualification",
+      "tests/contracts/component-specs.test.mjs | unimplemented stable scenario fails qualification",
+      "tests/contracts/component-specs.test.mjs | unknown rendering classification fails qualification",
+      "tests/contracts/component-specs.test.mjs | unknown scenario within existing file fails qualification",
+      "tests/contracts/component-specs.test.mjs | unnamed slot fails qualification",
+      "tests/contracts/component-specs.test.mjs | unquoted token beside a valid token fails qualification",
+      "tests/contracts/fixture-privacy.test.mjs | scans generated package members for private fixture data before release",
+      "tests/contracts/integrity.test.mjs | neutral browser reports require every contract ID per engine and reject skipped examples",
+      "tests/contracts/integrity.test.mjs | production renderers reject credential logging, network access and HTML injection",
+      "tests/contracts/integrity.test.mjs | required matrix rejects zero, skipped, ignored failures and missing engines",
+      "tests/contracts/revision-snapshot.test.mjs | integration and pre-push qualify the requested revision even when the working index differs",
+      "tests/contracts/revision-snapshot.test.mjs | pre-push qualifies distinct outgoing objects and ignores deleted refs",
+      "tests/contracts/simulator-scope.test.mjs | every staged simulator input or gate change requires a run",
+      "tests/contracts/simulator-scope.test.mjs | native deletions and either direction of a rename require the simulator",
+      "tests/contracts/simulator-scope.test.mjs | the active commit gate checks the staged tree and always runs shared checks",
+      "tests/contracts/simulator-scope.test.mjs | unborn indices, unusual filenames and missing Git state are handled safely",
+      "tests/contracts/simulator-scope.test.mjs | web, docs and policy-only commits skip iOS even with unstaged native edits",
+      "tests/contracts/simulator.test.mjs | a symlinked simulator runner fails closed when its candidate is missing",
+      "tests/contracts/simulator.test.mjs | accepts one executed simulator flow and rejects a skipped, failed or absent flow",
+      "tests/contracts/simulator.test.mjs | selects an available iPhone and rejects an unavailable or non-phone target",
+      "tests/contracts/snapshot-dependencies.test.mjs | an install is reused only for matching staged inputs and keeps workspace links isolated",
+      "tests/contracts/tokens.test.mjs | each theme resolves semantic text, emphasis and visible focus to contrasting colors",
+      "tests/contracts/tokens.test.mjs | token check rejects a stale generated artifact",
+      "tests/contracts/unit-matrix.test.mjs | matches required unit case identities including nested suites and rejects skips, duplicates and removed cases",
+      "tests/inventory.test.mjs | counts unique component families independently of slot and helper exports",
+      "tests/inventory.test.mjs | prevents silent changes to the shipped inventory and duplicate ownership of bindings",
+      "tests/inventory.test.mjs | rejects invented platform or maturity values and contradictory status claims",
+      "tests/inventory.test.mjs | requires implementation, examples, tests and owner for supported families and explicit exclusion reasons",
+      "tests/inventory.test.mjs | typed bindings distinguish controlled inputs and their refs from stateless layout",
+      "tests/inventory.test.mjs | unrelated existing story or test files cannot satisfy the evidence gate",
+      "tests/manifests/generate.test.mjs | a validator fixture replacement removes retired case names and preserves family cases",
+      "tests/manifests/generate.test.mjs | family changes reach the inventory, registry, matrices, package surface and budget",
+      "tests/manifests/generate.test.mjs | generation preserves package settings and existing component implementations",
+      "tests/manifests/generate.test.mjs | two independent families cannot silently overwrite the same bundle budget",
+      "tests/manifests/generate.test.mjs | worker snapshots derive shared files and reject a staged output that disagrees with its manifest",
+      "tests/packaging/artifact-cache.test.mjs | artifact reuse checks the expected bytes after missing, corrupt or linked cache entries",
+      "tests/packaging/artifact-cache.test.mjs | packed inputs include generated files, executable modes and tool inputs",
+      "tests/packaging/catalog-headers.test.mjs | the catalog disables access to the camera, microphone and location",
+      "tests/packaging/catalog-headers.test.mjs | the catalog restricts scripts, connections, embedding and document base URLs",
+      "tests/packaging/device-host.test.mjs | a JavaScript-only library change keeps the compiled app, a native requirement does not",
+      "tests/packaging/device-host.test.mjs | a host is built once per key, survives an interrupted build and keeps one host per platform",
+      "tests/packaging/device-host.test.mjs | an emulator counts as snapshot-booted only when the saved state actually loaded",
+      "tests/packaging/device-host.test.mjs | each run installs exactly the candidate archives and removes extras from the previous run",
+      "tests/packaging/device-host.test.mjs | every host file, tool version and platform is part of the key",
+      "tests/packaging/release.test.mjs | a one-byte compressed regression beyond the ceiling fails",
+      "tests/packaging/release.test.mjs | a packed consumer installs transitive local dependencies and only its required platform peers",
+      "tests/packaging/release.test.mjs | rejects new public entries without an assigned budget and stale entries",
+      "tests/packaging/release.test.mjs | requires approved licenses and provenance for every dependency",
+      "tests/packaging/release.test.mjs | verifies historical archives against immutable release digests",
+      "tests/packaging/surface.test.mjs | requires a minor increment for additive pre-1.0 APIs and preserves existing style/token IDs",
+      "tests/scenarios/read.test.cjs | iPhone reading order uses the accessible hierarchy and detects duplicates and missing targets",
+      "tests/scenarios/read.test.cjs | the device adapter discovers a third registration and rejects missing fixtures or unsupported operations",
+      "tests/scenarios/read.test.cjs | unknown operations, extra fields and ambiguous identifiers fail before adapter execution",
+      "tests/selection/selector.test.mjs | .githooks/pre-commit requires full tier 2 even alongside a known family change",
+      "tests/selection/selector.test.mjs | a CSS import can make an additional public stylesheet consume the edited chunks",
+      "tests/selection/selector.test.mjs | a collocated native renderer test always demands a simulator",
+      "tests/selection/selector.test.mjs | a novel production file with no public route forces full tier 2",
+      "tests/selection/selector.test.mjs | a registered web fixture owns its statically reachable family helpers",
+      "tests/selection/selector.test.mjs | an opaque asset glob in production cannot conceal an edge",
+      "tests/selection/selector.test.mjs | manifest ownership distinguishes families behind a shared barrel",
+      "tests/selection/selector.test.mjs | native subpath edits select the owning family and its device test",
+      "tests/selection/selector.test.mjs | one code, style, scenario, collocated browser and test manifest change stays scoped",
+      "tests/selection/selector.test.mjs | ordinary native changes keep their simulator journey in a scoped run",
+      "tests/selection/selector.test.mjs | packages/policy/quality/check-staged.mjs requires full tier 2 even alongside a known family change",
+      "tests/selection/selector.test.mjs | packages/tokens/tokens.json requires full tier 2 even alongside a known family change",
+      "tests/selection/selector.test.mjs | packages/web/package.json requires full tier 2 even alongside a known family change",
+      "tests/selection/selector.test.mjs | packages/web/src/shared.css requires full tier 2 even alongside a known family change",
+      "tests/selection/selector.test.mjs | portable scenario specs use their own runner and edits to it require tier 2",
+      "tests/selection/selector.test.mjs | publishing changes, unclassified CSS, case removal and reassigning an owned file require tier 2",
+      "tests/selection/selector.test.mjs | removing or renaming a module considers its old path",
+      "tests/selection/selector.test.mjs | scripts/selection/policy.mjs requires full tier 2 even alongside a known family change",
+      "tests/selection/selector.test.mjs | selects a changed family, transitive dependent families and their tests from staged imports",
+      "tests/selection/selector.test.mjs | staged browser fixtures with a known story route are selected through their story imports",
+      "tests/selection/selector.test.mjs | the selector CLI emits JSON when the snapshot has a symlinked ancestor",
+      "tests/selection/selector.test.mjs | tsconfig.json requires full tier 2 even alongside a known family change",
+      "tests/selection/selector.test.mjs | type-only import queries propagate changes to dependent families",
+      "tests/selection/selector.test.mjs | unknown.data requires full tier 2 even alongside a known family change",
+      "tests/selection/selector.test.mjs | unresolved computed local imports force broad coverage",
+      "tests/workers/parallel.test.mjs | a batch can run a child gate under its reservation without admitting other suites",
+      "tests/workers/parallel.test.mjs | contending processes cannot own or reclaim the same generation twice",
+      "tests/workers/parallel.test.mjs | each worker and MAIN gets a disjoint block for its servers",
+      "tests/workers/parallel.test.mjs | integration is exclusive across linked worktrees and releases on errors",
+      "tests/workers/parallel.test.mjs | new branches start on the integration revision and reuse leaves worker edits intact",
+      "tests/workers/parallel.test.mjs | simulator is exclusive across linked worktrees and releases on errors",
+      "tests/workers/parallel.test.mjs | stale recovery only clears a dead local owner after 30 minutes",
+      "tests/workers/parallel.test.mjs | workers reuse only successful installs of their own current lockfile",
+      "tests/scenarios/android.test.cjs | Android Back requires an observed hidden keyboard across both input method dump formats",
+      "tests/scenarios/android.test.cjs | Android low-end budgets reject missing input samples, flagged frames, and a single over-limit metric",
+      "tests/scenarios/android.test.cjs | Android qualification rejects missing or duplicate profiles, unexecuted journeys and missing low-end measurements",
+      "tests/scenarios/android.test.cjs | Android resource prefixes and accessible labels resolve one ordered neutral fixture target",
+      "tests/scenarios/android.test.cjs | Android semantic probes require the native class, name, enabled and focused states on one host",
+      "packages/policy/test/scoped-declarations.test.mjs | scoped packed declarations preserve canonical union order and retain genuine role changes",
+      "packages/style-policy/test/policy.test.mjs | only the exact retired source selects its previously reviewed style exceptions",
+      "packages/style-policy/test/policy.test.mjs | reviewed component scope exceptions retain their enclosing scope and exact declarations",
+      "packages/style-policy/test/native-provenance.test.mjs | a new native style binding can be absent only in its exact unregistered family revision",
+      "packages/style-policy/test/native-provenance.test.mjs | explicit scope selectors require the reviewed component boundary and retain token checks",
+      "packages/style-policy/test/native-provenance.test.mjs | native style passthroughs require the original typed caller or an existing semantic token leaf",
+      "packages/style-policy/test/native-provenance.test.mjs | standalone CSS permits only the exact registered semantic fallback value and unit",
+      "packages/policy/test/host-attributes.test.mjs | only verified scenario IDs in their states-matrix cell are neutral contract references",
+      "tests/scenarios/android.test.cjs | native checkbox semantic probes reject impostors, ambiguous names, disabled activation and incorrect state on both platforms",
+      "tests/scenarios/read.test.cjs | only true checkbox targets accept neutral checked-state expectations",
+      "packages/policy/test/size-ceiling.test.mjs | the released independent imports stay mandatory with a separate cap when families grow",
+      "packages/policy/test/size-ceiling.test.mjs | the canonical application budgets each unique asset and rejects coverage gaps, leaks and duplicate requests",
+      "packages/policy/test/size-ceiling.test.mjs | default CSS assembly retains the released owners",
+      "packages/style-policy/test/family-fallback.test.mjs | canonical scope, published token role, documented token and CSS length all agree",
+      "packages/style-policy/test/family-fallback.test.mjs | ambiguous equal-valued spacings and swapped control variants cannot qualify",
+      "packages/style-policy/test/family-fallback.test.mjs | the target element and every selector branch are family-owned within the actual standalone chunk",
+      "packages/style-policy/test/family-fallback.test.mjs | manifest, exported target, family-owned source and nonsymlinked provenance are required",
+      "packages/style-policy/test/native-provenance.test.mjs | new standalone web stylesheet allowances require its exact old manifest or its actual matching public route",
+      "packages/policy/test/reviewed-bundle-budgets.test.mjs | reviewed legacy budgets activate only at their ordered, independently published checkpoints",
+      "packages/policy/test/reviewed-bundle-budgets.test.mjs | first adoption verifies the real owned source and preserves every other incumbent import",
+      "packages/policy/test/reviewed-bundle-budgets.test.mjs | each newly adopted legacy allowance requires exactly one corresponding actual packed measurement",
+      "packages/policy/test/reviewed-bundle-parent.test.mjs | local staged and complete checks use the genuine Git start, and shallow release events resolve only their trusted base",
+      "packages/style-policy/test/native-provenance.test.mjs | native style slots accept literal absence and reject same-spelled mutable styles and missing design values",
+      "tests/browser/quality-perf-check.mjs | independent native checks run after a failed browser measurement and the gate retains every failure",
+      "tests/browser/quality-perf-check.mjs | timed diagnostic children release themselves and never signal a closed process group",
+      "packages/style-policy/test/text-typography.test.mjs | Text preserves the caller override and derives all four relative font sizes from published dimensions",
+      "packages/policy/test/rules.test.mjs | a future host owner applies only to its published family and exact module-level symbol",
+      "packages/style-policy/test/native-provenance.test.mjs | a private native style host must render through its real public family binding"
+    ]
+  },
+  "files": {
+    "source": [
+      "packages/web/src/_shared/entry-fields/binding.tsx",
+      "packages/web/src/_shared/jsx-dev-runtime.ts",
+      "packages/web/src/_shared/jsx-runtime.ts",
+      "packages/web/src/_shared/motion-choreography/binding.tsx",
+      "packages/web/src/_shared/motion-overlays/binding.tsx",
+      "packages/web/src/_shared/patterns/binding.tsx",
+      "packages/web/src/_shared/primitives/binding.tsx",
+      "packages/web/src/_shared/safe-url/binding.tsx",
+      "packages/web/src/_shared/workflows-status/binding.tsx",
+      "packages/web/src/avatar.tsx",
+      "packages/web/src/collections-virtual.tsx",
+      "packages/web/src/collections.tsx",
+      "packages/web/src/color.ts",
+      "packages/web/src/dialog.tsx",
+      "packages/web/src/document.ts",
+      "packages/web/src/entry-fields.tsx",
+      "packages/web/src/forms.ts",
+      "packages/web/src/index.tsx",
+      "packages/web/src/motion-choreography.ts",
+      "packages/web/src/motion-media.tsx",
+      "packages/web/src/motion-overlays.tsx",
+      "packages/web/src/motion.ts",
+      "packages/web/src/navigation.ts",
+      "packages/web/src/patterns.tsx",
+      "packages/web/src/primitives.tsx",
+      "packages/web/src/safe-url.ts",
+      "packages/web/src/workflows-commands.tsx",
+      "packages/web/src/workflows-layout.tsx",
+      "packages/web/src/workflows-status.tsx",
+      "packages/web/src/workflows.tsx"
+    ],
+    "nativeSource": [
+      "packages/native/src/dialog.tsx",
+      "packages/native/src/form-field.tsx",
+      "packages/native/src/index.tsx"
+    ],
+    "style": [
+      "packages/web/src/_shared/styles/collections.css",
+      "packages/web/src/_shared/styles/controls.css",
+      "packages/web/src/_shared/styles/motion.css",
+      "packages/web/src/_shared/styles/primitives.css",
+      "packages/web/src/_shared/styles/styles.css",
+      "packages/web/src/_shared/styles/workflows.css"
+    ]
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "id": "Form wizard",
+  "order": 64,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "workflows:Wizard"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseWorkspace.stories.tsx",
+    "test": "tests/form-wizard/workflow-commands.test.tsx",
+    "ownership": "owner supplied state"
+  },
+  "depth": {
+    "representative": "workflows:Wizard",
+    "expectation": "Caller-owned current step, validation, pending completion and restored form input",
+    "oracle": "Race a double finish with a step transition and verify a single completion and retained draft on failure.",
+    "evidence": {
+      "unit": "tests/form-wizard/workflow-commands.test.tsx | retains draft controls across steps and focuses the new step heading"
+    },
+    "assertions": {
+      "tests/form-wizard/workflow-commands.test.tsx | retains draft controls across steps and focuses the new step heading": "expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('Mei')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/form-wizard/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/form-wizard/workflow-commands.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-workspace.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseWorkspace.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/form-wizard/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/form-wizard/workflow-commands.test.tsx | an invalid step cannot advance and pending submissions are disabled",
+      "tests/form-wizard/workflow-commands.test.tsx | retains draft controls across steps and focuses the new step heading"
+    ],
+    "browser": [
+      "browser/enterprise-workspace.spec.ts | restores a saved workflow after reload and retries interrupted batch items"
+    ]
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "id": "Expanding media card",
+  "order": 74,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "motion:ExpandableMediaCard"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/MotionGallery.stories.tsx",
+    "test": "tests/expanding-media-card/motion-media.test.tsx",
+    "ownership": "internal with owner callbacks"
+  },
+  "depth": {
+    "representative": "motion:ExpandableMediaCard",
+    "expectation": "Labeled disclosure, accessible expanded content, reversible optional transition and owner synchronization",
+    "oracle": "Interrupt expansion at 200% text size and verify focus and expanded state match final display.",
+    "evidence": {
+      "unit": "tests/expanding-media-card/motion-media.test.tsx | media disclosure preserves media state during repeated reversals"
+    },
+    "assertions": {
+      "tests/expanding-media-card/motion-media.test.tsx | media disclosure preserves media state during repeated reversals": "expect(screen.getByTestId('media')).toBe(media)"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/expanding-media-card/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/expanding-media-card/motion-media.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/motion.spec.ts",
+      "tests/expanding-media-card/quality.spec.ts"
+    ],
+    "visual": [
+      "tests/browser/motion.visual.ts"
+    ],
+    "story": [
+      "catalog/MotionGallery.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/expanding-media-card/styles.css"
+    ]
+  },
+  "cases": {
+    "visual": [
+      "browser/motion.visual.ts | editorial dark desktop",
+      "browser/motion.visual.ts | editorial dark phone",
+      "browser/motion.visual.ts | editorial light desktop",
+      "browser/motion.visual.ts | editorial light phone",
+      "browser/motion.visual.ts | enterprise dark desktop",
+      "browser/motion.visual.ts | enterprise dark phone",
+      "browser/motion.visual.ts | enterprise light desktop",
+      "browser/motion.visual.ts | enterprise light phone"
+    ],
+    "vitest": [
+      "tests/expanding-media-card/motion-media.test.tsx | media disclosure preserves media state during repeated reversals",
+      "tests/expanding-media-card/motion-media.test.tsx | a controlled card reports each request and shows only the state its owner chooses",
+      "tests/expanding-media-card/motion-media.test.tsx | an uncontrolled card can start open and keeps its title in the surrounding outline"
+    ],
+    "browser": [
+      "browser/motion.spec.ts | browse drawer returns focus on Escape and media tolerates rapid reversals",
+      "browser/motion.spec.ts | native scroll, RTL keys and reduced-motion disclosures work without horizontal page overflow",
+      "browser/motion.spec.ts | save and remove a publication in the editorial theme",
+      "browser/motion.spec.ts | save and remove a publication in the enterprise theme",
+      "expanding-media-card/quality.spec.ts | preserves focus and disclosure state when text grows to 200 and 400 percent mid-animation"
+    ]
+  }
+}

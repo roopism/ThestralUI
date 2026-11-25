@@ -1,0 +1,16 @@
+{
+  "id": "Editorial collection",
+  "order": 89,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [],
+    "web": "equivalent",
+    "native": "planned",
+    "note": "Shortlist and media stories compose ResourceCard, Carousel and AdaptiveGrid.",
+    "ownership": "stateless or host-managed"
+  }
+}

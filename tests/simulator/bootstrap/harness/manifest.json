@@ -1,0 +1,14 @@
+{
+  "format": 1,
+  "files": {
+    "catalog/native/Gallery.tsx": "8b739426d7afffe38749503c9fc2b61db03133ced6965b1a901bd42c2183b67b",
+    "package-lock.json": "ccbdc316eab08a4e0126ffb316f23a25f9a515ae169793e0f5f26b77242030f9",
+    "package.json": "b21641607c9503ee5aa7e55e054599354fe1d84f0c47cf84e11c374aac8c2e4f",
+    "scripts/verify-ios-simulator.mjs": "13c3098b751e877766d1d362fc10e4fd1b401a76f233506fd17b86293f5623ca",
+    "tests/simulator/appearance.yaml": "853cc066eb3d3e03dee99e88ae6fe37aee61e662cd2b7d74d2923040ecfac4bf",
+    "tests/simulator/host/Podfile.lock": "434560b8c845f4eff6f648c23cba92e0364c2afe70150d64c176c73d4ff858f4",
+    "tests/simulator/host/package-lock.json": "5a7d8de50e0ff1031aece398fca7c40af07220c734e21d0df64a19f03208a690",
+    "tests/simulator/host/package.json": "f4a0d59f220ad00287f3029d328634fc31dd71979720f023e05c18e28c0c1a07",
+    "tests/simulator/workspace.yaml": "8a4be2c22673e3b3b12437fbf8f34a3e507eaa16bda3ecf25b777b81ab9fe0d4"
+  }
+}

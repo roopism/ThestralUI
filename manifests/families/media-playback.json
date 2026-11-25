@@ -1,0 +1,17 @@
+{
+  "id": "Media playback",
+  "order": 93,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap",
+      "Apple"
+    ],
+    "api": [],
+    "web": "equivalent",
+    "native": "planned",
+    "note": "Use HTML audio and video with browser playback controls and captions.",
+    "ownership": "stateless or host-managed"
+  }
+}

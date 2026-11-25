@@ -1,0 +1,57 @@
+{
+  "id": "Menu and submenu",
+  "order": 48,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "RAC"
+    ],
+    "api": [
+      "navigation:Menu",
+      "navigation:MenuItem",
+      "navigation:MenuTrigger",
+      "navigation:SubmenuTrigger"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseNavigation.stories.tsx",
+    "test": "tests/browser/enterprise-navigation.spec.ts",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "behaviorAnchor": "getByRole('menuitem'",
+  "depth": {
+    "representative": "navigation:Menu",
+    "expectation": "Actions versus selection, disabled keys, submenu focus, Escape and outside press",
+    "oracle": "Open a submenu by keyboard, cancel only that submenu, then select exactly one enabled item.",
+    "evidence": {
+      "browser": "browser/enterprise-navigation.spec.ts | opens nested menu commands by keyboard and returns to the toolbar"
+    },
+    "assertions": {
+      "browser/enterprise-navigation.spec.ts | opens nested menu commands by keyboard and returns to the toolbar": "expect(page.getByRole('status', { name: 'Action result' })).toHaveText('Plain text exported')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/menu-and-submenu/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-navigation.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseNavigation.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "browser": [
+      "browser/enterprise-navigation.spec.ts | opens nested menu commands by keyboard and returns to the toolbar"
+    ]
+  }
+}

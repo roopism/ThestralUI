@@ -1,0 +1,17 @@
+{
+  "id": "Meter",
+  "order": 81,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "Roadmap"
+    ],
+    "api": [],
+    "web": "planned",
+    "native": "planned",
+    "note": "A bounded measurement needs a separate contract from task progress.",
+    "ownership": "stateless or host-managed"
+  }
+}

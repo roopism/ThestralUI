@@ -1,0 +1,6 @@
+/* @uld-css-chunk controls.029 */
+
+
+.uld-controls :where(.react-aria-Separator) {
+  border-block-start: thin solid var(--uld-border);
+}

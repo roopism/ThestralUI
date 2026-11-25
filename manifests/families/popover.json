@@ -1,0 +1,54 @@
+{
+  "id": "Popover",
+  "order": 50,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "RAC"
+    ],
+    "api": [
+      "navigation:Popover"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseNavigation.stories.tsx",
+    "test": "tests/browser/enterprise-navigation.spec.ts",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "behaviorAnchor": "getByRole('menu'",
+  "depth": {
+    "representative": "navigation:Popover",
+    "expectation": "Placement, safe viewport flipping, outside dismiss and trigger focus restoration",
+    "oracle": "Open near both viewport edges at large text, then dismiss without losing the original trigger.",
+    "evidence": {
+      "browser": "browser/enterprise-navigation.spec.ts | opens nested menu commands by keyboard and returns to the toolbar"
+    },
+    "assertions": {
+      "browser/enterprise-navigation.spec.ts | opens nested menu commands by keyboard and returns to the toolbar": "expect(page.getByRole('menu', { name: 'Actions', exact: true })).toBeVisible()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/popover/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-navigation.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseNavigation.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "browser": [
+      "browser/enterprise-navigation.spec.ts | opens nested menu commands by keyboard and returns to the toolbar"
+    ]
+  }
+}

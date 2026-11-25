@@ -1,0 +1,56 @@
+{
+  "id": "Badge",
+  "order": 9,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "primitives:Badge"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/Primitives.stories.tsx",
+    "test": "tests/primitives.test.tsx",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "primitives:Badge",
+    "expectation": "Tone, size and optional leading decoration",
+    "oracle": "Test long labels and forced colors; important status remains available through text.",
+    "evidence": {
+      "unit": "tests/primitives.test.tsx | layout and decoration preserve accessible names and host attributes"
+    },
+    "assertions": {
+      "tests/primitives.test.tsx | layout and decoration preserve accessible names and host attributes": "expect(screen.getByText('Active').closest('#summary')).toBeTruthy()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/badge/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/primitives.test.tsx",
+      "tests/foundation-specs.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/Primitives.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/badge/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/foundation-specs.test.tsx | a surface and badge add style hooks without injecting a region or live announcement",
+      "tests/primitives.test.tsx | layout and decoration preserve accessible names and host attributes"
+    ]
+  }
+}

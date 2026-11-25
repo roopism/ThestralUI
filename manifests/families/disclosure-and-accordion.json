@@ -1,0 +1,56 @@
+{
+  "id": "Disclosure and accordion",
+  "order": 52,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "RAC"
+    ],
+    "api": [
+      "navigation:Disclosure",
+      "navigation:DisclosureGroup",
+      "navigation:DisclosurePanel"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseNavigation.stories.tsx",
+    "test": "tests/browser/enterprise-navigation.spec.ts",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "behaviorAnchor": "name: 'Review policy'",
+  "depth": {
+    "representative": "navigation:Disclosure",
+    "expectation": "Controlled/default expanded keys, heading association and single/multiple expansion",
+    "oracle": "Expand two panels with focus inside one; collapse it and check predictable focus and remaining state.",
+    "evidence": {
+      "browser": "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip"
+    },
+    "assertions": {
+      "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip": "expect(disclosure).toHaveAttribute('aria-expanded', 'true')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/disclosure-and-accordion/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-navigation.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseNavigation.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "browser": [
+      "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip"
+    ]
+  }
+}

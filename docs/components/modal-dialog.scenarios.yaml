@@ -1,0 +1,30 @@
+{
+  "family": "Modal dialog",
+  "scenarios": [
+    {
+      "id": "modal-dialog.open-and-close",
+      "fixture": "minimal",
+      "webKeyboardFocus": { "role": "button", "name": "Open dialog" },
+      "steps": [
+        { "act": "activate", "target": { "role": "button", "name": "Open dialog" } },
+        { "expect": "visible", "target": { "role": "text", "name": "Review changes" } },
+        { "act": "activate", "target": { "role": "button", "name": "Close dialog" } },
+        { "expect": "visible", "target": { "role": "text", "name": "Dialog closed" } }
+      ]
+    },
+    {
+      "id": "modal-dialog.nested-return",
+      "fixture": "workspace",
+      "steps": [
+        { "act": "activate", "target": { "role": "button", "name": "Review changes" } },
+        { "expect": "visible", "target": { "role": "text", "name": "Review draft" } },
+        { "act": "activate", "target": { "role": "button", "name": "Review details" } },
+        { "expect": "visible", "target": { "role": "text", "name": "Discard draft?" } },
+        { "act": "activate", "target": { "role": "button", "name": "Keep editing" } },
+        { "expect": "visible", "target": { "role": "button", "name": "Back to workspace" } },
+        { "act": "activate", "target": { "role": "button", "name": "Back to workspace" } },
+        { "expect": "visible", "target": { "role": "text", "name": "Workspace resumed" } }
+      ]
+    }
+  ]
+}

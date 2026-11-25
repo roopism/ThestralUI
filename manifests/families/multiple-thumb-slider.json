@@ -1,0 +1,16 @@
+{
+  "id": "Multiple-thumb slider",
+  "order": 95,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG"
+    ],
+    "api": [],
+    "web": "equivalent",
+    "native": "planned",
+    "note": "Slider and SliderThumb compose multiple values using the upstream slots.",
+    "ownership": "stateless or host-managed"
+  }
+}

@@ -1,0 +1,27 @@
+/* @uld-css-chunk motion.021 */
+
+.uld-toast-region {
+  position: fixed;
+  inset-inline: var(--uld-space-md);
+  inset-block-end: max(var(--uld-space-md), env(safe-area-inset-bottom));
+  z-index: 110;
+  display: grid;
+  gap: var(--uld-space-sm);
+  max-height: 60dvh;
+  overflow-y: auto;
+}
+/* @uld-css-chunk motion.022 */
+
+.uld-toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uld-space-sm);
+  padding: var(--uld-space-sm) var(--uld-space-md);
+}
+/* @uld-css-chunk motion.023 */
+
+.uld-toast-title {
+  display: block;
+  font-weight: var(--uld-strong-weight);
+}

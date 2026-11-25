@@ -1,0 +1,6 @@
+{
+  "paths": ["src/app", "src/components", "public"],
+  "required": ["src/components/admin.tsx", "src/components/ui/revamp.css", "src/app/globals.css"],
+  "tokenFile": "node_modules/@ui-lazy-dev/tokens/tokens.json",
+  "scopes": ["elevate-"]
+}

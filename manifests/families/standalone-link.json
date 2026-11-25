@@ -1,0 +1,17 @@
+{
+  "id": "Standalone link",
+  "order": 84,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG",
+      "Apple"
+    ],
+    "api": [],
+    "web": "equivalent",
+    "native": "planned",
+    "note": "Navigation Link is part of the breadcrumb family and supports independent links.",
+    "ownership": "stateless or host-managed"
+  }
+}

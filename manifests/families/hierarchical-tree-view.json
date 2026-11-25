@@ -1,0 +1,16 @@
+{
+  "id": "Hierarchical tree view",
+  "order": 96,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG"
+    ],
+    "api": [],
+    "web": "equivalent",
+    "native": "planned",
+    "note": "VirtualTree uses treegrid semantics and supports hierarchical navigation.",
+    "ownership": "stateless or host-managed"
+  }
+}

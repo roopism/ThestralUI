@@ -1,0 +1,23 @@
+{
+  "name": "@ui-lazy-dev/style-policy",
+  "version": "0.3.0-rc.1",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "ui-style-policy": "./cli.mjs"
+  },
+  "exports": {
+    ".": "./policy.mjs"
+  },
+  "files": [
+    "*.mjs",
+    "profiles",
+    "README.md"
+  ],
+  "dependencies": {
+    "css-tree": "3.2.1",
+    "postcss": "8.5.33",
+    "saxes": "6.0.0",
+    "typescript": "6.0.3"
+  }
+}

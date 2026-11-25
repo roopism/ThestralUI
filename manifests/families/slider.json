@@ -1,0 +1,65 @@
+{
+  "id": "Slider",
+  "order": 31,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:Slider",
+      "forms:SliderTrack",
+      "forms:SliderThumb",
+      "forms:SliderFill",
+      "forms:SliderOutput"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/EnterpriseNavigation.stories.tsx",
+    "test": "tests/browser/enterprise-navigation.spec.ts",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "behaviorAnchor": "getByRole('slider'",
+  "depth": {
+    "representative": "forms:Slider",
+    "expectation": "One or more thumbs, step, orientation, locale formatting and accessible names",
+    "oracle": "Verify distinct names, min/max clamping, keyboard stepping and RTL movement for a range.",
+    "evidence": {
+      "browser": "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip"
+    },
+    "assertions": {
+      "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip": "expect(slider).toHaveValue('3')"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/slider/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/slider/form-spec-states.test.tsx",
+      "tests/form-spec-states.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/enterprise-navigation.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/EnterpriseNavigation.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "browser": [
+      "browser/enterprise-navigation.spec.ts | toggles details, changes selector values, dismisses nested modal and reads its tooltip"
+    ],
+    "vitest": [
+      "tests/form-spec-states.test.tsx | readonly numbers, disabled thumbs and readonly temporal segments expose state on the editing target",
+      "tests/slider/form-spec-states.test.tsx | a slider moves by its step with arrow keys and respects the keyboard bound"
+    ]
+  }
+}

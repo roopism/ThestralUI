@@ -1,0 +1,65 @@
+{
+  "id": "Switch",
+  "order": 25,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:Switch"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/Controls.stories.tsx",
+    "test": "tests/advanced.test.tsx",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "forms:Switch",
+    "expectation": "Controlled/default checked state, accessible label and readonly presentation",
+    "oracle": "Activate by Space and label, hold the name stable, and verify disabled inputs do not emit change.",
+    "evidence": {
+      "unit": "tests/advanced.test.tsx | selection controls report state to their owners and keep localized names"
+    },
+    "assertions": {
+      "tests/advanced.test.tsx | selection controls report state to their owners and keep localized names": "expect(screen.getByRole('switch', { name: 'Notifications' })).toBeTruthy()"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/switch/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/advanced.test.tsx",
+      "tests/form-spec-states.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/preferences.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/Controls.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/switch/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/advanced.test.tsx | selection controls report state to their owners and keep localized names",
+      "tests/form-spec-states.test.tsx | readonly switches ignore activation and a disabled segmented choice cannot be selected"
+    ],
+    "browser": [
+      "browser/preferences.spec.ts | arabic preferences retain keyboard selection and reflow at 320 CSS pixels",
+      "browser/preferences.spec.ts | english preferences retain keyboard selection and reflow at 320 CSS pixels",
+      "browser/preferences.spec.ts | expanded preferences retain keyboard selection and reflow at 320 CSS pixels",
+      "browser/preferences.spec.ts | japanese preferences retain keyboard selection and reflow at 320 CSS pixels"
+    ]
+  }
+}

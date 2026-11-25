@@ -1,0 +1,10 @@
+/* @uld-css-chunk primitives.021 */
+
+.uld-stack[data-uld-align] {
+  justify-items: var(--uld-layout-align);
+}
+/* @uld-css-chunk primitives.023 */
+
+.uld-stack[data-uld-justify] {
+  align-content: var(--uld-layout-justify);
+}

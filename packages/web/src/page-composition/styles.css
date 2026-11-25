@@ -1,0 +1,29 @@
+/* @uld-css-chunk workflows.040 */
+
+.uld-workspace-page {
+  display: grid;
+  gap: 1rem;
+  min-inline-size: 0;
+}
+/* @uld-css-chunk workflows.041 */
+
+.uld-workspace-page > header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+/* @uld-css-chunk workflows.042 */
+
+.uld-workspace-page h1 {
+  margin: 0;
+  line-height: 1.15;
+}
+/* @uld-css-chunk workflows.043 */
+
+.uld-page-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}

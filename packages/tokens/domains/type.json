@@ -1,0 +1,40 @@
+{
+  "type": {
+    "captionSize": {
+      "$type": "dimension",
+      "$value": {
+        "value": 13,
+        "unit": "px"
+      }
+    },
+    "bodySize": {
+      "$type": "dimension",
+      "$value": {
+        "value": 16,
+        "unit": "px"
+      }
+    },
+    "headingSize": {
+      "$type": "dimension",
+      "$value": {
+        "value": 28,
+        "unit": "px"
+      }
+    },
+    "displaySize": {
+      "$type": "dimension",
+      "$value": {
+        "value": 48,
+        "unit": "px"
+      }
+    },
+    "bodyLeading": {
+      "$type": "number",
+      "$value": 1.5
+    },
+    "strongWeight": {
+      "$type": "number",
+      "$value": 650
+    }
+  }
+}

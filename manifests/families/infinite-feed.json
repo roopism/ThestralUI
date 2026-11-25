@@ -1,0 +1,16 @@
+{
+  "id": "Infinite feed",
+  "order": 91,
+  "inventory": {
+    "layer": "organism",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "APG"
+    ],
+    "api": [],
+    "web": "planned",
+    "native": "planned",
+    "note": "Windowed data and announcements for incremental feed loading need a dedicated contract.",
+    "ownership": "stateless or host-managed"
+  }
+}

@@ -1,0 +1,71 @@
+appId: ${APP_ID}
+name: Native workspace editing and save integrity
+---
+- launchApp
+- assertVisible: "Workspace settings"
+- assertVisible:
+    id: "workspace-review"
+    text: "Review changes"
+- tapOn:
+    id: "workspace-review"
+- assertVisible: "Enter a workspace name"
+- inputText: "Design team"
+- assertNotVisible: "Enter a workspace name"
+- tapOn:
+    id: "workspace-review"
+- assertVisible: "Save workspace?"
+- assertVisible:
+    id: "workspace-draft"
+    text: "Design team"
+- tapOn:
+    id: "workspace-cancel"
+    text: "Keep editing"
+- assertNotVisible: "Save workspace?"
+- tapOn:
+    id: "workspace-name"
+- inputText: " updated"
+- tapOn:
+    id: "workspace-review"
+- tapOn:
+    id: "workspace-save"
+    text: "Save changes"
+    repeat: 2
+    delay: 80
+- assertVisible:
+    id: "workspace-pending"
+    text: "Saving request 1"
+- assertVisible:
+    id: "workspace-save"
+    enabled: false
+- assertVisible:
+    id: "workspace-cancel"
+    enabled: false
+- tapOn:
+    id: "workspace-fail"
+- assertVisible: "Save failed. Your draft is still editable."
+- tapOn:
+    id: "workspace-review"
+- assertVisible:
+    id: "workspace-draft"
+    text: "Design team updated"
+- tapOn:
+    id: "workspace-save"
+- assertVisible:
+    id: "workspace-pending"
+    text: "Saving request 2"
+- tapOn:
+    id: "workspace-finish"
+- assertNotVisible: "Save workspace?"
+- assertVisible:
+    id: "workspace-saved"
+    text: "Saved Design team updated"
+- assertNotVisible: "Save failed. Your draft is still editable."
+- pressKey: home
+- launchApp:
+    stopApp: false
+- assertVisible:
+    id: "workspace-resumed"
+    text: "Resumed workspace"
+- assertVisible:
+    id: "workspace-saved"
+    text: "Saved Design team updated"

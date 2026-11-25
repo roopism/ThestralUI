@@ -1,0 +1,16 @@
+{
+  "id": "Rating",
+  "order": 82,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [],
+    "web": "planned",
+    "native": "planned",
+    "note": "No dedicated rating input is published.",
+    "ownership": "stateless or host-managed"
+  }
+}

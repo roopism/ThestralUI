@@ -1,0 +1,67 @@
+{
+  "id": "Adaptive grid",
+  "order": 6,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      ".:AdaptiveGrid",
+      "primitives:Grid"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/Shortlist.stories.tsx",
+    "test": "tests/browser/adaptive.spec.ts",
+    "ownership": "stateless or host-managed"
+  },
+  "behaviorAnchor": "shortlist adapts to the available space",
+  "depth": {
+    "representative": ".:AdaptiveGrid",
+    "expectation": "Token column minimum and gap overrides with current fluid defaults",
+    "oracle": "Place the same grid in two unequal containers on one desktop viewport and verify independent columns.",
+    "evidence": {
+      "browser": "browser/adaptive.spec.ts | a shortlist adapts to the available space and supports touch, keyboard and reduced motion"
+    },
+    "assertions": {
+      "browser/adaptive.spec.ts | a shortlist adapts to the available space and supports touch, keyboard and reduced motion": "expect((await box(1))!.y).toBeGreaterThan(first.y)"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/adaptive-grid/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [],
+    "nativeUnit": [],
+    "browser": [
+      "tests/browser/adaptive.spec.ts"
+    ],
+    "visual": [],
+    "story": [
+      "catalog/Shortlist.stories.tsx"
+    ],
+    "scenario": [],
+    "style": [
+      "packages/web/src/adaptive-grid/styles.css"
+    ]
+  },
+  "cases": {
+    "browser": [
+      "browser/adaptive.spec.ts | a shortlist adapts to the available space and supports touch, keyboard and reduced motion",
+      "browser/adaptive.spec.ts | touch input | shortlist saves by tap on a narrow screen"
+    ]
+  },
+  "rootExports": [
+    {
+      "pkg": "web",
+      "from": "./adaptive-grid/binding.js",
+      "names": [
+        "AdaptiveGrid"
+      ],
+      "order": 2
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "id": "Tag and removable chip",
+  "order": 38,
+  "inventory": {
+    "layer": "molecule",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "RAC",
+      "Roadmap"
+    ],
+    "api": [
+      "forms:TagGroup",
+      "forms:Tag",
+      "forms:TagList"
+    ],
+    "web": "supported",
+    "native": "planned",
+    "story": "catalog/Authoring.stories.tsx",
+    "test": "tests/tag-and-removable-chip/authoring.test.tsx",
+    "ownership": "see declared value/defaultValue or selected/defaultSelected props"
+  },
+  "depth": {
+    "representative": "forms:TagGroup",
+    "expectation": "Selection, localized deletion and focus after removing a key",
+    "oracle": "Delete first, last and only tag with both pointer and keyboard; verify one removal callback.",
+    "evidence": {
+      "unit": "tests/tag-and-removable-chip/authoring.test.tsx | removable tags retain an accessible collection name and report the removed key"
+    },
+    "assertions": {
+      "tests/tag-and-removable-chip/authoring.test.tsx | removable tags retain an accessible collection name and report the removed key": "expect([...remove.mock.lastCall![0]]).toEqual(['open'])"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/tag-and-removable-chip/aria-binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/tag-and-removable-chip/authoring.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [
+      "catalog/Authoring.stories.tsx"
+    ],
+    "scenario": [],
+    "style": []
+  },
+  "cases": {
+    "vitest": [
+      "tests/tag-and-removable-chip/authoring.test.tsx | removable tags retain an accessible collection name and report the removed key"
+    ]
+  }
+}

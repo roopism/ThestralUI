@@ -1,0 +1,60 @@
+{
+  "name": "ui-release-fixture",
+  "version": "1.0.0",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {
+    "": {
+      "name": "ui-release-fixture",
+      "version": "1.0.0",
+      "dependencies": {
+        "@ui-lazy-dev/tokens": "file:../previous/ui-lazy-dev-tokens-0.2.0.tgz",
+        "@ui-lazy-dev/ui-web": "file:../previous/ui-lazy-dev-ui-web-0.2.0.tgz",
+        "react": "19.3.1",
+        "react-dom": "19.3.1"
+      }
+    },
+    "node_modules/@ui-lazy-dev/tokens": {
+      "version": "0.2.0",
+      "resolved": "file:../previous/ui-lazy-dev-tokens-0.2.0.tgz",
+      "integrity": "sha512-YH10mJ3akPOAglDp1gUdMafj/NQuO0A26Ojy7SUJmGyffVE/oeXuMj/a+DIKhq/IQV7QTWPkYt9YsbEDqZZKzg=="
+    },
+    "node_modules/@ui-lazy-dev/ui-web": {
+      "version": "0.2.0",
+      "resolved": "file:../previous/ui-lazy-dev-ui-web-0.2.0.tgz",
+      "integrity": "sha512-MlaSZWnj9YCe1axnWroomp/0+NiPEZGBHtsqgOnQVu+Ej9PXY0pUY8SG2ECSNWjFgB9WmTWCkDQzVwhEj8C5TA==",
+      "peerDependencies": {
+        "@ui-lazy-dev/tokens": "0.2.x",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0"
+      }
+    },
+    "node_modules/react": {
+      "version": "19.3.1",
+      "resolved": "https://registry.npmjs.org/react/-/react-19.3.1.tgz",
+      "integrity": "sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/react-dom": {
+      "version": "19.3.1",
+      "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-19.3.1.tgz",
+      "integrity": "sha512-Y0bARz53lhEC1NMCASs0/j+faB/zqt3R8hpvg1e8+61ZVJ4UL0UdC4cBbXfZMcIuhrfgeILTLe+ZeBCavQPtKQ==",
+      "license": "MIT",
+      "dependencies": {
+        "scheduler": "^0.28.0"
+      },
+      "peerDependencies": {
+        "react": "^19.3.1"
+      }
+    },
+    "node_modules/scheduler": {
+      "version": "0.28.0",
+      "resolved": "https://registry.npmjs.org/scheduler/-/scheduler-0.28.0.tgz",
+      "integrity": "sha512-juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw==",
+      "license": "MIT"
+    }
+  }
+}

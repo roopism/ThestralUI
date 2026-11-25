@@ -1,0 +1,42 @@
+{
+  "size": {
+    "radius": {
+      "$type": "dimension",
+      "$value": {
+        "value": 7,
+        "unit": "px"
+      }
+    }
+  },
+  "shape": {
+    "radiusSm": {
+      "$type": "dimension",
+      "$value": {
+        "value": 4,
+        "unit": "px"
+      }
+    },
+    "radiusMd": {
+      "$type": "dimension",
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      }
+    },
+    "radiusLg": {
+      "$type": "dimension",
+      "$value": {
+        "value": 16,
+        "unit": "px"
+      }
+    },
+    "indicatorStroke": {
+      "$type": "dimension",
+      "$description": "Line width of a busy indicator.",
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      }
+    }
+  }
+}

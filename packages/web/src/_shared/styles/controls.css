@@ -1,0 +1,76 @@
+/* @uld-css-chunk controls.001 */
+@import '@ui-lazy-dev/tokens/styles.css';
+/* @uld-css-chunk controls.002 */
+
+
+/* Opt in by importing this stylesheet and applying the scope to the form or panel. */
+/* @uld-css-chunk controls.003 */
+
+.uld-controls {
+  color: var(--uld-text);
+  overflow-wrap: anywhere;
+}
+/* @uld-css-chunk controls.004 */
+
+.uld-controls
+  :where(
+    .react-aria-Tabs,
+    .react-aria-TabPanel,
+    .react-aria-SearchField,
+    .react-aria-RadioGroup,
+    .react-aria-CheckboxGroup,
+    form,
+    .uld-password
+  ) {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--uld-space-md);
+}
+/* @uld-css-chunk controls.011 */
+
+.uld-controls :where(.react-aria-Checkbox, .react-aria-Radio, .react-aria-Switch) {
+  display: flex;
+  align-items: center;
+  gap: 0.65em;
+  min-block-size: var(--uld-control);
+  cursor: pointer;
+}
+/* @uld-css-chunk controls.012 */
+
+.uld-controls :where(.react-aria-Checkbox, .react-aria-Radio, .react-aria-Switch)::before {
+  content: '';
+  flex: none;
+  box-sizing: border-box;
+  inline-size: 1.2em;
+  block-size: 1.2em;
+  border: 2px solid var(--uld-muted);
+  border-radius: 0.25em;
+}
+/* @uld-css-chunk controls.021 */
+
+.uld-controls :where([data-disabled]) {
+  color: var(--uld-disabled);
+  cursor: default;
+}
+/* @uld-css-chunk controls.022 */
+
+.uld-controls :where([data-focus-visible], :focus-visible) {
+  outline: var(--uld-focus-width) solid var(--uld-focus);
+  outline-offset: 2px;
+}
+/* @uld-css-chunk controls.024 */
+
+.uld-controls .uld-password .uld-field {
+  inline-size: 100%;
+}
+/* @uld-css-chunk controls.028 */
+
+@media (forced-colors: active) {
+  .uld-controls .react-aria-Switch::after {
+    background: ButtonText;
+    forced-color-adjust: none;
+  }
+  .uld-controls .react-aria-Tab[data-selected] {
+    border-color: Highlight;
+  }
+}

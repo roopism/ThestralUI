@@ -1,0 +1,452 @@
+[
+  {
+    "fingerprint": "0cfe8f8adfbf2e20244c72135010eab2b835ef17092ddc44174a63d616b45f5f",
+    "file": "catalog/EnterpriseWorkspace.stories.tsx",
+    "symbol": "DeliveryConsole",
+    "rule": "primitive-owner",
+    "family": "input",
+    "owner": "@thetechgeeek",
+    "reason": "This delivery fixture exercises native required validation and restoring a saved draft.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "a3d59fc4c80b515f72a052325b03079c3a04a034c789b71c31d44dcdceee641a",
+    "file": "catalog/EnterpriseWorkspace.stories.tsx",
+    "symbol": "ReviewWorkspace",
+    "rule": "primitive-owner",
+    "family": "input",
+    "owner": "@thetechgeeek",
+    "reason": "This review fixture exercises controlled list-detail drafts across viewport changes.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "feb9c43db251ad7e9de8732ddf5d735c9af78ba9d7d958b992d378b3cfb9429c",
+    "file": "catalog/Library.stories.tsx",
+    "symbol": "(imports)",
+    "rule": "private-import",
+    "family": "module",
+    "owner": "@thetechgeeek",
+    "reason": "Read the release version from workspace package metadata for the catalog heading.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "4ec99e81145d0f4b389be7a9cb269de37798de1cc6b95604a001aaf855484ba4",
+    "file": "catalog/Library.stories.tsx",
+    "symbol": "Overview",
+    "rule": "local-substitute",
+    "family": "input",
+    "owner": "@thetechgeeek",
+    "reason": "Keep the documented legacy field composition until the example migrates.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "10cbe65f2bbd6a70cccabf22b4680387a60f5a9f6867c6590a0093d0dc9aa172",
+    "file": "catalog/MotionGallery.stories.tsx",
+    "symbol": "PublicationLibrary",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Keep catalog interactions comparable with the approved two-brand visual baselines.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "2a5d72d5b87d9ec6b61f73bae3f5333f959bec81f4c7cbabddd648714a02b3fe",
+    "file": "catalog/MotionGallery.stories.tsx",
+    "symbol": "PublicationLibrary",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Keep catalog interactions comparable with the approved two-brand visual baselines.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "68f69168cb3bb2ebe9a2a2c807b3468b2402a1d5b5ef5ae2d609e26c30109c50",
+    "file": "catalog/MotionGallery.stories.tsx",
+    "symbol": "PublicationLibrary",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Keep catalog interactions comparable with the approved two-brand visual baselines.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "9df9ed383d8ba3b783b3df5f7fbc3718a77e48aa48e1f55926af66a90484aef6",
+    "file": "catalog/MotionGallery.stories.tsx",
+    "symbol": "PublicationLibrary",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Keep catalog interactions comparable with the approved two-brand visual baselines.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "fd9332ce97484943106beaf9112c2e4393e43504fd96d1ce5ee7a2e05367ca38",
+    "file": "catalog/MotionGallery.stories.tsx",
+    "symbol": "PublicationLibrary",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Keep catalog interactions comparable with the approved two-brand visual baselines.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "2ee9fdbead998a2c52efd4ccd92de53cbf730f700242f103f0e524f5c04603ea",
+    "file": "catalog/MotionSequences.stories.tsx",
+    "symbol": "ProofReview",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Preserve the public motion example used by interruption and timing regression tests.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "428acfdb65d58b823973ef5131d081b40b8b8c8741491c953cbda579dfe04b9d",
+    "file": "catalog/MotionSequences.stories.tsx",
+    "symbol": "ProofReview",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Preserve the public motion example used by interruption and timing regression tests.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "5e64ce95d1b709f05ab9c249de344de7eb90ca80637e61c25175e517dc2348c4",
+    "file": "catalog/MotionSequences.stories.tsx",
+    "symbol": "ProofReview",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Preserve the public motion example used by interruption and timing regression tests.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "bae9f1fbfe783ae691fed8e4a91bc16a796277862773aa3a752350289f5e72f1",
+    "file": "catalog/MotionSequences.stories.tsx",
+    "symbol": "ProofReview",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Preserve the public motion example used by interruption and timing regression tests.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "2b8e5fde597acb5d734fe730bbbeba1c0ac4acd1338934fd1331faff728f6865",
+    "file": "catalog/examples.tsx",
+    "symbol": "FieldExample",
+    "rule": "primitive-owner",
+    "family": "input",
+    "owner": "@thetechgeeek",
+    "reason": "The historical fixture verifies the public field wrapper with native host input.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "81692527701507f940d11fb8bdb920ad5fc4e62cfb6d9834216604e7411c16e9",
+    "file": "packages/web/src/data-table/binding.tsx",
+    "symbol": "DataTable",
+    "rule": "primitive-owner",
+    "family": "selection",
+    "owner": "@thetechgeeek",
+    "reason": "Retain page selection, indeterminate state and sorted headers during the collection migration.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "27244f009b7521cbb020b6ab0598ad1c49c320026a546f5f6c53b0744f364092",
+    "file": "packages/web/src/data-table/binding.tsx",
+    "symbol": "DataTable",
+    "rule": "primitive-owner",
+    "family": "input",
+    "owner": "@thetechgeeek",
+    "reason": "Retain page selection, indeterminate state and sorted headers during the collection migration.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "f3328adc18f521a59c6b8cac4081abca205b98fad22526628cf1148415429b38",
+    "file": "packages/web/src/data-table/binding.tsx",
+    "symbol": "DataTable",
+    "rule": "primitive-owner",
+    "family": "selection",
+    "owner": "@thetechgeeek",
+    "reason": "Retain page selection, indeterminate state and sorted headers during the collection migration.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "6f8f544f66953920ed019c4659ea9348bcfad51c320fa9b6cd2e996d3f124a36",
+    "file": "packages/web/src/data-table/binding.tsx",
+    "symbol": "DataTable",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Retain page selection, indeterminate state and sorted headers during the collection migration.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "b943c487d1b2332ef4d2907aa45ed71abca47076067ad5b1c3f40904d2747bd2",
+    "file": "packages/web/src/data-table/binding.tsx",
+    "symbol": "DataTable",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Retain page selection, indeterminate state and sorted headers during the collection migration.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "117db889832185f90e54e41a8b395be65d182bf68b19ddedfaf157e646d62528",
+    "file": "packages/web/src/data-table/binding.tsx",
+    "symbol": "DataTable",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Retain page selection, indeterminate state and sorted headers during the collection migration.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "adc228d11c8a3f2678c66aabf064875c25e3fd693bdec4ce3520cf2e469632ff",
+    "file": "packages/web/src/data-table/binding.tsx",
+    "symbol": "DataTable",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Retain page selection, indeterminate state and sorted headers during the collection migration.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "37f5bead33f549cfee02a98859b00e6da93ab07b9a70aff3821c04135de31e60",
+    "file": "packages/web/src/data-table/binding.tsx",
+    "symbol": "EditableCell",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Retain Enter, Escape and focus restoration while the inline editor migrates.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "c5db0dc892731a2d28ef04ef98695290be7dabe92c5edb6745ce8c7f13925474",
+    "file": "packages/web/src/data-table/binding.tsx",
+    "symbol": "EditableCell",
+    "rule": "primitive-owner",
+    "family": "input",
+    "owner": "@thetechgeeek",
+    "reason": "Retain Enter, Escape and focus restoration while the inline editor migrates.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "0e095e03822d0cedb860dc66ef8ad7b69885256b955983d1260ff44d325b858f",
+    "file": "packages/web/src/data-table/binding.tsx",
+    "symbol": "EditableCell",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Retain Enter, Escape and focus restoration while the inline editor migrates.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "ba85ce026642864a6d06c2c79f1437ade95f614a2b7e1b6aedb8956c3e86f9b3",
+    "file": "packages/web/src/data-table/binding.tsx",
+    "symbol": "EditableCell",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Retain Enter, Escape and focus restoration while the inline editor migrates.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "9d050ef1e5cfd83746d3ff10db0bcb6ec270bd2438004e9c777b767029972567",
+    "file": "packages/web/src/codefield/binding.tsx",
+    "symbol": "CodeField",
+    "rule": "primitive-owner",
+    "family": "input",
+    "owner": "@thetechgeeek",
+    "reason": "Preserve numeric keyboard, autocomplete and one-time-code semantics.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "3414baefaa652ace2ec654da0104deaddb9ac95f5b3ea809787eff587c51e209",
+    "file": "packages/web/src/file-upload/binding.tsx",
+    "symbol": "FileUpload",
+    "rule": "primitive-owner",
+    "family": "input",
+    "owner": "@thetechgeeek",
+    "reason": "Preserve the browser file picker and selection reset contract during migration.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "39bc2695b42fdbe2d8ac41f51a18a4e66bf9c034b03454eb17292502ffbb9d74",
+    "file": "packages/web/src/passwordfield/binding.tsx",
+    "symbol": "PasswordField",
+    "rule": "primitive-owner",
+    "family": "input",
+    "owner": "@thetechgeeek",
+    "reason": "The reveal toggle must preserve password manager autofill and caret position.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "bfa804228f0fcddb6a6a126d35ec1d8773054f6f6905a7b70041da0b7620ab7d",
+    "file": "packages/web/src/validationsummary/binding.tsx",
+    "symbol": "ValidationSummary",
+    "rule": "primitive-owner",
+    "family": "link",
+    "owner": "@thetechgeeek",
+    "reason": "The error link moves focus to the named invalid field.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "4eea4a0be682aa305aa5653b6ff8184c0894230605228ed3e988ab21c60a14bc",
+    "file": "packages/web/src/snap-carousel/binding.tsx",
+    "symbol": "Carousel",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Retain swipe, keyboard navigation and reduced-motion contracts while restyling its actions.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "aa48956f8d1ab11a871a1fb3df66016bb9a6ac97deda140e5755b7f1be1ec64c",
+    "file": "packages/web/src/snap-carousel/binding.tsx",
+    "symbol": "Carousel",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Retain swipe, keyboard navigation and reduced-motion contracts while restyling its actions.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "a971d05f81027f84183fba97d624cb987a32f27c869971c810ee3d4f20def256",
+    "file": "packages/web/src/expanding-media-card/binding.tsx",
+    "symbol": "ExpandableMediaCard",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Retain card activation and focus restoration during the media action migration.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "5ea8887774a315195dc398e81e2bb2d9819e393bc35477f6bb9f6121869449cc",
+    "file": "packages/web/src/alert-dialog/binding.tsx",
+    "symbol": "AlertDialog",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Preserve cancel-first focus and confirmation semantics when adopting shared actions.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "ac254757fd73181c586bcf14beda8faeddf8e838974ba158a2cb25e075588109",
+    "file": "packages/web/src/alert-dialog/binding.tsx",
+    "symbol": "AlertDialog",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Preserve cancel-first focus and confirmation semantics when adopting shared actions.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "6852f19c9091eefd08c18d7b3185941d2fd59955388a66793a8bac45eb1a1cb3",
+    "file": "packages/web/src/_shared/motion-overlays/binding.tsx",
+    "symbol": "EdgePanel",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Keep the close action reachable and restore focus after dismissing the panel.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "d9ddb8c91f1c6c90c53364a962dde8fc5e7431aeda6558c6f2fdebf24f993aa0",
+    "file": "packages/web/src/command-palette/binding.tsx",
+    "symbol": "CommandPalette",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Retain active-descendant focus, IME behavior and disabled command semantics.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "da0066b1f9f086a700371a41f96c44cdc8c217b67fe5bb19c08b1e2c89875a55",
+    "file": "packages/web/src/command-palette/binding.tsx",
+    "symbol": "CommandPalette",
+    "rule": "primitive-owner",
+    "family": "input",
+    "owner": "@thetechgeeek",
+    "reason": "Retain active-descendant focus, IME behavior and disabled command semantics.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "59c73262c33b3d7b8b41caeb2aff7249851cd68fd850e5465df7d3e43f182c17",
+    "file": "packages/web/src/command-palette/binding.tsx",
+    "symbol": "CommandPalette",
+    "rule": "primitive-owner",
+    "family": "selection",
+    "owner": "@thetechgeeek",
+    "reason": "Retain active-descendant focus, IME behavior and disabled command semantics.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "107b2e8bbcd253ab91b68576d81b8403bed5ad415ce5e176c889ed89e9166eea",
+    "file": "packages/web/src/navigation-bar-and-rail/binding.tsx",
+    "symbol": "AppNavigation",
+    "rule": "primitive-owner",
+    "family": "link",
+    "owner": "@thetechgeeek",
+    "reason": "Verify the routing slot, active state and destination policy during shared link adoption.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "005b1d5aea15099c89acb65af35a77f323d73b09aed1eda004b3c88b347d2c2f",
+    "file": "packages/web/src/_shared/workflows-status/binding.tsx",
+    "symbol": "AvailabilityMessage",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Keep error retry inside the labeled status pattern while migrating the action.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "07415bf652702c64222efce52e3278651f42d011543351eac08fc4e63278bf26",
+    "file": "packages/web/src/batch-progress/binding.tsx",
+    "symbol": "BatchProgress",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Retry applies only to the selected failed operation.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "51cffaa7590cb0e153343144c0481a699d4ded0c12869c989a236dfc05d11843",
+    "file": "packages/web/src/notification-center/binding.tsx",
+    "symbol": "NotificationCenter",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Retain unread-item targeting and bulk read behavior during action migration.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "f2fd25b10b77eb53c0a0dbd328f3e8a14328235cdb0e6e70566a655b3db0ac41",
+    "file": "packages/web/src/notification-center/binding.tsx",
+    "symbol": "NotificationCenter",
+    "rule": "primitive-owner",
+    "family": "button",
+    "owner": "@thetechgeeek",
+    "reason": "Retain unread-item targeting and bulk read behavior during action migration.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "27aaeb5fb4941100b0daf15fd63ddc66114142ebf2fde6aa7a78d95d0175eb4b",
+    "file": "packages/web/src/settings/binding.tsx",
+    "symbol": "SettingRow",
+    "rule": "primitive-owner",
+    "family": "selection",
+    "owner": "@thetechgeeek",
+    "reason": "Preserve the switch name, help text and disabled account permissions during migration.",
+    "expires": "2027-02-01"
+  },
+  {
+    "fingerprint": "0eb617863082edcb958a564a905a7df34bcb2d0a938f5eaf91b61e7282b8f4b5",
+    "file": "packages/web/src/application-shell/binding.tsx",
+    "symbol": "AppShell",
+    "rule": "primitive-owner",
+    "family": "link",
+    "owner": "@thetechgeeek",
+    "reason": "The skip link must continue to target the stable main landmark.",
+    "expires": "2027-02-01"
+  }
+]

@@ -1,0 +1,32 @@
+{
+  "light": {
+    "canvas": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [1.0, 0.97254902, 0.94901961], "alpha": 1}},
+    "surface": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [1.0, 1.0, 1.0], "alpha": 1}},
+    "text": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [0.15686275, 0.08235294, 0.11764706], "alpha": 1}},
+    "accent": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [0.68627451, 0.14117647, 0.27058824], "alpha": 1}},
+    "focus": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [0.54901961, 0.09019608, 0.22745098], "alpha": 1}},
+    "onAccent": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [1.0, 1.0, 1.0], "alpha": 1}},
+    "selected": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [1.0, 0.89019608, 0.83529412], "alpha": 1}}
+  },
+  "dark": {
+    "canvas": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [0.12941176, 0.08235294, 0.10980392], "alpha": 1}},
+    "surface": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [0.18823529, 0.1254902, 0.16470588], "alpha": 1}},
+    "text": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [1.0, 0.95294118, 0.96078431], "alpha": 1}},
+    "accent": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [1.0, 0.6745098, 0.71372549], "alpha": 1}},
+    "focus": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [1.0, 0.77254902, 0.42352941], "alpha": 1}},
+    "onAccent": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [0.20784314, 0.0627451, 0.13333333], "alpha": 1}},
+    "selected": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [0.29803922, 0.18039216, 0.23921569], "alpha": 1}}
+  },
+  "highContrast": {
+    "accent": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [0.38431373, 0.0, 0.15294118], "alpha": 1}},
+    "focus": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [0.38431373, 0.0, 0.15294118], "alpha": 1}},
+    "selected": {"$type": "color", "$value": {"colorSpace": "srgb", "components": [1.0, 0.8627451, 0.90588235], "alpha": 1}}
+  },
+  "shape": {
+    "radiusMd": {"$type": "dimension", "$value": {"value": 12, "unit": "px"}},
+    "radiusLg": {"$type": "dimension", "$value": {"value": 24, "unit": "px"}}
+  },
+  "type": {
+    "displaySize": {"$type": "dimension", "$value": {"value": 56, "unit": "px"}}
+  }
+}

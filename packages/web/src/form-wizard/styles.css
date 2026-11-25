@@ -1,0 +1,34 @@
+/* @uld-css-chunk workflows.011 */
+
+.uld-wizard ol {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-inline-start: 1.5rem;
+}
+/* @uld-css-chunk workflows.012 */
+
+.uld-wizard li {
+  padding-inline-end: 0.5rem;
+}
+/* @uld-css-chunk workflows.013 */
+
+.uld-wizard li[aria-current] {
+  font-weight: bold;
+}
+/* @uld-css-chunk workflows.014 */
+
+.uld-wizard fieldset {
+  min-inline-size: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+/* @uld-css-chunk workflows.015 */
+
+.uld-workflow-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-block-start: 1rem;
+}

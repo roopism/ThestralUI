@@ -1,0 +1,49 @@
+{
+  "id": "Scroll area",
+  "order": 4,
+  "inventory": {
+    "layer": "atom",
+    "owner": "@thetechgeeek",
+    "refs": [
+      "Roadmap"
+    ],
+    "api": [
+      "primitives:ScrollArea"
+    ],
+    "web": "exported",
+    "native": "planned",
+    "ownership": "stateless or host-managed"
+  },
+  "depth": {
+    "representative": "primitives:ScrollArea",
+    "expectation": "Axis and accessible region name, ref and keyboard scrolling",
+    "oracle": "Scroll a horizontal RTL strip and vertical panel by keyboard, then focus an offscreen control.",
+    "evidence": {
+      "packed": "primitives:ScrollArea"
+    }
+  },
+  "files": {
+    "source": [
+      "packages/web/src/scroll-area/binding.tsx"
+    ],
+    "nativeSource": [],
+    "unit": [
+      "tests/family-contracts.test.tsx",
+      "tests/foundation-specs.test.tsx"
+    ],
+    "nativeUnit": [],
+    "browser": [],
+    "visual": [],
+    "story": [],
+    "scenario": [],
+    "style": [
+      "packages/web/src/scroll-area/styles.css"
+    ]
+  },
+  "cases": {
+    "vitest": [
+      "tests/family-contracts.test.tsx | layout, loading, image and grouping slots preserve native roles, names, and caller content",
+      "tests/foundation-specs.test.tsx | a divider exposes the host separator and a named scroll region can receive focus"
+    ]
+  }
+}
