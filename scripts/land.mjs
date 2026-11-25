@@ -16,6 +16,12 @@ import { stagedDiff } from './selection/staged-tree.mjs';
 import { withLock } from './workers/lock.mjs';
 
 const number = process.argv[2];
+if (import.meta.main && number === '--train') {
+  const { landTrainCommand } = await import('./train.mjs');
+  const train = await landTrainCommand(process.argv.slice(3));
+  console.log('Landed train', train.id, 'at', train.finalCommit, 'with tree', train.finalTree);
+  process.exit(0);
+}
 if (import.meta.main) assert.match(number ?? '', /^[1-9]\d*$/, 'Usage: npm run land <PR number>');
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 const root = git('rev-parse', '--show-toplevel');
@@ -64,7 +70,7 @@ function ownerDecisions(base) {
   return /^## Owner decisions\s*$([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(ledger)?.[1] ?? '';
 }
 
-function requireProposalHistory(tree, base, directory, proposal) {
+export function requireProposalHistory(tree, base, directory, proposal) {
   const path = join(directory, tree + '.json');
   const first = existsSync(path) ? JSON.parse(readFileSync(path)) : undefined;
   const target = proposal.commit ? { tree, base, commit: proposal.commit } : first?.commit ? first : undefined;
@@ -133,6 +139,10 @@ export function passing(tree, base, directory = join(common, 'uld-receipts'), pr
 }
 if (import.meta.main) await withLock(root, 'landing', 'PR ' + number, async () => {
   const directory = join(common, 'uld-receipts');
+  if (existsSync(join(directory, 'train-landing-blocked.json'))) {
+    const { reconcileTrainLanding } = await import('./train.mjs');
+    await reconcileTrainLanding(directory, root);
+  }
   requireResolvedMerge(directory, (commit, actualTree) => {
     assert.equal(git('rev-parse', commit + '^{tree}'), actualTree);
     return passing(actualTree, commit, directory, { commit });
