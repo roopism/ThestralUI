@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,8 +19,10 @@ function trees(t) {
   const dir = mkdtempSync(join(tmpdir(), 'uld-registrations-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const env = { ...process.env, GIT_INDEX_FILE: join(dir, 'index') };
-  const git = (args, input) => execFileSync('git', args, { cwd: root, env, input, encoding: 'utf8', maxBuffer: 128 << 20 }).trim();
+  const git = args => execFileSync('git', args, { cwd: root, env, encoding: 'utf8', maxBuffer: 128 << 20 }).trim();
   const base = git(['rev-parse', '--verify', 'HEAD^{tree}']);
+  const hashAlgorithm = git(['rev-parse', '--show-object-format']);
+  const blobInput = join(dir, 'blob-input');
   const read = path => git(['show', base + ':' + path]);
   const names = git(['ls-tree', '--name-only', base + ':manifests/families']).split('\n');
   const originals = new Map(names.map(name => ['manifests/families/' + name, read('manifests/families/' + name)]));
@@ -33,7 +36,11 @@ function trees(t) {
     const raw = edit(byId) ?? {};
     git(['read-tree', base]);
     const write = (path, content) => {
-      const blob = git(['hash-object', '-w', '--stdin'], content);
+      const bytes = Buffer.from(content, 'utf8');
+      writeFileSync(blobInput, bytes);
+      const blob = git(['hash-object', '-w', '--no-filters', '--', blobInput]);
+      const expected = createHash(hashAlgorithm).update('blob ' + bytes.length + '\0').update(bytes).digest('hex');
+      assert.equal(blob, expected, 'Git must store the exact fixture bytes for ' + path);
       git(['update-index', '--add', '--cacheinfo', '100644,' + blob + ',' + path]);
     };
     for (const row of rows) {
