@@ -404,14 +404,15 @@ const beforeActionSizes = {
   'primitives:Stack': pair('{children:<button/>,ref:el=>el?.focus()}', '{children:{invalid:true}}'),
   'primitives:Inline': pair('{children:<button/>,dir:"rtl"}', '{children:{invalid:true}}'),
 };
-export function consumerCases(target) {
-  if (target === 'layout') return shippedMinimum;
+export function consumerCases(target, registrations) {
+  const minimum = registrations ? registeredConsumerCases(incumbentCases, registrations) : shippedMinimum;
+  if (target === 'layout') return minimum;
   if (target === 'actions')
     return {
-      ...shippedMinimum,
+      ...minimum,
       'primitives:Stack': beforeActionSizes['primitives:Stack'],
       'primitives:Inline': beforeActionSizes['primitives:Inline'],
     };
-  const { 'native:IconButton': introducedWithActions, ...earlier } = shippedMinimum;
+  const { 'native:IconButton': introducedWithActions, ...earlier } = minimum;
   return { ...earlier, ...beforeActionSizes };
 }

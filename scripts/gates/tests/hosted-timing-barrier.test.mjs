@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { sealReceipt, sealPhysical } from '../reuse/runner.mjs';
+import { mkdirSync, realpathSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { registerHooks } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -41,7 +44,7 @@ const shards = [
 ];
 const attempt = '12345678-1234-1234-1234-123456789abc';
 function receipt() {
-  return { id: attempt, base: proposal.base, commit: proposal.merge, tree: proposal.tree, mode: 'qualification',
+  return { id: attempt, reuseSchema: 1, base: proposal.base, commit: proposal.merge, tree: proposal.tree, mode: 'qualification',
     status: 'passed', suites: [
       { name: shards[2].suite, result: 'passed', durationMs: 20, coverage: { tree: proposal.tree, ...structuredClone(roster) } },
       { name: shards[3].suite, result: 'passed', durationMs: 10 },
@@ -50,6 +53,7 @@ function receipt() {
 
 function harness(t) {
   const directory = mkdtempSync(join(tmpdir(), 'hosted-timing-barrier-'));
+  execFileSync('git', ['init', '--quiet', '--template=', directory]);
   const events = [];
   const runs = [];
   const completed = { id: 17, run_attempt: 1, head_sha: proposal.merge, status: 'completed', conclusion: 'success' };
@@ -69,7 +73,12 @@ function harness(t) {
       events.push('verify');
       return [{id:'build'}, {id:'browser'}];
     },
-    collectPhysicalEvidence: async () => { events.push('local'); return Buffer.from(JSON.stringify(receipt())); },
+    collectPhysicalEvidence: async () => {
+      events.push('local');
+      const report = receipt();report.id=randomUUID();
+      sealPhysical(directory,report);
+      return Buffer.from(JSON.stringify(report));
+    },
     listing: () => ({ total_count: 1, workflow_runs: [completed] }),
     execFileSync(tool, args) {
       if (tool === 'git') {
@@ -148,11 +157,14 @@ test('prior local evidence needs every fresh visual case on its exact tree and d
   const path=join(attempts,attempt+'.json');
   for (const change of [row=>{delete row.coverage;},row=>{row.coverage.tree=proposal.merge;},
     row=>{row.coverage.cases.pop();},row=>{row.coverage.projects.pop();},row=>{row.result='reused';}]) {
-    const prior=receipt();change(prior.suites[0]);
-    writeFileSync(path,JSON.stringify(prior));
+    const prior=receipt();prior.id=randomUUID();change(prior.suites[0]);
+    sealReceipt(h.directory,prior);
+    writeFileSync(join(attempts,prior.id+'.json'),JSON.stringify(prior));
+    const attempt=prior.id;
     await assert.rejects(h.run(attempt));
   }
   assert.deepEqual(h.events,[]);
+  sealReceipt(h.directory,receipt());
   writeFileSync(path,JSON.stringify(receipt()));
   const report=JSON.parse(readFileSync(await h.run(attempt),'utf8'));
   assert.deepEqual(h.events,['reserve','dispatch','verify','release']);
@@ -164,6 +176,7 @@ test('prior local evidence needs every fresh visual case on its exact tree and d
   mkdirSync(legacyAttempts,{recursive:true});
   const ordinary = receipt();
   delete ordinary.suites[0].coverage;
+  sealReceipt(legacy.directory,ordinary);
   writeFileSync(join(legacyAttempts,attempt+'.json'),JSON.stringify(ordinary));
   const saved = join(legacy.directory,'uld-delivery/cloud-local',proposal.base+'-'+proposal.merge);
   mkdirSync(saved,{recursive:true});
@@ -171,16 +184,34 @@ test('prior local evidence needs every fresh visual case on its exact tree and d
   caseReport.status='failed';
   for (const invalid of [ {...caseReport, tree: proposal.merge}, {...caseReport,suites:[]},
     {...caseReport,suites:[{...caseReport.suites[0],result:'failed'}]}]) {
+    invalid.id=randomUUID();sealPhysical(legacy.directory,invalid);
     writeFileSync(join(saved,'local.json'),JSON.stringify(invalid));
     const count=legacy.events.length;
     await assert.rejects(legacy.run(attempt));
     assert.equal(legacy.events.length,count);
   }
+  sealPhysical(legacy.directory,caseReport);
+  writeFileSync(join(saved,'local.json'),JSON.stringify({...caseReport,status:'passed'}));
+  await assert.rejects(legacy.run(attempt),/changed after its verdict/);
   writeFileSync(join(saved,'local.json'),JSON.stringify(caseReport));
   const supported=JSON.parse(readFileSync(await legacy.run(attempt),'utf8'));
   assert.deepEqual(supported.local[0].coverage,caseReport.suites[0].coverage);
   assert.notEqual(supported.visualEvidenceSha256,supported.localEvidenceSha256);
   assert.equal(legacy.events.includes('local'),false);
+});
+
+test('a changed prior verdict is rejected before hosted dispatch', async t => {
+  const h = harness(t);
+  const prior = receipt();
+  const attempts = join(h.directory, 'uld-receipts/attempts');
+  mkdirSync(attempts, { recursive: true });
+  const recorded = structuredClone(prior);
+  recorded.status = 'failed';
+  recorded.suites[1].result = 'failed';
+  sealReceipt(h.directory, recorded);
+  writeFileSync(join(attempts, attempt + '.json'), JSON.stringify(prior));
+  await assert.rejects(h.run(attempt), /changed after its verdict/);
+  assert.deepEqual(h.events, []);
 });
 
 test('a new run or a quick rerun of an old workflow invalidates the measured result', async t => {
@@ -200,7 +231,7 @@ test('a new run or a quick rerun of an old workflow invalidates the measured res
 });
 
 test('all three local visual engines finish before timing and a failed visual run never admits timing', async t => {
-  const scratch = mkdtempSync(join(tmpdir(), 'local-visual-before-timing-'));
+  const scratch = realpathSync(mkdtempSync(join(tmpdir(), 'local-visual-before-timing-')));
   const originalCwd = process.cwd(), originalArgs = process.argv;
   const stubs = {
     'node:child_process': ['execFileSync'],
@@ -208,6 +239,8 @@ test('all three local visual engines finish before timing and a failed visual ru
     '../../workers/lock.mjs': ['withLock', 'releaseLocksOnSignal'],
     '../../workers/resource-guard.mjs': ['usingSimulator', 'withTiming'],
     '../typed-tools.mjs': 'export const trustedRoot="/inert-tools",buildTypedInputs=()=>{},requireTypedControls=()=>{};',
+    './browser-kit.mjs': ['shareBrowserKit'],
+    '../mac-performance.mjs': ['runMacPerformance'],
     './shard.mjs': ['runShard'],
     '../verdict.mjs': ['trustedVerdict'],
     './coordinator.mjs': ['whileHostedIdle'],
@@ -220,7 +253,7 @@ test('all three local visual engines finish before timing and a failed visual ru
     process.chdir(originalCwd); rmSync(scratch,{recursive:true,force:true});
   });
   process.chdir(scratch);
-  mkdirSync('.git');
+  execFileSync('git',['init','--quiet','--template=','.']);
   mkdirSync('release/evidence',{recursive:true});
   writeFileSync('release/evidence/android-emulator.json',JSON.stringify({passed:true,profiles:[{id:'low-end'},{id:'standard'}]}));
   for (const fail of [true,false]) {
@@ -229,6 +262,14 @@ test('all three local visual engines finish before timing and a failed visual ru
     mkdirSync(directory);
     process.argv=[process.execPath,'local-physical.mjs',scratch,proposal.base,proposal.merge,proposal.tree,directory];
     globalThis[driver]={
+      shareBrowserKit(base,candidate) {
+        assert.equal(base,'/inert-tools');
+        assert.equal(candidate,scratch);
+      },
+      runMacPerformance(root,base,commit) {
+        assert.deepEqual([root,base,commit],[scratch,proposal.base,proposal.merge]);
+        globalThis[driver].execFileSync(process.execPath,['/inert-tools/tests/browser/quality-perf.mjs']);
+      },
       execFileSync(command,args){
         if(command==='git') return args.includes('show')?JSON.stringify(roster):proposal.tree;
         if(command==='xcrun') return JSON.stringify({devices:{}});
@@ -254,7 +295,8 @@ test('all three local visual engines finish before timing and a failed visual ru
       },
       runBrowserShards(discovery,expected,owners,args,run){
         assert.deepEqual(expected,roster);
-        for(const engine of expected.projects)run([...args,engine]);
+        const observed=expected.projects.flatMap(engine=>run([...args,engine]).suites.map(row=>row.name));
+        return {projects:expected.projects,cases:observed.sort()};
       },
     };
     const url=new URL('../cloud/local-physical.mjs?visual='+String(fail),import.meta.url).href;
@@ -268,4 +310,45 @@ test('all three local visual engines finish before timing and a failed visual ru
     assert.equal(local.suites[0].result,fail?'failed':'passed');
     if(!fail)assert.deepEqual(local.suites[0].coverage,{tree:proposal.tree,...roster});
   }
+});
+
+
+test('the physical performance verdict enforces a tightened merge budget', async t => {
+  const scratch = mkdtempSync(join(tmpdir(),'local-budget-'));
+  const cwd = process.cwd();
+  process.chdir(scratch);
+  t.after(()=>{delete globalThis[driver];process.chdir(cwd);rmSync(scratch,{recursive:true,force:true});});
+  mkdirSync('test-results/ui-runtime',{recursive:true});
+  let tighter;
+  globalThis[driver]={execFileSync(tool,args) {
+    if(tool===process.execPath) {
+      assert.ok(args[0].endsWith('/tests/browser/quality-perf.mjs'));
+      writeFileSync('test-results/ui-runtime/summary.json',JSON.stringify({metrics:{motionFrameP95Ms:30}}));
+      return;
+    }
+    assert.equal(tool,'git');
+    return JSON.stringify({budgets:{motionFrameP95Ms:{baseline:16.7,allowance:args.at(-1).startsWith(tighter+':')?8.3:16.7}}});
+  }};
+  const url=new URL('../mac-performance.mjs?budgets',import.meta.url).href;
+  const {runMacPerformance}=await loadWithBoundaries(url,{'node:child_process':['execFileSync']});
+  runMacPerformance(scratch,proposal.base,proposal.merge);
+  for(tighter of [proposal.base,proposal.merge]) assert.throws(()=>runMacPerformance(scratch,proposal.base,proposal.merge),/motionFrameP95Ms/);
+});
+
+test('local visual fixtures resolve the same locked kit as their launcher', async t => {
+  const {shareBrowserKit}=await import('../cloud/browser-kit.mjs');
+  const scratch=mkdtempSync(join(tmpdir(),'local-kit-'));
+  t.after(()=>rmSync(scratch,{recursive:true,force:true}));
+  const base=join(scratch,'base'), candidate=join(scratch,'candidate');
+  const packages=['@playwright/test','playwright','playwright-core'].map(name=>'node_modules/'+name);
+  const lock={packages:Object.fromEntries(packages.map(name=>[name,{integrity:'sha512-fixture'}]))};
+  for(const root of [base,candidate]) {
+    for(const name of packages) mkdirSync(join(root,name),{recursive:true});
+    writeFileSync(join(root,'package-lock.json'),JSON.stringify(lock));
+  }
+  writeFileSync(join(candidate,'package-lock.json'),'{"packages":{}}');
+  assert.throws(()=>shareBrowserKit(base,candidate),/integrity/);
+  writeFileSync(join(candidate,'package-lock.json'),JSON.stringify(lock));
+  shareBrowserKit(base,candidate);
+  for(const name of packages) assert.equal(realpathSync(join(candidate,name)),realpathSync(join(base,name)));
 });

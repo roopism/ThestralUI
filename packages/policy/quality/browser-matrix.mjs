@@ -117,6 +117,9 @@ export function runBrowserShards(discovery, baseline, owners, args, run) {
   }
   validateBrowser(combined, baseline);
   console.log('Browser matrix passed', baseline.cases.length, 'cases across', baseline.projects.length, 'engines.');
+  const observed = cases(combined.suites);
+  return { projects: [...new Set(observed.map(row => row.test.projectName))].sort(),
+    cases: observed.map(row => row.name).sort() };
 }
 
 export function validateScenarioReport(report, ids, projects) {

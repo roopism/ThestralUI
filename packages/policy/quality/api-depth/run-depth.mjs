@@ -13,9 +13,12 @@ export async function verifyPackedDepth(
   root = process.cwd(),
   selectedIds,
 ) {
-  const { families: observed } = await import(pathToFileURL(resolve(registryPath)).href);
-  const published = observed.filter((row) => row.api?.length || row.nativeApi?.length);
-  const all = reviewedFamilies(target);
+  // Historical package comparisons can still supply their original inventory module.
+  const inputs = typeof registryPath === 'string'
+    ? { published: (await import(pathToFileURL(resolve(registryPath)).href)).families.filter(row => row.api?.length || row.nativeApi?.length) }
+    : registryPath;
+  const { published, registrations } = inputs;
+  const all = reviewedFamilies(target, registrations);
   validateRoutes(all);
   verifyFamilies(
     all,
@@ -28,7 +31,7 @@ export async function verifyPackedDepth(
   if (selectedIds) assert.deepEqual(families.map(row => row.id).sort(), [...selectedIds].sort());
   const bindings = families.flatMap(row => row.exports);
   const scoped = selectedIds !== undefined;
-  const cases = consumerCases(target);
+  const cases = consumerCases(target, registrations);
   const selectedCases = scoped
     ? Object.fromEntries(Object.entries(cases).filter(([key]) => bindings.includes(key)))
     : cases;

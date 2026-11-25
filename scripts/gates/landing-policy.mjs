@@ -7,6 +7,8 @@ const gateDirectories = [
 const gateCode = path => gateDirectories.some(directory => path.startsWith(directory));
 
 export function requireGateIsolation(branch, paths) {
+  if (paths.includes('scripts/gates/landing-evidence.allowed-signers'))
+    throw Error('Landing evidence signer enrollment requires an owner-controlled signing channel');
   if (!paths.some(gateCode)) return;
   if (!branch.startsWith('gates/')) throw Error('Protected changes require a gates/ branch');
   if (!paths.every(gateCode)) throw Error('Cannot mix protected gate paths and other paths');

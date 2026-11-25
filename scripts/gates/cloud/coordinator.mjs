@@ -7,6 +7,7 @@ import { cloudProposal, startHostedRun } from './proposal.mjs';
 import { readHostedVerdict } from './github.mjs';
 import { planAt } from './plan.mjs';
 import { collectPhysicalEvidence } from './local-snapshots.mjs';
+import { requireOriginalReceipt, requirePhysicalSeal } from '../reuse/runner.mjs';
 import { sha256 } from './results.mjs';
 import { withTimingReservation } from '../../workers/timing-reservation.mjs';
 
@@ -85,6 +86,8 @@ export async function hostedEvidence(root, common, number, attempt) {
     prior = readFileSync(join(common, 'uld-receipts/attempts', attempt + '.json'));
     const local = JSON.parse(prior);
     assert.equal(local.id, attempt);
+    assert.equal(local.reuseSchema, 1, 'Combined evidence requires a sealed qualification attempt');
+    requireOriginalReceipt(root, local, expected.base);
     const visual = local.suites.find(row => row.name === 'Mac visual comparisons');
     if (visualRoster && visual?.result === 'passed' && !visual.coverage) {
       // Older ordinary receipts contain a suite summary. An immutable, host-written
@@ -97,6 +100,7 @@ export async function hostedEvidence(root, common, number, attempt) {
         throw Error('Missing case-level visual evidence for this prior attempt; no hosted or device work was started');
       }
       const physical = JSON.parse(saved);
+      requirePhysicalSeal(root, physical);
       assert.deepEqual([physical.base, physical.commit, physical.tree, physical.mode],
         [expected.base, expected.merge, expected.tree, 'qualification']);
       assert.ok(['passed', 'failed'].includes(physical.status), 'Visual evidence needs a finalized physical report');
@@ -143,7 +147,9 @@ export async function hostedEvidence(root, common, number, attempt) {
   const failures = outcomes.filter(item => item.status === 'rejected');
   if (failures.length) throw new AggregateError(failures.map(item => item.reason), 'Qualification lanes failed');
   const [{ runId, hosted }, bytes] = outcomes.map(item => item.value);
-  const report = { ...combineEvidence(expected, shards, hosted, priorLocal ?? JSON.parse(bytes), visualRoster),
+  const physical = priorLocal ?? JSON.parse(bytes);
+  if (!priorLocal) requirePhysicalSeal(root, physical);
+  const report = { ...combineEvidence(expected, shards, hosted, physical, visualRoster),
     runId, localEvidenceSha256: sha256(bytes), ...(visualEvidenceSha256 && { visualEvidenceSha256 }) };
   const directory = join(common, 'uld-delivery/cloud-evidence');
   mkdirSync(directory, { recursive: true, mode: 0o700 });

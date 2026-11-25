@@ -8,6 +8,10 @@ import { hasWaiters, waitForLock } from './lock-queue.mjs';
 function lockDirectory(root, resource) {
   if (resource === 'ios-host' || resource === 'android-host') return join(root, '.uld-locks', resource);
   if (!['integration', 'simulator', 'landing'].includes(resource)) throw Error('Unknown shared resource ' + resource);
+  return sharedDirectory(root, resource);
+}
+
+function sharedDirectory(root, resource) {
   const common = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], {
     cwd: root, encoding: 'utf8',
   }).trim();
@@ -56,8 +60,13 @@ function requireFinishedGroup(owner, signal) {
 
 // Manual recovery retains the historical age check. Admission can recover a
 // freshly abandoned generation after proving its owner and suite have exited.
-export function recoverStaleLock(root, resource, request) {
-  const directory = lockDirectory(root, resource);
+export { recoverSharedLock as recoverStaleLock };
+function recoverSharedLock(root, resource, request) {
+  return recoverStaleLock(dirname(lockDirectory(root, resource)), resource, request);
+}
+
+function recoverStaleLock(root, resource, request) {
+  const directory = join(root, resource);
   const owner = readOwner(directory);
   if (typeof owner.id !== 'string' || !/^[a-f0-9-]{36}$/.test(owner.id)
     || owner.host !== hostname() || !Number.isSafeInteger(owner.pid) || owner.pid <= 0
@@ -102,9 +111,14 @@ export function releaseLocksOnSignal(forward) {
 
 const admitted = Symbol('queued holder');
 
-export function acquireLock(root, resource, holder, ticket, recovered = false) {
+export { acquireSharedLock as acquireLock };
+function acquireSharedLock(root, resource, holder) {
+  return acquireLock(dirname(lockDirectory(root, resource)), resource, holder);
+}
+
+function acquireLock(root, resource, holder, ticket, recovered = false) {
+  const directory = join(root, resource);
   if (!holder?.trim()) throw Error('A lock holder is required');
-  const directory = lockDirectory(root, resource);
   if (ticket !== admitted && hasWaiters(directory + '-queue')) throw Error(resource + ' has queued holders');
   mkdirSync(dirname(directory), { recursive: true });
   const owner = { holder, host: hostname(), pid: process.pid, started: new Date().toISOString(), id: randomUUID() };
@@ -159,10 +173,17 @@ export function acquireLock(root, resource, holder, ticket, recovered = false) {
   return release;
 }
 
+function reserveDirectory(directory, resource, holder, options) {
+  return waitForLock(directory + '-queue', holder, () => acquireLock(dirname(directory), resource, holder, admitted), options);
+}
+
+export function reserveLinuxGuest(root, holder) {
+  return reserveDirectory(sharedDirectory(root, 'linux-guest'), 'linux-guest', holder);
+}
+
 export async function withLock(root, resource, holder, run, options) {
   if (!holder?.trim()) throw Error('A lock holder is required');
-  const directory = lockDirectory(root, resource);
-  const release = await waitForLock(directory + '-queue', holder, () => acquireLock(root, resource, holder, admitted), options);
+  const release = await reserveDirectory(lockDirectory(root, resource), resource, holder, options);
   try {
     return await run(release.id);
   } finally {

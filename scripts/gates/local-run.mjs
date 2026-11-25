@@ -1,5 +1,5 @@
 import { gitInputs } from './reuse/fingerprint.mjs';
-import { decideRow, executeChoice, rowIdentity, saveFreshEvidence, sealReceipt, useRecord } from './reuse/runner.mjs';
+import { decideRow, executeChoice, rowIdentity, readVisualCoverage, saveFreshEvidence, sealReceipt, useRecord } from './reuse/runner.mjs';
 import { projectStoredPasses, publishRecord, sha256 } from './reuse/store.mjs';
 import { assertAuditResult, selectAudit } from './reuse/audit.mjs';
 import { withBrowserServers } from './reuse/browser-run.mjs';
@@ -26,6 +26,7 @@ import { packedDepth, checkNewBudgets } from '../../packages/policy/quality/chec
 import { verifyPackedCeiling } from '../../packages/policy/quality/size-ceiling.mjs';
 import { requireTypedControls } from './typed-tools.mjs';
 import { fast, typed, browserRosters } from './fast-typed.mjs';
+import { runMacPerformance } from './mac-performance.mjs';
 import { linuxBrowsers, stopVm } from './linux-vm.mjs';
 
 releaseLocksOnSignal();
@@ -74,7 +75,7 @@ function runDevice(script, reports, platform) {
     const root = join('test-results', reports);
     const versions = globSync(['device.json', '*/device.json'], { cwd: root }).map(file => read(join(root, file)));
     receipt.devices[platform] = platform === 'iphone' ? versions[0] ?? null : versions;
-    const patterns = ['device.json', '*/device.json', 'maestro-session-*/ready.json', '*/maestro-session-*/ready.json',
+    const patterns = ['final-budget-failure.json', 'device.json', '*/device.json', 'maestro-session-*/ready.json', '*/maestro-session-*/ready.json',
       '{maestro-session-*,*/maestro-session-*}/*/{request.json,reply.json,suite.json,junit.xml,nodes.xml}',
       '*/timing-source.json', '*/timing-admission.json', '*/timing-diagnostic/**/*.txt',
       '*/timing-diagnostic/*.json', '*/timing-diagnostic-error.txt', '*/frame-trial-*/*.txt', '*/frame-measurements.json', '*/motion-target.json', '*/ripple.json'];
@@ -91,6 +92,7 @@ const eligible = new Map();
 let inputs;
 const alwaysFresh = ['No weakening','Fast','Mac browser performance'];
 const deviceNames = ['iPhone Simulator','Android standard and low-end'];
+const visualCoveragePath = join(snapshot, '.git', 'visual-coverage-' + id + '.json');
 const browserGroups = ['Portable web scenarios','Mac browser behavior','Mac visual comparisons'];
 
 const verifiedProfiles = new Set();
@@ -177,6 +179,7 @@ async function runGroup(name, entry, operation, audit) {
   } else {
     const perform = overrides => runChild(name,exclude,overrides,Boolean(audit));
     logSha256 = exclude.length && browserGroups.includes(name) ? await withBrowserServers(snapshot,perform) : await perform({});
+    if (name === 'Mac visual comparisons') entry.coverage = readVisualCoverage(context, visualCoveragePath);
   }
   if (entry.result==='pending') entry.result='passed';
   if (entry.result!=='passed' || !identity || mode!=='qualification' || receipt.retries!==0) return;
@@ -279,12 +282,15 @@ if (mode !== 'hook') {
     const { cases, projects } = read(path);
     verifyCandidatePassed('browser', cases, projects);
   }, ['Catalog build']);
-  step('Mac visual comparisons', () => browserMatrix('tests/acceptance/visual-matrix.json', 'tests/browser/motion.visual.config.ts'), ['Catalog build']);
+  step('Mac visual comparisons', () => {
+    const observed = browserMatrix('tests/acceptance/visual-matrix.json', 'tests/browser/motion.visual.config.ts');
+    writeFileSync(visualCoveragePath, JSON.stringify({tree, ...observed}), {flag:'wx',mode:0o600});
+  }, ['Catalog build']);
   step('Scoped styles', () => node('tests/browser/quality-style-scope.mjs'), ['Catalog build']);
   step('Mac browser performance', () => usingSimulator('Mac browser performance', async () => {
     await stopVm();
     shutdownSimulators();
-    node('tests/browser/quality-perf.mjs');
+    runMacPerformance(root, base, commit);
   }), ['Catalog build']);
   step('Native package consumer', () => node(trustedVerdict('verify-native-consumer.mjs'), 'release/evidence'), preflight);
   step('Linux browser behavior', async (_entry,exclude) => { receipt.vm = await linuxBrowsers(root, commit, metadata => { receipt.vm = metadata; save(); },{exclude}); }, preflight);

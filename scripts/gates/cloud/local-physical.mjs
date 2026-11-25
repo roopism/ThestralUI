@@ -7,10 +7,13 @@ import { deviceScope } from '../../selection/local-device.mjs';
 import { withLock, releaseLocksOnSignal } from '../../workers/lock.mjs';
 import { usingSimulator, withTiming } from '../../workers/resource-guard.mjs';
 import { buildTypedInputs, requireTypedControls, trustedRoot } from '../typed-tools.mjs';
+import { shareBrowserKit } from './browser-kit.mjs';
+import { runMacPerformance } from '../mac-performance.mjs';
+import { sealPhysical } from '../reuse/runner.mjs';
 import { runShard } from './shard.mjs';
 import { trustedVerdict } from '../verdict.mjs';
 import { whileHostedIdle } from './coordinator.mjs';
-import { cases, runBrowserReport, runBrowserShards } from '../../../packages/policy/quality/browser-matrix.mjs';
+import { runBrowserReport, runBrowserShards } from '../../../packages/policy/quality/browser-matrix.mjs';
 import { browserCaseOwners } from '../../../packages/policy/quality/browser-shards.mjs';
 import { loadManifests } from '../../manifests/generate.mjs';
 
@@ -47,6 +50,7 @@ try {
       node(join(trustedRoot, 'node_modules/storybook/dist/bin/dispatcher.js'), 'build', '-o', 'dist/catalog', '--disable-telemetry');
     });
     await measure('Mac visual comparisons', () => withTiming('activity', 'Local three-engine visual comparisons', () => {
+      shareBrowserKit(trustedRoot, process.cwd());
       const config = 'tests/browser/motion.visual.config.ts';
       // Use the local Darwin snapshot paths and the incumbent tool and configuration.
       execFileSync('git', ['--no-replace-objects', 'diff', '--exit-code', base, commit, '--', config, 'scripts/workers/ports.mjs'], { cwd: root });
@@ -56,20 +60,14 @@ try {
       const run = flags => runBrowserReport(flags, process.env, join(trustedRoot, 'node_modules/@playwright/test/cli.js'));
       const discovery = run([...args, '--list']);
       const owners = browserCaseOwners(loadManifests(process.cwd()).families, 'visual');
-      const observed = [];
-      runBrowserShards(discovery, roster, owners, args, flags => {
-        const report = run(flags);
-        observed.push(...cases(report.suites).map(row => row.name));
-        return report;
-      });
-      return { tree, projects: roster.projects, cases: observed.sort() };
+      return { tree, ...runBrowserShards(discovery, roster, owners, args, run) };
     }));
     await measure('Mac browser performance', () => usingSimulator('Mac browser performance', () => {
       const vm = execFileSync('/Applications/UTM.app/Contents/MacOS/utmctl', ['status', 'uld-linux'], { encoding: 'utf8' }).trim();
       assert.equal(vm, 'stopped', 'The project VM must already be stopped for local timing');
       const booted = JSON.parse(execFileSync('xcrun', ['simctl', 'list', 'devices', 'booted', '-j'])).devices;
       assert.equal(Object.values(booted).flat().length, 0, 'Local timing needs an idle simulator');
-      return whileHostedIdle(() => node(join(trustedRoot, 'tests/browser/quality-perf.mjs')));
+      return whileHostedIdle(() => runMacPerformance(root, base, commit));
     }));
     await measure('Android standard and low-end', () => withLock(root, 'simulator', 'Android ' + tree, async () => {
       await withTiming('measurement', 'Android ' + tree, () =>
@@ -85,5 +83,6 @@ try {
   for (const path of ['test-results/ui-runtime', 'test-results/android-emulator', 'release/evidence']) {
     if (existsSync(path)) cpSync(path, join(directory, path), { recursive: true });
   }
+  sealPhysical(root, evidence);
   writeFileSync(join(directory, 'local.json'), JSON.stringify(evidence, null, 2) + '\n', { flag: 'wx' });
 }

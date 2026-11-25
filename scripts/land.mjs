@@ -75,7 +75,8 @@ export function requireProposalHistory(tree, base, directory, proposal) {
   const first = existsSync(path) ? JSON.parse(readFileSync(path)) : undefined;
   const target = proposal.commit ? { tree, base, commit: proposal.commit } : first?.commit ? first : undefined;
   const history = relatedHistory(directory, tree, first, proposal.root ?? root, target);
-  requireReviewedFailures(directory, tree, history, () => ownerDecisions(base));
+  requireReviewedFailures(directory, tree, history, () => ownerDecisions(base),
+    { root: proposal.root ?? root, base, roster: required });
 }
 export function passing(tree, base, directory = join(common, 'uld-receipts'), proposal = {}) {
   assert.match(tree, oid);
@@ -85,11 +86,13 @@ export function passing(tree, base, directory = join(common, 'uld-receipts'), pr
   if (!existsSync(path)) return;
   const first = JSON.parse(readFileSync(path));
   const history = treeHistory(directory, tree, first);
-  requireReviewedFailures(directory, tree, history, () => ownerDecisions(base));
-  const available = history.filter(item => item.base === base && item.status === 'passed');
-  const raw = available.sort((a, b) => (b.finished ?? '').localeCompare(a.finished ?? '')).at(0) ?? first;
+  const available = requireReviewedFailures(directory, tree, history, () => ownerDecisions(base),
+    { root: proposal.root ?? root, base, roster: required });
+  const candidates = available.filter(item => item.receipt.base === base);
+  const selected = candidates.sort((a, b) => (b.receipt.finished ?? '').localeCompare(a.receipt.finished ?? '')).at(0);
+  const raw = selected?.receipt ?? first;
   if (raw.status === 'passed' && raw.base === base) requireOriginalReceipt(proposal.root ?? root,raw,base);
-  const r = projectStoredPasses(directory, raw);
+  const r = projectStoredPasses(directory, selected?.verdict ?? raw);
   if (r.status === 'passed' && r.base === base && raw.suites.some(row => row.result === 'reused' || row.auditRerun)) {
     const checkout = proposal.root ?? root;
     withRevisionSnapshot(checkout, tree, (snapshot, actual, env) => {
@@ -135,7 +138,7 @@ export function passing(tree, base, directory = join(common, 'uld-receipts'), pr
     }
   }
   if (r.base !== base) return;
-  return raw;
+  return selected?.evidence ? { ...selected.verdict, landingEvidence: selected.evidence } : raw;
 }
 if (import.meta.main) await withLock(root, 'landing', 'PR ' + number, async () => {
   const directory = join(common, 'uld-receipts');
@@ -145,7 +148,10 @@ if (import.meta.main) await withLock(root, 'landing', 'PR ' + number, async () =
   }
   requireResolvedMerge(directory, (commit, actualTree) => {
     assert.equal(git('rev-parse', commit + '^{tree}'), actualTree);
-    return passing(actualTree, commit, directory, { commit });
+    const receipt = passing(actualTree, commit, directory, { commit });
+    // Clearing a post-merge discrepancy still needs a full qualification of the actual commit.
+    if (receipt?.landingEvidence?.some(item => item.failed === receipt.id)) return;
+    return receipt;
   });
   const { pr, merge, tree } = proposal();
   let receipt = passing(tree, pr.base.sha, directory, { commit: merge });
@@ -178,6 +184,8 @@ if (import.meta.main) await withLock(root, 'landing', 'PR ' + number, async () =
   if (!git('for-each-ref', '--format=%(refname)', archive)) git('update-ref', archive, pr.head.sha, '0'.repeat(40));
   assert.equal(git('rev-parse', archive), pr.head.sha);
   const summary = ['Local qualification passed for tree ' + tree + '.', '',
+    ...(receipt.landingEvidence ?? []).map(({ failed, diagnostic }) =>
+      '- Reviewed failure ' + failed + (diagnostic ? ' with timing diagnostic ' + diagnostic : ' against unchanged base')),
     ...receipt.suites.map(row => '- ' + row.name + ' — ' + row.result + ' (' + (row.durationMs / 1000).toFixed(1) + ' s)')].join('\n');
   api('repos/' + repo + '/issues/' + number + '/comments', 'POST', { body: summary });
   const status = spawnSync('gh', ['api', '--method', 'POST', 'repos/' + repo + '/statuses/' + pr.head.sha,

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { hasEarlierAndroidDiagnostic } from './diagnostic-slot.mjs';
 import { execFileSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
@@ -114,6 +115,13 @@ export function claimDiagnostic(common,record) {
   mkdirSync(dirname(path),{recursive:true});
   try { writeFileSync(path,JSON.stringify({tree,entryManifestSha256,attempt,claimedAt:new Date().toISOString()}),{flag:'wx',mode:0o600}); }
   catch (error) { if (error.code==='EEXIST') return false; throw error; }
+  // A crash after reserving the original per-app slot must still consume the diagnostic.
+  const directory = join(common, 'uld-receipts');
+  if (hasEarlierAndroidDiagnostic(directory, tree, tree + '-' + entryManifestSha256 + '.json')) return false;
+  const parent = join(directory, 'timing-diagnostics');
+  mkdirSync(parent, { recursive: true });
+  try { mkdirSync(join(parent, tree), { mode: 0o700 }); }
+  catch (error) { if (error.code === 'EEXIST') return false; throw error; }
   return true;
 }
 
