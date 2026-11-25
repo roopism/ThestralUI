@@ -52,6 +52,18 @@ function verifyHardware(device, profile) {
   };
 }
 
+export async function prepareAndroidProfile({ profile, apk, dir, serial, name, device, tools }) {
+  const hardware = verifyHardware(device, profile);
+  writeFileSync(join(dir, 'device.json'), JSON.stringify({ id: profile.id, name, hardware }));
+  device('install', '-r', apk);
+  device('shell', 'settings', 'put', 'secure', 'show_ime_with_hard_keyboard', '1');
+  device('shell', 'cmd', 'uimode', 'night', 'no');
+  device('shell', 'settings', 'put', 'system', 'font_scale', '1.0');
+  // This runs before Maestro opens Android's accessibility connection.
+  const interaction = await verifyAndroidInteraction({ device, serial, tools, reports: dir, profile });
+  return { hardware, interaction };
+}
+
 async function qualify() {
   mkdirSync(evidence, { recursive: true });
   rmSync(report, { force: true });
@@ -69,27 +81,11 @@ async function qualify() {
     for (const profile of config.profiles) {
       const dir = join(reports, profile.id);
       await withEmulator(profile, tools, dir, async ({ serial, name, device }) => {
-        const hardware = verifyHardware(device, profile);
-        writeFileSync(join(dir, 'device.json'), JSON.stringify({ id: profile.id, name, hardware }));
-        device('install', '-r', apk);
-        device('shell', 'settings', 'put', 'secure', 'show_ime_with_hard_keyboard', '1');
-        const env = {
-          ...driverEnv,
-          ANDROID_SERIAL: serial,
-        };
-        // Measure before the automation instrumentation starts and owns Android's accessibility connection.
-        device('shell', 'cmd', 'uimode', 'night', 'no');
-        device('shell', 'settings', 'put', 'system', 'font_scale', '1.0');
-        const interaction = await verifyAndroidInteraction({
-          device,
-          serial,
-          tools,
-          reports: dir,
-          profile,
-        });
+        const { hardware, interaction } = await prepareAndroidProfile({ profile, apk, dir, serial, name, device, tools });
+        const env = { ...driverEnv, ANDROID_SERIAL: serial };
         let frameBudget;
         if (profile.id === 'low-end') {
-          const timing = await androidTiming({ apk, root, common: process.env.ULD_ARTIFACT_COMMON, limits: budgets.limits,
+          const timing = await androidTiming({ apk, root, common: process.env.ULD_FRESH_ANDROID_TIMING === '1' ? undefined : process.env.ULD_ARTIFACT_COMMON, limits: budgets.limits,
             measure: async () => {
               await stopVm();
               shutdownSimulators();
@@ -224,4 +220,4 @@ async function qualify() {
     );
   }
 }
-await inCommandGroup(() => usingSimulator('Android emulator', qualify), true);
+if (import.meta.main) await inCommandGroup(() => usingSimulator('Android emulator', qualify), true);
