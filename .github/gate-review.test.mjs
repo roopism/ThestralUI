@@ -9,7 +9,7 @@ import { renderDepthRegistry } from '../scripts/manifests/depth-registry.mjs';
 import { checkProposal, checkRevision, gatePaths } from './gate-review.mjs';
 
 const owners = gatePaths(readFileSync(new URL('./CODEOWNERS', import.meta.url), 'utf8'));
-const repository = 'thetechgeeek/ThestralUI';
+const repository = 'roopism/ThestralUI';
 const product = { repository, headRepository: repository, headBranch: 'feat/families' };
 const gate = { ...product, headBranch: 'feat/gates' };
 const cases = [
@@ -56,9 +56,9 @@ test('the public cascade contract requires gate review while family stylesheets 
 });
 
 test('invalid or unowned rules are rejected', () => {
-  for (const row of ['* @thetechgeeek', '/scripts/** @thetechgeeek', '/.github/ @someone', '/.github/'])
+  for (const row of ['* @roopism', '/scripts/** @roopism', '/.github/ @someone', '/.github/'])
     assert.throws(() => gatePaths(row));
-  assert.throws(() => gatePaths('/scripts/ @thetechgeeek'), /must be owned/);
+  assert.throws(() => gatePaths('/scripts/ @roopism'), /must be owned/);
 });
 
 test('the diff uses the base policy and treats both ends of a rename as changes', t => {
@@ -69,12 +69,12 @@ test('the diff uses the base policy and treats both ends of a rename as changes'
   git('config', 'user.name', 'Review fixture');
   git('config', 'user.email', 'fixture@example.invalid');
   mkdirSync(join(cwd, '.github'));
-  writeFileSync(join(cwd, '.github/CODEOWNERS'), '/.github/ @thetechgeeek\n');
+  writeFileSync(join(cwd, '.github/CODEOWNERS'), '/.github/ @roopism\n');
   writeFileSync(join(cwd, '.github/guard'), 'fixture\n');
   git('add', '.'); git('commit', '-qm', 'base'); const base = git('rev-parse', 'HEAD');
   const filename = 'product\nfile';
   renameSync(join(cwd, '.github/guard'), join(cwd, filename));
-  writeFileSync(join(cwd, '.github/CODEOWNERS'), '/.github/ @thetechgeeek\n/product @thetechgeeek\n');
+  writeFileSync(join(cwd, '.github/CODEOWNERS'), '/.github/ @roopism\n/product @roopism\n');
   writeFileSync(join(cwd, 'product'), 'cannot classify its own change\n');
   git('add', '-A'); git('commit', '-qm', 'proposal'); const head = git('rev-parse', 'HEAD');
   assert.throws(() => checkRevision(cwd, base, head, product), /\.github\/guard/);
@@ -110,7 +110,7 @@ test('symlink and gitlink replacements at an owned directory remain gated', t =>
   git('init', '--quiet', '--template=');
   git('config', 'user.name', 'Review fixture'); git('config', 'user.email', 'fixture@example.invalid');
   mkdirSync(join(cwd, '.github')); mkdirSync(join(cwd, 'scripts'));
-  writeFileSync(join(cwd, '.github/CODEOWNERS'), '/.github/ @thetechgeeek\n/scripts/ @thetechgeeek\n');
+  writeFileSync(join(cwd, '.github/CODEOWNERS'), '/.github/ @roopism\n/scripts/ @roopism\n');
   writeFileSync(join(cwd, 'scripts/check'), 'gate\n');
   git('add', '.'); git('commit', '-qm', 'ordinary directory'); const base = git('rev-parse', 'HEAD');
   rmSync(join(cwd, 'scripts'), { recursive: true }); symlinkSync('other', join(cwd, 'scripts'));

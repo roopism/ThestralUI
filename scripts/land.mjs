@@ -13,7 +13,7 @@ if (import.meta.main) assert.match(number ?? '', /^[1-9]\d*$/, 'Usage: npm run l
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 const root = git('rev-parse', '--show-toplevel');
 const common = git('rev-parse', '--path-format=absolute', '--git-common-dir');
-const repo = 'thetechgeeek/ThestralUI', integration = 'feat/enterprise-ui';
+const repo = 'roopism/ThestralUI', integration = 'feat/enterprise-ui';
 const slug = 'repos/' + repo + '/pulls/' + number;
 const api = (endpoint, method = 'GET', body) => JSON.parse(execFileSync('gh', ['api', '--method', method,
   endpoint, ...(body ? ['--input', '-'] : [])], { input: body && JSON.stringify(body), encoding: 'utf8' }));

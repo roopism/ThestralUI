@@ -56,7 +56,7 @@ test('the measured catalog fixtures participate in protected input checks', t =>
   const owners = readFileSync(new URL('../../../.github/CODEOWNERS', import.meta.url), 'utf8').split('\n');
   for (const file of ['catalog/MotionGallery.stories.tsx', 'catalog/EnterpriseWorkspace.stories.tsx',
     'catalog/EnterpriseCollections.stories.tsx', 'catalog/collection-events.ts']) {
-    assert.ok(owners.includes('/' + file + ' @thetechgeeek'), file);
+    assert.ok(owners.includes('/' + file + ' @roopism'), file);
     assert.ok(compareWithBase(t, file, 'assert.ok(sample);')('// fixture').length > 0, file);
   }
 });

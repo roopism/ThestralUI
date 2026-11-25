@@ -5,7 +5,7 @@
     "symbol": "DeliveryConsole",
     "rule": "primitive-owner",
     "family": "input",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "This delivery fixture exercises native required validation and restoring a saved draft.",
     "expires": "2027-02-01"
   },
@@ -15,7 +15,7 @@
     "symbol": "ReviewWorkspace",
     "rule": "primitive-owner",
     "family": "input",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "This review fixture exercises controlled list-detail drafts across viewport changes.",
     "expires": "2027-02-01"
   },
@@ -25,7 +25,7 @@
     "symbol": "(imports)",
     "rule": "private-import",
     "family": "module",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Read the release version from workspace package metadata for the catalog heading.",
     "expires": "2027-02-01"
   },
@@ -35,7 +35,7 @@
     "symbol": "Overview",
     "rule": "local-substitute",
     "family": "input",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Keep the documented legacy field composition until the example migrates.",
     "expires": "2027-02-01"
   },
@@ -45,7 +45,7 @@
     "symbol": "PublicationLibrary",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Keep catalog interactions comparable with the approved two-brand visual baselines.",
     "expires": "2027-02-01"
   },
@@ -55,7 +55,7 @@
     "symbol": "PublicationLibrary",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Keep catalog interactions comparable with the approved two-brand visual baselines.",
     "expires": "2027-02-01"
   },
@@ -65,7 +65,7 @@
     "symbol": "PublicationLibrary",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Keep catalog interactions comparable with the approved two-brand visual baselines.",
     "expires": "2027-02-01"
   },
@@ -75,7 +75,7 @@
     "symbol": "PublicationLibrary",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Keep catalog interactions comparable with the approved two-brand visual baselines.",
     "expires": "2027-02-01"
   },
@@ -85,7 +85,7 @@
     "symbol": "PublicationLibrary",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Keep catalog interactions comparable with the approved two-brand visual baselines.",
     "expires": "2027-02-01"
   },
@@ -95,7 +95,7 @@
     "symbol": "ProofReview",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Preserve the public motion example used by interruption and timing regression tests.",
     "expires": "2027-02-01"
   },
@@ -105,7 +105,7 @@
     "symbol": "ProofReview",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Preserve the public motion example used by interruption and timing regression tests.",
     "expires": "2027-02-01"
   },
@@ -115,7 +115,7 @@
     "symbol": "ProofReview",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Preserve the public motion example used by interruption and timing regression tests.",
     "expires": "2027-02-01"
   },
@@ -125,7 +125,7 @@
     "symbol": "ProofReview",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Preserve the public motion example used by interruption and timing regression tests.",
     "expires": "2027-02-01"
   },
@@ -135,7 +135,7 @@
     "symbol": "FieldExample",
     "rule": "primitive-owner",
     "family": "input",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "The historical fixture verifies the public field wrapper with native host input.",
     "expires": "2027-02-01"
   },
@@ -145,7 +145,7 @@
     "symbol": "DataTable",
     "rule": "primitive-owner",
     "family": "selection",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain page selection, indeterminate state and sorted headers during the collection migration.",
     "expires": "2027-02-01"
   },
@@ -155,7 +155,7 @@
     "symbol": "DataTable",
     "rule": "primitive-owner",
     "family": "input",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain page selection, indeterminate state and sorted headers during the collection migration.",
     "expires": "2027-02-01"
   },
@@ -165,7 +165,7 @@
     "symbol": "DataTable",
     "rule": "primitive-owner",
     "family": "selection",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain page selection, indeterminate state and sorted headers during the collection migration.",
     "expires": "2027-02-01"
   },
@@ -175,7 +175,7 @@
     "symbol": "DataTable",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain page selection, indeterminate state and sorted headers during the collection migration.",
     "expires": "2027-02-01"
   },
@@ -185,7 +185,7 @@
     "symbol": "DataTable",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain page selection, indeterminate state and sorted headers during the collection migration.",
     "expires": "2027-02-01"
   },
@@ -195,7 +195,7 @@
     "symbol": "DataTable",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain page selection, indeterminate state and sorted headers during the collection migration.",
     "expires": "2027-02-01"
   },
@@ -205,7 +205,7 @@
     "symbol": "DataTable",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain page selection, indeterminate state and sorted headers during the collection migration.",
     "expires": "2027-02-01"
   },
@@ -215,7 +215,7 @@
     "symbol": "EditableCell",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain Enter, Escape and focus restoration while the inline editor migrates.",
     "expires": "2027-02-01"
   },
@@ -225,7 +225,7 @@
     "symbol": "EditableCell",
     "rule": "primitive-owner",
     "family": "input",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain Enter, Escape and focus restoration while the inline editor migrates.",
     "expires": "2027-02-01"
   },
@@ -235,7 +235,7 @@
     "symbol": "EditableCell",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain Enter, Escape and focus restoration while the inline editor migrates.",
     "expires": "2027-02-01"
   },
@@ -245,7 +245,7 @@
     "symbol": "EditableCell",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain Enter, Escape and focus restoration while the inline editor migrates.",
     "expires": "2027-02-01"
   },
@@ -255,7 +255,7 @@
     "symbol": "CodeField",
     "rule": "primitive-owner",
     "family": "input",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Preserve numeric keyboard, autocomplete and one-time-code semantics.",
     "expires": "2027-02-01"
   },
@@ -265,7 +265,7 @@
     "symbol": "FileUpload",
     "rule": "primitive-owner",
     "family": "input",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Preserve the browser file picker and selection reset contract during migration.",
     "expires": "2027-02-01"
   },
@@ -275,7 +275,7 @@
     "symbol": "PasswordField",
     "rule": "primitive-owner",
     "family": "input",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "The reveal toggle must preserve password manager autofill and caret position.",
     "expires": "2027-02-01"
   },
@@ -285,7 +285,7 @@
     "symbol": "ValidationSummary",
     "rule": "primitive-owner",
     "family": "link",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "The error link moves focus to the named invalid field.",
     "expires": "2027-02-01"
   },
@@ -295,7 +295,7 @@
     "symbol": "Carousel",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain swipe, keyboard navigation and reduced-motion contracts while restyling its actions.",
     "expires": "2027-02-01"
   },
@@ -305,7 +305,7 @@
     "symbol": "Carousel",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain swipe, keyboard navigation and reduced-motion contracts while restyling its actions.",
     "expires": "2027-02-01"
   },
@@ -315,7 +315,7 @@
     "symbol": "ExpandableMediaCard",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain card activation and focus restoration during the media action migration.",
     "expires": "2027-02-01"
   },
@@ -325,7 +325,7 @@
     "symbol": "AlertDialog",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Preserve cancel-first focus and confirmation semantics when adopting shared actions.",
     "expires": "2027-02-01"
   },
@@ -335,7 +335,7 @@
     "symbol": "AlertDialog",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Preserve cancel-first focus and confirmation semantics when adopting shared actions.",
     "expires": "2027-02-01"
   },
@@ -345,7 +345,7 @@
     "symbol": "EdgePanel",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Keep the close action reachable and restore focus after dismissing the panel.",
     "expires": "2027-02-01"
   },
@@ -355,7 +355,7 @@
     "symbol": "CommandPalette",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain active-descendant focus, IME behavior and disabled command semantics.",
     "expires": "2027-02-01"
   },
@@ -365,7 +365,7 @@
     "symbol": "CommandPalette",
     "rule": "primitive-owner",
     "family": "input",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain active-descendant focus, IME behavior and disabled command semantics.",
     "expires": "2027-02-01"
   },
@@ -375,7 +375,7 @@
     "symbol": "CommandPalette",
     "rule": "primitive-owner",
     "family": "selection",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain active-descendant focus, IME behavior and disabled command semantics.",
     "expires": "2027-02-01"
   },
@@ -385,7 +385,7 @@
     "symbol": "AppNavigation",
     "rule": "primitive-owner",
     "family": "link",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Verify the routing slot, active state and destination policy during shared link adoption.",
     "expires": "2027-02-01"
   },
@@ -395,7 +395,7 @@
     "symbol": "AvailabilityMessage",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Keep error retry inside the labeled status pattern while migrating the action.",
     "expires": "2027-02-01"
   },
@@ -405,7 +405,7 @@
     "symbol": "BatchProgress",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retry applies only to the selected failed operation.",
     "expires": "2027-02-01"
   },
@@ -415,7 +415,7 @@
     "symbol": "NotificationCenter",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain unread-item targeting and bulk read behavior during action migration.",
     "expires": "2027-02-01"
   },
@@ -425,7 +425,7 @@
     "symbol": "NotificationCenter",
     "rule": "primitive-owner",
     "family": "button",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Retain unread-item targeting and bulk read behavior during action migration.",
     "expires": "2027-02-01"
   },
@@ -435,7 +435,7 @@
     "symbol": "SettingRow",
     "rule": "primitive-owner",
     "family": "selection",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "Preserve the switch name, help text and disabled account permissions during migration.",
     "expires": "2027-02-01"
   },
@@ -445,7 +445,7 @@
     "symbol": "AppShell",
     "rule": "primitive-owner",
     "family": "link",
-    "owner": "@thetechgeeek",
+    "owner": "@roopism",
     "reason": "The skip link must continue to target the stable main landmark.",
     "expires": "2027-02-01"
   }

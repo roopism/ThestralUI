@@ -1,46 +1,46 @@
 # Gate definitions and acceptance limits require the repository owner's approval.
 # Use root-anchored literal files or directories. The gate path check reads this list.
-/.github/ @thetechgeeek
-/.githooks/ @thetechgeeek
-/packages/policy/ @thetechgeeek
+/.github/ @roopism
+/.githooks/ @roopism
+/packages/policy/ @roopism
 # Exact generated data. The frozen check verifies its bytes and keeps prior contracts.
 /packages/policy/quality/api-depth/families.json
-/packages/style-policy/ @thetechgeeek
-/scripts/ @thetechgeeek
-/manifests/shared.json @thetechgeeek
-/tests/android/ @thetechgeeek
-/tests/simulator/ @thetechgeeek
-/tests/browser/quality-perf-baseline.json @thetechgeeek
-/tests/browser/quality-perf-check.mjs @thetechgeeek
-/tests/browser/quality-perf-policy.mjs @thetechgeeek
-/tests/browser/quality-perf.mjs @thetechgeeek
-/tests/browser/quality-style-scope.mjs @thetechgeeek
-/tests/browser/quality.spec.ts @thetechgeeek
-/tests/browser/motion.visual.config.ts @thetechgeeek
+/packages/style-policy/ @roopism
+/scripts/ @roopism
+/manifests/shared.json @roopism
+/tests/android/ @roopism
+/tests/simulator/ @roopism
+/tests/browser/quality-perf-baseline.json @roopism
+/tests/browser/quality-perf-check.mjs @roopism
+/tests/browser/quality-perf-policy.mjs @roopism
+/tests/browser/quality-perf.mjs @roopism
+/tests/browser/quality-style-scope.mjs @roopism
+/tests/browser/quality.spec.ts @roopism
+/tests/browser/motion.visual.config.ts @roopism
 # Story inputs for the calibrated performance journeys.
-/catalog/MotionGallery.stories.tsx @thetechgeeek
-/catalog/EnterpriseWorkspace.stories.tsx @thetechgeeek
-/catalog/EnterpriseCollections.stories.tsx @thetechgeeek
-/catalog/collection-events.ts @thetechgeeek
+/catalog/MotionGallery.stories.tsx @roopism
+/catalog/EnterpriseWorkspace.stories.tsx @roopism
+/catalog/EnterpriseCollections.stories.tsx @roopism
+/catalog/collection-events.ts @roopism
 # Shared cross-platform scenario interpreters and their dedicated regression suites.
-/tests/native/scenarios.test.cjs @thetechgeeek
-/tests/scenarios/android.test.cjs @thetechgeeek
-/tests/scenarios/read.test.cjs @thetechgeeek
-/tests/scenarios/web/adapter-regressions.spec.ts @thetechgeeek
-/tests/scenarios/web/adapter.ts @thetechgeeek
-/tests/scenarios/web/playwright.config.ts @thetechgeeek
+/tests/native/scenarios.test.cjs @roopism
+/tests/scenarios/android.test.cjs @roopism
+/tests/scenarios/read.test.cjs @roopism
+/tests/scenarios/web/adapter-regressions.spec.ts @roopism
+/tests/scenarios/web/adapter.ts @roopism
+/tests/scenarios/web/playwright.config.ts @roopism
 # The public stylesheet composition contract validates emitted cascade layers.
-/tests/contracts/cascade-layers.test.mjs @thetechgeeek
-/tests/packaging/default-ceiling.json @thetechgeeek
-/tests/packaging/baseline/ @thetechgeeek
-/docs/ui-ownership-exceptions.json @thetechgeeek
-/ui-policy.json @thetechgeeek
-/package.json @thetechgeeek
-/package-lock.json @thetechgeeek
-/.npmrc @thetechgeeek
-/.nvmrc @thetechgeeek
-/babel.config.cjs @thetechgeeek
-/tsconfig.json @thetechgeeek
-/playwright.config.ts @thetechgeeek
-/vitest.config.ts @thetechgeeek
-/jest.native.config.cjs @thetechgeeek
+/tests/contracts/cascade-layers.test.mjs @roopism
+/tests/packaging/default-ceiling.json @roopism
+/tests/packaging/baseline/ @roopism
+/docs/ui-ownership-exceptions.json @roopism
+/ui-policy.json @roopism
+/package.json @roopism
+/package-lock.json @roopism
+/.npmrc @roopism
+/.nvmrc @roopism
+/babel.config.cjs @roopism
+/tsconfig.json @roopism
+/playwright.config.ts @roopism
+/vitest.config.ts @roopism
+/jest.native.config.cjs @roopism

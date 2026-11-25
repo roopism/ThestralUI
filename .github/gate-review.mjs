@@ -19,7 +19,7 @@ export function gatePaths(codeowners) {
       paths.push({ path: depthRegistry, directory: false, owned: false });
       continue;
     }
-    const match = /^\/([\w.-]+(?:\/[\w.-]+)*)(\/?)\s+@thetechgeeek$/.exec(line);
+    const match = /^\/([\w.-]+(?:\/[\w.-]+)*)(\/?)\s+@roopism$/.exec(line);
     if (!match) throw Error('Unsupported gate CODEOWNERS rule: ' + JSON.stringify(line));
     paths.push({ path: match[1], directory: Boolean(match[2]), owned: true });
   }

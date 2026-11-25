@@ -3,7 +3,7 @@
   "family": "Text",
   "status": "draft",
   "since": "0.3.0-rc.1",
-  "owner": "@thetechgeeek",
+  "owner": "@roopism",
   "platforms": {
     "web": "exported",
     "native": "planned"

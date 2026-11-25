@@ -3,7 +3,7 @@
   "family": "Modal dialog",
   "status": "experimental",
   "since": "0.1.0",
-  "owner": "@thetechgeeek",
+  "owner": "@roopism",
   "platforms": {
     "web": "supported",
     "native": "experimental"

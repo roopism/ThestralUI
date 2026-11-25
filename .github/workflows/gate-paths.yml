@@ -32,7 +32,7 @@ jobs:
             node "$RUNNER_TEMP/gate-review.mjs" "$base" "$HEAD_SHA"
           else
             # The first adoption is limited to these five governance files under the old owner rule.
-            test "$(git show "$base:.github/CODEOWNERS")" = '* @thetechgeeek'
+            test "$(git show "$base:.github/CODEOWNERS")" = '* @roopism'
             test "$HEAD_BRANCH" = feat/gates
             test "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"
             git diff --exit-code --name-only --no-renames --ignore-submodules=none "$base...$HEAD_SHA" -- . \
