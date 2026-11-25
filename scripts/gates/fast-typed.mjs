@@ -32,7 +32,7 @@ export async function typed() {
       await background(process.execPath, [join(trustedRoot, 'scripts/check-api.mjs')]);
       buildTokens(process.cwd(), true);
       for (const args of [
-        ['scripts/inventory.mjs'],
+        [join(trustedRoot, 'scripts/inventory.mjs')],
         [trustedVerdict('verify-artifacts.mjs'), '--built-snapshot'],
         [trustedVerdict('verify-version.mjs')], [trustedVerdict('verify-inventory.mjs')],
       ]) await background(process.execPath, args);

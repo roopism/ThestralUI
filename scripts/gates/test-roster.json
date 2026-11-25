@@ -78,6 +78,7 @@
   "scripts/gates/tests/trusted-verdicts.test.mjs | a candidate with no verdict still runs the trusted check against its own records",
   "scripts/gates/tests/trusted-verdicts.test.mjs | qualification routes every device, package and unit verdict through the trusted entry point",
   "scripts/gates/tests/trusted-verdicts.test.mjs | the trusted device reader includes newly registered candidate fixtures and validates their descriptors",
+  "scripts/gates/tests/typed-provenance.test.mjs | the trusted inventory reader uses the proposed family manifest data",
   "scripts/gates/tests/typed-provenance.test.mjs | the trusted native runner discovers and reports a failure in the candidate tree",
   "scripts/gates/tests/typed-provenance.test.mjs | trusted compiler reports candidate type errors with different candidate compiler settings",
   "scripts/gates/tests/typed-provenance.test.mjs | trusted compiler reports candidate type errors with different package type command",

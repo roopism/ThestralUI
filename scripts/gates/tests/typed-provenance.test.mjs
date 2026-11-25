@@ -64,3 +64,15 @@ test('the trusted native runner discovers and reports a failure in the candidate
   assert.equal(report.testResults[0].assertionResults[0].fullName, 'native candidate case');
   assert.match(assertion.failureMessages.join(' '), /Expected: 5/);
 });
+
+test('the trusted inventory reader uses the proposed family manifest data', async t => {
+  const { inventoryFromSources } = await import('../../inventory.mjs');
+  const candidate = fixture(t);
+  cpSync(join(trustedRoot, 'manifests'), join(candidate, 'manifests'), { recursive: true });
+  const source = join(candidate, 'manifests/families/text.json');
+  const text = JSON.parse(readFileSync(source));
+  text.inventory.note = 'Documented by the proposed library';
+  writeFileSync(source, JSON.stringify(text));
+  const registered = inventoryFromSources(candidate).families.find(row => row.id === 'Text');
+  assert.equal(registered.note, text.inventory.note);
+});

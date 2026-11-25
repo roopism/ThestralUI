@@ -18,6 +18,8 @@ export function unitCommand(kind, root, candidate, args) {
   const options = kind === 'vitest'
     ? ['run', '--config', join(root, 'scripts/gates/trusted-vitest.config.mts'), '--root', candidate]
     : ['--config', JSON.stringify(nativeOptions(root, candidate)), '--runInBand'];
+  // Vite's default loader writes beside its config. Hosted integration files are read-only.
+  if (kind === 'vitest' && process.env.ULD_READONLY_TOOLCHAIN === '1') options.push('--configLoader', 'native');
   return [join(root, bin[kind]), ...options, ...args];
 }
 
