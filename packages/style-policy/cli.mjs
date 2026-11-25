@@ -83,7 +83,16 @@ export function scanProject(root, profileName) {
   const tokens = JSON.parse(read(join(root, profile.tokenFile)));
   const tokenErrors = validateTokens(tokens);
   if (tokenErrors.length) throw new Error(tokenErrors.join('\n'));
-  const native = nativeTokenSources(root, profile, tokens);
+  const findings = [];
+  // A missing registry cannot grant any token. Keep its error alongside independent source findings.
+  let native;
+  try {
+    native = nativeTokenSources(root, profile, tokens);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    findings.push({ rule: 'style/config', path: profile.nativeTokenSources, message: error.message });
+    native = { paths: [], variables: new Set() };
+  }
   const tokenPaths = Object.entries(tokens)
     .filter(([name]) => name !== 'palette')
     .flatMap(([group, leaves]) => Object.keys(leaves).map((key) => group + '.' + key));
@@ -104,7 +113,14 @@ export function scanProject(root, profileName) {
     if (group !== 'palette')
       for (const key of Object.keys(leaves))
         vars.add('--uld-' + key.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase()));
-  for (const name of publishedTokenProperties(join(root, dirname(profile.tokenFile)))) vars.add(name);
+  const tokenPackage = dirname(profile.tokenFile);
+  try {
+    for (const name of publishedTokenProperties(join(root, tokenPackage))) vars.add(name);
+  } catch (error) {
+    // Compiling published CSS may need the same missing registry. Record both errors.
+    if (!findings.length) throw error;
+    findings.push({ rule: 'style/config', path: tokenPackage, message: error.message });
+  }
   const files = new Map();
   for (const dir of profile.paths) contents(root, dir, files);
   for (const path of profile.required)
@@ -132,7 +148,6 @@ export function scanProject(root, profileName) {
       });
   }
   const variables = [...vars];
-  const findings = [];
   for (const [path, source] of files) {
     const scopes = path.startsWith('catalog/')
       ? [...profile.scopes, ...(profile.catalogScopes ?? [])]

@@ -69,7 +69,9 @@ export function inspectSource(path, source, options) {
 }
 
 export function checkBaseline(findings, baseline, today = new Date().toISOString().slice(0, 10)) {
-  const issues = [];
+  // Only renderer findings can have dated exceptions. Registry inputs must always be available.
+  const issues = findings.filter(finding => finding.rule === 'style/config')
+    .map(finding => finding.path + ': ' + finding.message);
   const byId = new Map();
   for (const entry of baseline) {
     if (
@@ -92,7 +94,7 @@ export function checkBaseline(findings, baseline, today = new Date().toISOString
     if (entry.expires > '2027-02-18') issues.push('Style exception exceeds its retirement date: ' + entry.id);
     byId.set(entry.id, { ...entry, used: 0 });
   }
-  for (const finding of findings) {
+  for (const finding of findings.filter(finding => finding.rule !== 'style/config')) {
     const allowance = byId.get(finding.id);
     if (
       allowance &&
