@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 const lanes = new Set(['github-linux', 'github-macos', 'local']);
 const engines = ['chromium', 'firefox', 'webkit'];
-const localOnly = new Set(['Mac browser performance', 'Android standard and low-end']);
+const localOnly = new Set(['Mac browser performance', 'Mac visual comparisons', 'Android standard and low-end']);
 
 export function qualificationShards(roster, suiteNames) {
   assert.equal(roster.schema, 1, 'Unknown cloud lane roster');

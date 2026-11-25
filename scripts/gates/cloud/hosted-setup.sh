@@ -4,12 +4,25 @@ test "$GITHUB_SHA" = "$MERGE"
 test "$(git rev-parse HEAD)" = "$BASE"
 test "$(id -u)" != "$(id -u nobody)"
 # Keep the CI user's metadata and credential-free checkout outside the build user.
-root=$(mktemp -d /tmp/thestral-shard.XXXXXXXX)
+case "$RUNNER_OS" in
+  Linux)
+    # The Linux sandbox already grants its children access to /tmp.
+    root=$(mktemp -d /var/tmp/thestral-shard.XXXXXXXX)
+    ;;
+  macOS)
+    root=$(mktemp -d /tmp/thestral-shard.XXXXXXXX)
+    ;;
+  *) echo "Unsupported hosted runner: $RUNNER_OS" >&2; exit 1 ;;
+esac
+root=$(cd "$root" && pwd -P)
 chmod 755 "$root"
 trusted="$root/base"
 candidate="$root/candidate"
 home="$root/home"
 mkdir "$home" "$home/tmp" "$home/cache"
+# The workflow group must be able to read the worker's finished coverage file.
+chgrp "$(id -g)" "$home"
+chmod 750 "$home"
 git clone --quiet --no-local --no-checkout "$PWD" "$trusted"
 git -C "$trusted" fetch --quiet --no-tags "$PWD" "$MERGE"
 git -C "$trusted" checkout --quiet --detach "$BASE"

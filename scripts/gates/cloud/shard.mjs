@@ -8,6 +8,7 @@ import { runEngineShard } from './browsers.mjs';
 import { iphonePartition, requireIphoneEvidence, selectHostedIphone } from './iphone.mjs';
 import { buildTypedInputs, requireTypedControls, trustedRoot } from '../typed-tools.mjs';
 import { typed } from '../fast-typed.mjs';
+import { reusePolicyIssues } from '../reuse/strength.mjs';
 import { trustedVerdict } from '../verdict.mjs';
 import { packedDepth, checkNewBudgets } from '../../../packages/policy/quality/check-staged.mjs';
 import { verifyPackedCeiling } from '../../../packages/policy/quality/size-ceiling.mjs';
@@ -44,6 +45,7 @@ export async function runShard(shard, base, merge) {
   const evidence = 'release/evidence';
   switch (shard.suite) {
     case 'No weakening': {
+      assert.deepEqual(reusePolicyIssues(root, base, merge), []);
       node(control('scripts/gates/review/qualification-policy.mjs'), root, base, merge);
       node(control('scripts/gates/no-weakening.mjs'), base, merge, root);
       node(control('scripts/gates/canaries.mjs'), merge);
@@ -75,7 +77,6 @@ export async function runShard(shard, base, merge) {
       break;
     case 'Native package consumer': packages(); node(trustedVerdict('verify-native-consumer.mjs'), evidence); break;
     case 'Mac browser behavior':
-    case 'Mac visual comparisons':
     case 'Linux browser behavior': catalog(); return runEngineShard(shard.suite, shard.engine);
     case 'Portable web scenarios': {
       catalog();

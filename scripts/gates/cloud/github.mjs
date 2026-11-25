@@ -88,13 +88,12 @@ export async function readHostedVerdict(root, runId, expected) {
         covered.push(...coverage.scenarioIds);
       }
       assert.deepEqual(covered.sort(), scenarios.map(row => row.id).sort(), 'Incomplete iPhone roster');
-      for (const suite of ['Mac browser behavior', 'Mac visual comparisons', 'Linux browser behavior']) {
-        const kind = suite === 'Mac visual comparisons' ? 'visual' : 'browser';
-        const roster = JSON.parse(readFileSync(join(snapshot, 'tests/acceptance/' + kind + '-matrix.json')));
+      const roster = JSON.parse(readFileSync(join(snapshot, 'tests/acceptance/browser-matrix.json')));
+      for (const suite of ['Mac browser behavior', 'Linux browser behavior']) {
         const engineReports = shards.filter(shard => shard.suite === suite).map(shard => reports.get(shard.id).result);
         const ids = suite === 'Linux browser behavior' ? readScenarios(snapshot).map(scenario => scenario.id) : [];
         const passed = browserCoverage(suite, engineReports, roster, ids);
-        if (kind === 'browser') verifyCandidatePassed('browser', passed, roster.projects, snapshot);
+        verifyCandidatePassed('browser', passed, roster.projects, snapshot);
       }
     });
     return verified;

@@ -61,6 +61,8 @@ async function build(context, prs) {
   return { base, members, finalCommit: parent, finalTree: members.at(-1).tree };
 }
 
+export { build as inspectTrain };
+
 function persist(directory, train) {
   const folder = join(directory, 'trains');
   mkdirSync(folder, { recursive: true });
@@ -102,19 +104,46 @@ async function refresh(context, stack) {
 
 const target = 'refs/heads/feat/enterprise-ui';
 
-export async function pushAtomicTrain(root, remote, train, recheckHistory) {
+const rejectedTransactions = new WeakMap();
+
+export function requireAtomicTrainTransport(transaction) {
+  if (typeof transaction?.transact !== 'function' || typeof transaction.readOutcome !== 'function')
+    throw Error('Train publication requires an atomic server transaction for integration and all member heads. Inspect with node scripts/train.mjs --inspect <PR> [<PR> ...] or use normal solo landing.');
+}
+
+export async function pushAtomicTrain(root, remote, train, recheckHistory, transaction, transactionId = randomUUID()) {
+  requireAtomicTrainTransport(transaction);
   assert.equal(trainGit(root, 'rev-parse', train.finalCommit + '^{tree}'), train.finalTree, 'Final commit has a different tree');
   trainGit(root, 'merge-base', '--is-ancestor', train.base, train.finalCommit);
   const expected = [[target, train.base], ...train.members.map(m => ['refs/heads/' + m.branch, m.head])];
   const current = new Map(trainGit(root, 'ls-remote', '--refs', remote, ...expected.map(([ref]) => ref))
     .split('\n').filter(Boolean).map(row => row.split('\t').reverse()));
   for (const [ref, sha] of expected) assert.equal(current.get(ref), sha, 'Remote ref moved before atomic push: ' + ref);
-  // Only integration changes. Git's lease binds its old SHA on the server. PR state and
-  // member heads are checked before and after; the server does not lease untouched refs.
-  // A standalone attempt can finish while the PR and ref checks are in flight.
+  // The backend must compare all refs in the same transaction that advances integration.
+  // A normal Git push elides unchanged member refs, even when leases are supplied.
   await recheckHistory();
-  trainGit(root, '-c', 'push.followTags=false', 'push', '--atomic', '--no-follow-tags', '--recurse-submodules=no',
-    '--force-with-lease=' + target + ':' + train.base, remote, train.finalCommit + ':' + target);
+  assert.match(transactionId, uuid);
+  const request = { id: transactionId, trainId: train.id, target, before: train.base, after: train.finalCommit, members: expected.slice(1) };
+  const status = await transaction.transact(structuredClone(request));
+  if (status === 'rejected') {
+    const error = Error('Server rejected atomic train transaction for the expected refs');
+    rejectedTransactions.set(error, { request, transaction });
+    throw error;
+  }
+  assert.equal(status, 'committed', 'Unconfirmed train transaction');
+}
+
+// Only a reply from this invocation can start recovery. Query the receiver again
+// for its terminal result, the exact submitted comparisons and the full write set.
+export async function confirmedZeroUpdateRejection(train, error) {
+  const refusal = rejectedTransactions.get(error);
+  if (!refusal) return;
+  const { request, transaction } = refusal;
+  assert.deepEqual([request.trainId, request.target, request.before, request.after, request.members],
+    [train.id, target, train.base, train.finalCommit, train.members.map(m => ['refs/heads/' + m.branch, m.head])]);
+  const result = await transaction.readOutcome(request.id);
+  assert.deepEqual(result, { request, status: 'rejected', updatedRefs: [] }, 'Unconfirmed zero-update train rejection');
+  return request.id;
 }
 
 export async function createTrain(context, prs) {

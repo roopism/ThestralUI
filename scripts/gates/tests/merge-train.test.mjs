@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import test from 'node:test';
 import { requireProposalHistory } from '../../land.mjs';
@@ -43,6 +45,25 @@ function fixture(t, count = 2, weaker = false) {
     git(root, 'push', '--quiet', 'origin', head + ':refs/heads/' + branch);
     members.push({ number, branch, head, soloCommit });
   }
+  const outcomes = new Map();
+  const receiver = {
+    transact(request) {
+      // Only this fixture owns a receiver. Git refuses the entire transaction if any comparison changed.
+      git(server, 'fetch', '--quiet', '--no-tags', '--no-write-fetch-head', root, request.after);
+      const commands = ['start', ...request.members.map(([ref, head]) => 'verify ' + ref + ' ' + head),
+        'update ' + request.target + ' ' + request.after + ' ' + request.before, 'prepare', 'commit'];
+      const result = spawnSync('git', ['update-ref', '--stdin'], {
+        cwd: server, input: commands.join('\n') + '\n', encoding: 'utf8',
+      });
+      if (result.status === 0) return 'committed';
+      if (result.stdout.trim() === 'start: ok' && /prepare: cannot lock ref/.test(result.stderr)) {
+        outcomes.set(request.id, { request, status: 'rejected', updatedRefs: [] });
+        return 'rejected';
+      }
+      throw Error('Uncertain local transaction outcome: ' + result.stderr);
+    },
+    readOutcome: id => outcomes.get(id),
+  };
   let verified;
   let checks = 0, full = 0;
   const directory = join(dir, 'receipts');
@@ -60,7 +81,7 @@ function fixture(t, count = 2, weaker = false) {
       verified = { id: 'cdddc6d8-ab1d-4e22-bf69-6b895600d921', status: 'passed',
         commit: train.finalCommit, tree: train.finalTree, base: train.base };
     },
-    publish: (train, recheckHistory) => pushAtomicTrain(root, server, train, recheckHistory),
+    publish: (train, recheckHistory, transactionId) => pushAtomicTrain(root, server, train, recheckHistory, receiver, transactionId),
     confirm: train => {
       assert.equal(git(server, 'rev-parse', integration), train.finalCommit);
       for (const member of train.members) {
@@ -70,7 +91,7 @@ function fixture(t, count = 2, weaker = false) {
       return git(server, 'rev-parse', integration + '^{tree}');
     },
   };
-  return { dir, context, server, base, members, numbers: members.map(m => m.number),
+  return { dir, context, server, base, members, receiver, numbers: members.map(m => m.number),
     calls: () => ({ checks, full }), tip: () => git(server, 'rev-parse', integration) };
 }
 
@@ -219,5 +240,93 @@ test('a failed train keeps its immutable receipt before invoking prefix diagnost
   await assert.rejects(createTrain(f.context, f.numbers), /Train failed/);
   assert.equal(run, 1);
   assert.equal(diagnoses, 2);
+  assert.equal(f.tip(), f.base);
+});
+
+test('changing a member after the last read aborts the complete server ref transaction', async t => {
+  const f = fixture(t);
+  const train = await createTrain(f.context, f.numbers);
+  const member = train.members[1];
+  const moved = git(f.context.root, 'commit-tree', member.soloTree, '-p', member.head, '-m', 'Concurrent member update');
+  const changeAfterReadback = () => git(f.context.root, 'push', '--quiet', 'origin', moved + ':refs/heads/' + member.branch);
+  await assert.rejects(f.context.publish(train, changeAfterReadback), /cannot lock ref|expected/);
+  assert.equal(f.tip(), f.base);
+  assert.equal(git(f.server, 'rev-parse', 'refs/heads/' + member.branch), moved);
+});
+
+test('a confirmed zero-update rejection clears only its matching intent after an independent readback', async t => {
+  const { clearRejectedTrainIntent } = await import('../../train.mjs');
+  const f = fixture(t);
+  const train = await createTrain(f.context, f.numbers);
+  const transactionId = randomUUID(), laterId = randomUUID();
+  const marker = join(f.context.directory, 'train-landing-blocked.json');
+  const pending = id => ({ id: train.id, base: train.base, commit: train.finalCommit, tree: train.finalTree, transactionId: id });
+  const advanced = git(f.context.root, 'commit-tree', train.members[0].soloTree, '-p', train.base, '-m', 'Concurrent integration');
+  let rejection;
+  await assert.rejects(f.context.publish(train, () =>
+    git(f.context.root, 'push', '--quiet', 'origin', advanced + ':' + integration), transactionId), error => {
+    rejection = error;
+    return true;
+  });
+  assert.equal(f.tip(), advanced);
+  writeFileSync(marker, JSON.stringify(pending(laterId)));
+  const clear = (error, base = f.tip) => clearRejectedTrainIntent(f.context.root, f.context.directory, train, error, base);
+  await assert.rejects(clear(rejection), /intent changed/);
+  assert.deepEqual(JSON.parse(readFileSync(marker)), pending(laterId));
+  writeFileSync(marker, JSON.stringify(pending(transactionId)));
+  let reads = 0;
+  await clear(Error('Connection closed before the outcome was known'));
+  assert.equal(existsSync(marker), true);
+  const readOutcome = f.receiver.readOutcome;
+  try {
+    f.receiver.readOutcome = () => undefined;
+    await assert.rejects(clear(rejection), /Unconfirmed zero-update/);
+    assert.equal(existsSync(marker), true);
+  } finally { f.receiver.readOutcome = readOutcome; }
+  await assert.rejects(clear(rejection, () => { throw Error('Live ref is unavailable'); }), /Live ref is unavailable/);
+  assert.equal(existsSync(marker), true);
+  await clear(rejection, () => { reads++; return f.tip(); });
+  assert.equal(reads, 2);
+  assert.equal(existsSync(marker), false);
+  assert.equal(f.tip(), advanced);
+});
+
+test('the GitHub train commands refuse an unavailable atomic publication before network or qualification', t => {
+  const dir = mkdtempSync(join(tmpdir(), 'train-admission-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  git(dir, 'init', '--quiet', '--template=');
+  git(dir, 'remote', 'add', 'origin', 'https://github.com/roopism/ThestralUI.git');
+  const gh = join(dir, 'gh');
+  writeFileSync(gh, '#!/bin/sh\nprintf "%s\\n" "$*" >> "$PWD/network-called"\nexit 1\n');
+  chmodSync(gh, 0o700);
+  for (const [program, ...args] of [['train.mjs', '10', '4'], ['land.mjs', '--train', 'fixture']]) {
+    const module = new URL('../../' + program, import.meta.url);
+    const result = spawnSync(process.execPath, [fileURLToPath(module), ...args], {
+      cwd: dir, encoding: 'utf8', env: { ...process.env, PATH: dir + ':' + process.env.PATH },
+    });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /atomic server transaction.*member heads/);
+    assert.equal(existsSync(join(dir, 'network-called')), false);
+    assert.equal(existsSync(join(dir, '.git', 'uld-receipts')), false);
+    assert.equal(existsSync(join(dir, '.git', 'uld-locks')), false);
+  }
+  const solo = spawnSync(process.execPath, [fileURLToPath(new URL('../../land.mjs', import.meta.url)), '1'], {
+    cwd: dir, encoding: 'utf8', env: { ...process.env, PATH: dir + ':' + process.env.PATH },
+  });
+  assert.notEqual(solo.status, 0);
+  assert.match(readFileSync(join(dir, 'network-called'), 'utf8'), /^api --method GET repos\/roopism\/ThestralUI\/pulls\/1\s*$/);
+  assert.equal(existsSync(join(dir, '.git', 'uld-receipts', 'train-landing-blocked.json')), false);
+});
+
+test('inspection builds and judges the stack without member execution or a train receipt', async t => {
+  const { inspectTrain } = await import('../merge-train.mjs');
+  const f = fixture(t);
+  const judged = [];
+  f.context.judge = member => judged.push(member.number);
+  const stack = await inspectTrain(f.context, f.numbers);
+  assert.deepEqual(judged, f.numbers);
+  assert.deepEqual(stack.members.map(m => m.number), f.numbers);
+  assert.deepEqual(f.calls(), { checks: 0, full: 0 });
+  assert.equal(existsSync(join(f.context.directory, 'trains')), false);
   assert.equal(f.tip(), f.base);
 });

@@ -23,8 +23,21 @@ test('gate paths accepts same-repository gate topics and keeps gate changes sepa
   checkProposal(['scripts/verify-consumers.mjs'], owners, identity);
   assert.throws(() => checkProposal(['scripts/verify-consumers.mjs', 'package.json'], owners, identity));
   const product = { ...identity, headBranch: 'family/text' };
-  checkProposal(['packages/web/src/text.ts', 'package.json', 'manifests/shared.json'], owners, product);
+  checkProposal(['packages/web/src/text.ts'], owners, product);
+  assert.throws(() => checkProposal(['packages/web/src/text.ts', 'package.json', 'manifests/shared.json'], owners, product), /Propose these gate changes/);
   assert.throws(() => checkProposal(['scripts/verify-consumers.mjs'], owners, product));
+});
+
+test('docs and family topics preserve base ownership of package and shared registration files', () => {
+  const repository = 'roopism/ThestralUI';
+  const owners = gatePaths(readFileSync(join(trustedRoot, '.github/CODEOWNERS'), 'utf8'));
+  for (const headBranch of ['docs/process', 'family/text']) {
+    const identity = { repository, headRepository: repository, headBranch };
+    for (const path of ['package.json', 'package-lock.json', 'manifests/shared.json']) {
+      assert.throws(() => checkProposal([path], owners, identity), /Propose these gate changes/);
+      assert.throws(() => checkProposal(['packages/web/src/text.ts', path], owners, identity), /Propose these gate changes/);
+    }
+  }
 });
 
 test('gate path verification requires a successful exact-base job from the trusted workflow', () => {

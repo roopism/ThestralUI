@@ -86,7 +86,6 @@ export function checkProposal(files, owners, identity, revisions, validateDepth,
     // can be unowned, so a gate proposal must also touch a directly owned entry.
     if (!isOwned(file) && owners.some(({ path }) => path.startsWith(file + '/')))
       return !gateBranch || !ownedChange;
-    if (modern && !gateBranch && ['package.json', 'manifests/shared.json', 'package-lock.json'].includes(file)) return false;
     return gateBranch !== isOwned(file);
   });
   if (invalid.length) {

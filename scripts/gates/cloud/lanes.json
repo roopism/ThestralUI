@@ -53,9 +53,8 @@
       "splitBy": "engine"
     },
     "Mac visual comparisons": {
-      "lane": "github-macos",
-      "shards": 3,
-      "splitBy": "engine"
+      "lane": "local",
+      "shards": 1
     },
     "Scoped styles": {
       "lane": "github-linux",

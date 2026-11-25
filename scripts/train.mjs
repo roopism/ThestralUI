@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { existsSync, linkSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { withRevisionSnapshot } from '../packages/policy/quality/staged-tree.mjs';
 import { installSnapshotDependencies } from '../packages/policy/quality/snapshot-dependencies.mjs';
 import { requireResolvedMerge } from './gates/landing-policy.mjs';
-import { createTrain, landTrain, pushAtomicTrain, readTrain, trainGit } from './gates/merge-train.mjs';
+import { confirmedZeroUpdateRejection, createTrain, inspectTrain, landTrain, pushAtomicTrain, readTrain, requireAtomicTrainTransport, trainGit } from './gates/merge-train.mjs';
 import { treeHistory } from './gates/receipt-history.mjs';
 import { withLock } from './workers/lock.mjs';
 
@@ -30,6 +31,7 @@ function github(root) {
   const pushUrls = git('remote', 'get-url', '--push', '--all', 'origin').split('\n');
   assert.deepEqual(pushUrls, [remote], 'The train requires one identical fetch and push URL');
   const target = 'heads/' + integration;
+  const publicationTransaction = null;
   function requireGreen(number, head) {
     const review = JSON.parse(execFileSync('gh', ['pr', 'view', String(number), '--repo', repository,
       '--json', 'headRefOid,reviewDecision'], { encoding: 'utf8' }));
@@ -88,7 +90,9 @@ function github(root) {
       return { number, branch: pr.head.ref, head: pr.head.sha, soloCommit: pr.merge_commit_sha };
     },
     confirm,
-    publish: (train, recheckHistory) => pushAtomicTrain(root, remote, train, recheckHistory),
+    // GitHub exposes no verified transaction for a write conditional on unchanged PR heads.
+    publicationTransaction,
+    publish: (train, recheckHistory, transactionId) => pushAtomicTrain(root, remote, train, recheckHistory, publicationTransaction, transactionId),
     requireTransport() {
       const branch = encodeURIComponent(integration);
       requireTrainBranch(api('branches/' + branch), api('rules/branches/' + branch), api(''));
@@ -141,17 +145,37 @@ export async function reconcileTrainLanding(directory, root) {
 function quarantine(directory, train) {
   const file = quarantineFile(directory);
   const tmp = file + '.' + train.id;
-  writeFileSync(tmp, JSON.stringify({ id: train.id, base: train.base, commit: train.finalCommit, tree: train.finalTree }) + '\n',
+  const transactionId = randomUUID();
+  writeFileSync(tmp, JSON.stringify({ id: train.id, base: train.base, commit: train.finalCommit, tree: train.finalTree, transactionId }) + '\n',
     { flag: 'wx', mode: 0o600 });
   try { linkSync(tmp, file); } finally { unlinkSync(tmp); }
+  return transactionId;
 }
 
-async function withTrainContext(operation) {
+export async function clearRejectedTrainIntent(root, directory, train, error, readBase) {
+  const transactionId = await confirmedZeroUpdateRejection(train, error);
+  if (!transactionId) return;
+  const file = quarantineFile(directory);
+  const expected = { id: train.id, base: train.base, commit: train.finalCommit, tree: train.finalTree, transactionId };
+  assert.deepEqual(JSON.parse(readFileSync(file)), expected, 'Pending train intent changed');
+  assert.equal(trainGit(root, 'rev-parse', train.finalCommit + '^{tree}'), train.finalTree);
+  const tip = await readBase();
+  assert.match(tip, oid);
+  const line = trainGit(root, 'rev-list', '--first-parent', tip).split('\n');
+  assert.ok(line.includes(train.base), 'Ambiguous integration history after transaction rejection');
+  assert.notEqual(trainGit(root, 'merge-base', tip, train.finalCommit), train.finalCommit, 'The train is already reachable');
+  assert.equal(await readBase(), tip, 'Integration moved during rejected transaction recovery');
+  assert.deepEqual(JSON.parse(readFileSync(file)), expected, 'Pending train intent changed');
+  unlinkSync(file);
+}
+
+async function withTrainContext(operation, inspectOnly = false) {
   const root = trainGit(process.cwd(), 'rev-parse', '--show-toplevel');
   const common = trainGit(root, 'rev-parse', '--path-format=absolute', '--git-common-dir');
   const directory = join(common, 'uld-receipts');
   const client = github(root);
-  // Read applicable branch rules before installing dependencies or scheduling local checks.
+  // Refuse unsupported publication before fetching, installing, locking or allocating a receipt.
+  if (!inspectOnly) requireAtomicTrainTransport(client.publicationTransaction);
   client.requireTransport();
   const base = client.base();
   return withRevisionSnapshot(root, base, async (trusted, _tree, env) => {
@@ -160,7 +184,7 @@ async function withTrainContext(operation) {
       { cwd, env: { ...env, ...extra, GIT_NO_REPLACE_OBJECTS: '1' }, stdio: 'inherit' });
     const { passing, requireProposalHistory } = await import(join(trusted, 'scripts/land.mjs'));
     const { requireGateIsolation } = await import(join(trusted, 'scripts/gates/landing-policy.mjs'));
-    const context = { ...client, passing, root, directory,
+    const context = { ...client, passing, root, directory, liveBase: client.base,
       base() { assert.equal(client.base(), base, 'Integration moved'); return base; },
       history: (tree, parent, commit) => requireProposalHistory(tree, parent, directory, { root, commit }),
       judge(member) {
@@ -206,11 +230,10 @@ export async function landTrainCommand(args) {
     return landTrain({ ...context,
       async publish(train, recheckHistory) {
         // An interruption or unverifiable outcome blocks every landing until GitHub confirms the result.
-        quarantine(context.directory, train);
-        try { await context.publish(train, recheckHistory); }
+        const transactionId = quarantine(context.directory, train);
+        try { await context.publish(train, recheckHistory, transactionId); }
         catch (error) {
-          // A rejected push with the original target still in place did not land this train.
-          if (context.base() === train.base) unlinkSync(quarantineFile(context.directory));
+          await clearRejectedTrainIntent(context.root, context.directory, train, error, context.liveBase);
           throw error;
         }
       },
@@ -226,8 +249,15 @@ export async function landTrainCommand(args) {
 
 if (import.meta.main) {
   const args = process.argv.slice(2);
+  const inspectOnly = args[0] === '--inspect';
+  if (inspectOnly) args.shift();
   assert.ok(args.length > 0 && args.length <= 5 && args.every(a => /^[1-9]\d*$/.test(a)), 'Usage: node scripts/train.mjs <PR> [<PR> ...]');
-  const receipt = await withTrainContext(context => withLock(context.root, 'landing', 'prepare merge train',
-    () => createTrain(context, args.map(Number))));
-  console.log('Train receipt', receipt.id, 'qualified tree', receipt.finalTree);
+  if (inspectOnly) {
+    const stack = await withTrainContext(context => inspectTrain(context, args.map(Number)), true);
+    console.log('Inspected train on', stack.base, 'with final tree', stack.finalTree);
+  } else {
+    const receipt = await withTrainContext(context => withLock(context.root, 'landing', 'prepare merge train',
+      () => createTrain(context, args.map(Number))));
+    console.log('Train receipt', receipt.id, 'qualified tree', receipt.finalTree);
+  }
 }
