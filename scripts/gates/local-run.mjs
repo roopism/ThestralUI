@@ -39,6 +39,7 @@ const directory = join(common, 'uld-receipts');
 const initial = mode === 'hook' ? { id: randomUUID(), started: new Date().toISOString() }
   : readAttempt(directory, process.argv[6], base, commit, tree, mode);
 const id = initial.id;
+if (mode!=='hook') process.env.ULD_ANDROID_TIMING_ATTEMPT=id;
 const noReuse = mode !== 'qualification' || process.argv.includes('--no-reuse');
 const single = process.argv.indexOf('--reuse-operation');
 const snapshot = process.cwd();
@@ -48,7 +49,7 @@ else delete process.env.ULD_FRESH_ANDROID_TIMING;
 const scope = deviceScope(root, base, tree, mode === 'release' || process.argv.includes('--no-reuse'));
 writeFileSync('.git/gate-selection.json', JSON.stringify({ budgetComparisonBase: base }));
 context.scope = scope;
-const receipt = { ...initial, schema: 1, tree, base, commit, id, mode, scope,
+const receipt = { ...initial, schema: 1, androidHostActivityPolicy:1, tree, base, commit, id, mode, scope,
   reuseSchema: 1, noReuse, auditSeed: noReuse ? null : randomBytes(32).toString('hex'), retries: null,
   status: 'running', vm: null, devices: {}, suites: [] };
 const steps = new Map();
@@ -75,7 +76,8 @@ function runDevice(script, reports, platform) {
     receipt.devices[platform] = platform === 'iphone' ? versions[0] ?? null : versions;
     const patterns = ['device.json', '*/device.json', 'maestro-session-*/ready.json', '*/maestro-session-*/ready.json',
       '{maestro-session-*,*/maestro-session-*}/*/{request.json,reply.json,suite.json,junit.xml,nodes.xml}',
-      '*/timing-source.json', '*/frame-trial-*/*.txt', '*/frame-measurements.json', '*/motion-target.json', '*/ripple.json'];
+      '*/timing-source.json', '*/timing-admission.json', '*/timing-diagnostic/**/*.txt',
+      '*/timing-diagnostic/*.json', '*/timing-diagnostic-error.txt', '*/frame-trial-*/*.txt', '*/frame-measurements.json', '*/motion-target.json', '*/ripple.json'];
     for (const file of globSync(patterns, { cwd: root })) {
       const target = join(directory, 'attempts', id + '-evidence', platform, file);
       mkdirSync(dirname(target), { recursive: true });
@@ -220,7 +222,8 @@ async function finishAndroidTiming() {
     throw error;
   } finally {
     const folder = join(snapshot,'test-results/android-emulator');
-    for (const path of globSync(['low-end/device.json','low-end/timing-source.json','low-end/frame-trial-*/*.txt','low-end/frame-measurements.json'],
+    for (const path of globSync(['low-end/device.json','low-end/timing-source.json','low-end/timing-admission.json',
+        'low-end/timing-diagnostic/**/*.txt','low-end/timing-diagnostic/*.json','low-end/timing-diagnostic-error.txt','low-end/frame-trial-*/*.txt','low-end/frame-measurements.json'],
         {cwd:folder})) {
       const dest=join(directory,'attempts',id+'-evidence','android',path);
       mkdirSync(dirname(dest),{recursive:true});

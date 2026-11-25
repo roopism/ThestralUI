@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
+import { requireObservedSource } from './android-host-activity.mjs';
 import { enforceBudget, summarizeTrials } from '../../tests/android/frame-budget.mjs';
 
 const hash = /^[a-f0-9]{64}$/;
@@ -36,6 +37,9 @@ export function timingForIdenticalApk(receipt, baseTree, apkSha256, limits, entr
   const identicalEntries = hash.test(entryManifestSha256) && entryManifestSha256 === baseEntryManifestSha256;
   if (!identicalFile && !identicalEntries) return;
   try {
+    if (receipt.androidHostActivityPolicy===1 && !['timing measured','timing reused: identical app'].includes(source.result)) return;
+    if (source.admission || receipt.androidHostActivityPolicy===1 && source.result==='timing measured')
+      requireObservedSource(source,receipt);
     for (const journey of ['press', 'scroll']) {
       const recorded = source.frameBudget[journey];
       if (!recorded.trials.every(trial => Number.isInteger(trial.frames) && trial.frames >= 15 &&
@@ -72,7 +76,7 @@ export async function androidTiming({ apk, common, root, limits, measure }) {
     const frameBudget = timingForIdenticalApk(source, baseTree, identity.apkSha256, limits,
       identity.entryManifestSha256, baseEntryManifestSha256);
     if (frameBudget) return { result: 'timing reused: identical app', ...comparison, sourceReceipt,
-      measuredReceipt: source.androidTiming.measuredReceipt ?? sourceReceipt, frameBudget };
+      measuredReceipt: source.androidTiming.measuredReceipt ?? sourceReceipt, admission:source.androidTiming.admission ?? null, frameBudget };
   }
-  return { result: 'timing measured', ...comparison, frameBudget: await measure() };
+  return { result: 'timing measured', ...comparison, frameBudget: await measure(identity) };
 }

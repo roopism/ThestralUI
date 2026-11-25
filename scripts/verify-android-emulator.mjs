@@ -4,6 +4,7 @@ import { stopVm } from './gates/linux-vm.mjs';
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { measureAdmitted, observedIdentity } from './gates/android-host-activity.mjs';
 import { androidTiming } from './gates/android-timing-reuse.mjs';
 import { checkFlow } from './verify-ios-simulator.mjs';
 import { selectNativeScenarios } from './selection/native-scenarios.mjs';
@@ -78,6 +79,7 @@ async function qualify() {
     const { executable: maestro, env: driverEnv } = await androidMaestro(tools.env);
     const { apk, archives, host } = await preparePackedApk(root, evidence, tools, reports);
     const profiles = [];
+    let timingFailure;
     for (const profile of config.profiles) {
       const dir = join(reports, profile.id);
       await withEmulator(profile, tools, dir, async ({ serial, name, device }) => {
@@ -85,15 +87,30 @@ async function qualify() {
         const env = { ...driverEnv, ANDROID_SERIAL: serial };
         let frameBudget;
         if (profile.id === 'low-end') {
-          const timing = await androidTiming({ apk, root, common: process.env.ULD_FRESH_ANDROID_TIMING === '1' ? undefined : process.env.ULD_ARTIFACT_COMMON, limits: budgets.limits,
-            measure: async () => {
-              await stopVm();
-              shutdownSimulators();
-              return measureFrameBudget({ device, tree: () => androidTree(device).nodes, reports: dir });
-            } });
-          frameBudget = timing.frameBudget;
-          writeFileSync(join(dir, 'timing-source.json'), JSON.stringify(timing, null, 2) + '\n');
-          console.log(timing.result, timing.apkSha256, timing.sourceReceipt ?? '');
+          try {
+            const timing = await androidTiming({ apk, root, common: process.env.ULD_FRESH_ANDROID_TIMING === '1' ? undefined : process.env.ULD_ARTIFACT_COMMON, limits: budgets.limits,
+              measure: async (identity) => {
+                await stopVm();
+                shutdownSimulators();
+                const common=process.env.ULD_ARTIFACT_COMMON;
+                return measureAdmitted({reports:dir,identity:observedIdentity(root,common,identity),common,limits:budgets.limits,
+                  measure:reports=>measureFrameBudget({device,tree:()=>androidTree(device).nodes,reports})});
+              } });
+            if(timing.result==='timing measured') timing.admission=JSON.parse(readFileSync(join(dir,'timing-admission.json'),'utf8'));
+            frameBudget = timing.frameBudget;
+            writeFileSync(join(dir, 'timing-source.json'), JSON.stringify(timing, null, 2) + '\n');
+            console.log(timing.result, timing.apkSha256, timing.sourceReceipt ?? '');
+          } catch (error) {
+            const measured=join(dir,'frame-measurements.json'), observed=join(dir,'timing-admission.json');
+            if (!existsSync(measured) || !existsSync(observed)) throw error;
+            const admission=JSON.parse(readFileSync(observed,'utf8'));
+            if (admission.kind!=='primary' || admission.verdict!=='failed') throw error;
+            // Complete the functional scenarios against this app and retain the original failed trials.
+            timingFailure=error;
+            frameBudget=JSON.parse(readFileSync(measured,'utf8'));
+            writeFileSync(join(dir,'timing-source.json'),JSON.stringify({result:'timing failed',...admission.identity,
+              frameBudget,admission},null,2)+'\n');
+          }
         }
         const reset = () => androidWindow(device, appId);
         reset();
@@ -203,6 +220,7 @@ async function qualify() {
       });
     }
     requireCompletedProfiles(profiles, flows, roster.map(scenario => scenario.id), budgets.limits, neutralIds);
+    if (timingFailure) throw timingFailure;
     writeFileSync(
       report,
       JSON.stringify(

@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { constants, cpSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { measureAdmitted, observedIdentity } from '../android-host-activity.mjs';
 import { androidTiming } from '../android-timing-reuse.mjs';
 import { shutdownSimulators, usingSimulator, withTiming } from '../../workers/resource-guard.mjs';
 import { stopVm } from '../linux-vm.mjs';
@@ -117,7 +118,7 @@ export async function reuseAndroidTiming({ snapshot, directory, base }, prepared
   const reports = join(snapshot, 'test-results/android-emulator/low-end');
   mkdirSync(reports, { recursive: true });
   const timing = await androidTiming({ root: snapshot, apk: prepared.path, common: dirname(directory), limits,
-    measure: () => usingSimulator('Android low-end timing', async () => {
+    measure: identity => usingSimulator('Android low-end timing', async () => {
       await stopVm();
       shutdownSimulators();
       const { prepareAndroidProfile } = await import('../../verify-android-emulator.mjs');
@@ -127,9 +128,12 @@ export async function reuseAndroidTiming({ snapshot, directory, base }, prepared
       return withEmulator(profile, tools, reports, async ({ device, serial, name }) => {
         const { interaction } = await prepareAndroidProfile({ profile, apk: prepared.path, dir: reports, serial, name, device, tools });
         assert.ok(interaction.heldPixels >= 20, 'Missing Android ripple observation');
-        return measureFrameBudget({ device, tree: () => androidTree(device).nodes, reports });
+        const common=dirname(directory);
+        return measureAdmitted({reports,identity:observedIdentity(snapshot,common,identity),common,limits,
+          measure:folder=>measureFrameBudget({device,tree:()=>androidTree(device).nodes,reports:folder})});
       });
     }) });
+  if(timing.result==='timing measured') timing.admission=read(join(reports,'timing-admission.json'));
   writeFileSync(join(reports, 'timing-source.json'), JSON.stringify(timing, null, 2) + '\n');
   verifyTimingTrials(timing.frameBudget, limits);
   return timing;
