@@ -1,3 +1,8 @@
+import { requireOriginalReceipt, verifyLandingReuse } from './gates/reuse/runner.mjs';
+import { projectStoredPasses } from './gates/reuse/store.mjs';
+import { reusePolicyIssues } from './gates/reuse/strength.mjs';
+import { withRevisionSnapshot } from '../packages/policy/quality/staged-tree.mjs';
+import { installSnapshotDependencies } from '../packages/policy/quality/snapshot-dependencies.mjs';
 import { relatedHistory, requireReviewedFailures, treeHistory } from './gates/receipt-history.mjs';
 import { reviewPolicy } from './gates/review/qualification-policy.mjs';
 import assert from 'node:assert/strict';
@@ -49,6 +54,7 @@ function proposal() {
   const paths = stagedDiff(root, { parent: pr.base.sha, tree }).changes.map(change => change.path);
   requireGateIsolation(pr.head.ref, paths);
   assert.deepEqual(reviewPolicy(root, pr.base.sha, tree), []);
+  assert.deepEqual(reusePolicyIssues(root, pr.base.sha, tree), []);
   return { pr, merge, tree };
 }
 function ownerDecisions(base) {
@@ -73,7 +79,17 @@ export function passing(tree, base, directory = join(common, 'uld-receipts'), pr
   const history = treeHistory(directory, tree, first);
   requireReviewedFailures(directory, tree, history, () => ownerDecisions(base));
   const available = history.filter(item => item.base === base && item.status === 'passed');
-  const r = available.sort((a, b) => (b.finished ?? '').localeCompare(a.finished ?? '')).at(0) ?? first;
+  const raw = available.sort((a, b) => (b.finished ?? '').localeCompare(a.finished ?? '')).at(0) ?? first;
+  if (raw.status === 'passed' && raw.base === base) requireOriginalReceipt(proposal.root ?? root,raw,base);
+  const r = projectStoredPasses(directory, raw);
+  if (r.status === 'passed' && r.base === base && raw.suites.some(row => row.result === 'reused' || row.auditRerun)) {
+    const checkout = proposal.root ?? root;
+    withRevisionSnapshot(checkout, tree, (snapshot, actual, env) => {
+      assert.equal(actual, tree);
+      installSnapshotDependencies(snapshot, join(directory, '..', 'uld-dependencies'), env);
+      verifyLandingReuse({ directory, root: checkout, snapshot }, raw);
+    });
+  }
   assert.equal(r.tree, tree);
   assert.ok(r.mode === 'qualification' || r.mode === 'release');
   if (r.status !== 'passed') return;
@@ -84,7 +100,7 @@ export function passing(tree, base, directory = join(common, 'uld-receipts'), pr
   assert.ok(r.suites.every(row => Number.isFinite(row.durationMs) && (row.result === 'passed' ||
     row.name === 'iPhone Simulator' && !r.scope.iphone && row.result === 'web-only')));
   if (r.base !== base) return;
-  return r;
+  return raw;
 }
 if (import.meta.main) await withLock(root, 'landing', 'PR ' + number, async () => {
   const directory = join(common, 'uld-receipts');

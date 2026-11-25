@@ -119,12 +119,12 @@ export function pickPhone(devices, id) {
   return phone;
 }
 
-function candidateArchives() {
-  const provenance = JSON.parse(readFileSync(join(evidence, 'provenance.json'), 'utf8'));
-  const needed = runtimeWorkspaces(packageWorkspaces(root), ['@ui-lazy-dev/ui-native']);
+export function candidateArchives(inputRoot = root) {
+  const provenance = JSON.parse(readFileSync(join(inputRoot, 'release/evidence', 'provenance.json'), 'utf8'));
+  const needed = runtimeWorkspaces(packageWorkspaces(inputRoot), ['@ui-lazy-dev/ui-native']);
   return selectArchives(provenance.packages, needed).map(item => {
     const name = item.name.slice('@ui-lazy-dev/'.length);
-    const path = join(evidence, item.filename);
+    const path = join(inputRoot, 'release/evidence', item.filename);
     const digest = createHash('sha256').update(readFileSync(path)).digest('hex');
     assert.equal(digest, item.sha256, 'Candidate archive changed');
     return { ...item, path, name };
@@ -207,6 +207,25 @@ function runJourneys(phoneId, app, maestro, env, reports, run, reconnect) {
   return passed;
 }
 
+export async function preparePackedIosApp(inputRoot, archives, phone, pods, reports) {
+  const key = iosHostKey(inputRoot, archives, { runtime: phone.runtime, pods });
+  const { host, bundle, app } = await withHostCache(hostsDir(), 'ios', () => {
+    const host = deviceHost(hostsDir(), 'ios', key, (dir) =>
+      buildIosHost(inputRoot, dir, { archives, phoneId: phone.udid, pods }),
+    );
+    installArchives(host.dir, archives);
+    stageIosJavaScript(inputRoot, host.dir);
+    const bundle = bundleJavaScript(host.dir, {
+      platform: 'ios',
+      hermesc: iosHermesc(host.dir),
+      out: join(reports, 'bundle'),
+    });
+    const app = injectIosApp(host.dir, bundle, join(reports, 'app'));
+    return { host, bundle, app };
+  });
+  return { key, host, bundle, app };
+}
+
 export function qualify() {
   // Missing packed inputs must fail before competing for a device or timing reservation.
   accessSync(join(evidence, 'provenance.json'), constants.R_OK);
@@ -244,21 +263,7 @@ export function qualify() {
     const initialSize = sim('ui', phone.udid, 'content_size');
     try {
       const started = Date.now();
-      const key = iosHostKey(root, archives, { runtime: phone.runtime, pods });
-      const { host, bundle, app } = await withHostCache(hostsDir(), 'ios', () => {
-        const host = deviceHost(hostsDir(), 'ios', key, (dir) =>
-          buildIosHost(root, dir, { archives, phoneId: phone.udid, pods }),
-        );
-        installArchives(host.dir, archives);
-        stageIosJavaScript(root, host.dir);
-        const bundle = bundleJavaScript(host.dir, {
-          platform: 'ios',
-          hermesc: iosHermesc(host.dir),
-          out: join(reports, 'bundle'),
-        });
-        const app = injectIosApp(host.dir, bundle, join(reports, 'app'));
-        return { host, bundle, app };
-      });
+      const { key, host, bundle, app } = await preparePackedIosApp(root, archives, phone, pods, reports);
       const setupSeconds = Math.round((Date.now() - started) / 1000);
       console.log(
         (host.built ? 'Built the iPhone host ' : 'Reused the iPhone host ') + key.slice(0, 12) +

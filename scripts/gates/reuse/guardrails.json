@@ -1,0 +1,18 @@
+{
+  "contractVersion": 1,
+  "ttlHours": 72,
+  "flakeWindow": 5,
+  "minAuditGroups": 1,
+  "neverExclude": [
+    "scripts/gates/**",
+    "scripts/qualify.mjs",
+    "scripts/land.mjs",
+    "packages/policy/quality/**",
+    "tests/acceptance/suite-inputs.json"
+  ],
+  "neverGroups": [
+    "No weakening",
+    "Fast",
+    "Mac browser performance"
+  ]
+}
