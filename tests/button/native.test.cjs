@@ -167,14 +167,19 @@ test('native actions retain decorative slots and one accessible label while busy
   expect(onPress).toHaveBeenCalledTimes(1);
 });
 
-test('uses a bounded Android theme ripple on both active public controls', async () => {
-  const { Platform, View } = require('react-native');
+function rippleControls(onPress, state = {}) {
+  const { View } = require('react-native');
   const { IconButton } = require('@ui-lazy-dev/ui-native');
-  const onPress = jest.fn();
-  const controls = (state = {}) => React.createElement(View, null,
+  return React.createElement(View, null,
     React.createElement(Button, { label:'Continue', tone:'primary', onPress, ...state }),
     React.createElement(IconButton, { label:'Workspace help', tone:'secondary', icon:React.createElement(View), onPress, ...state }));
-  const view = await render(controls());
+}
+
+test('uses a bounded Android theme ripple on both active public controls', async () => {
+  const { Platform } = require('react-native');
+  jest.replaceProperty(Platform, 'OS', 'android');
+  const onPress = jest.fn();
+  const view = await render(rippleControls(onPress));
   const find = name => view.getByRole('button', { name, exact:true });
   for (const name of ['Continue', 'Workspace help']) {
     const host = find(name);
@@ -188,10 +193,28 @@ test('uses a bounded Android theme ripple on both active public controls', async
     await fireEvent.press(host);
   }
   for (const state of [{busy:true}, {disabled:true}]) {
-    await view.rerender(controls(state));
+    await view.rerender(rippleControls(onPress, state));
     for (const name of ['Continue', 'Workspace help']) {
       const host = find(name);
       expect(host.props.nativeForegroundAndroid).toBeUndefined();
+      await fireEvent.press(host);
+    }
+  }
+  expect(onPress).toHaveBeenCalledTimes(2);
+  await view.unmount();
+});
+
+test('iOS keeps Android ripple props off active, busy and disabled public controls', async () => {
+  const { Platform } = require('react-native');
+  jest.replaceProperty(Platform, 'OS', 'ios');
+  const onPress = jest.fn();
+  const view = await render(rippleControls(onPress));
+  for (const state of [{}, {busy:true}, {disabled:true}]) {
+    await view.rerender(rippleControls(onPress, state));
+    for (const name of ['Continue', 'Workspace help']) {
+      const host = view.getByRole('button', { name, exact:true });
+      expect(host.props.nativeForegroundAndroid).toBeUndefined();
+      expect(host.props.nativeBackgroundAndroid).toBeUndefined();
       await fireEvent.press(host);
     }
   }

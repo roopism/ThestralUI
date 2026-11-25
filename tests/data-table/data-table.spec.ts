@@ -246,6 +246,7 @@ test('table viewport takes focus when an owner removes the focused editor or cel
     await page.getByRole('button', { name: 'Remove first record' }).evaluate(button => (button as HTMLButtonElement).click());
     await expect(row).toHaveCount(0);
     await expect(page.locator('[data-part="viewport"]')).toBeFocused();
+    await expect(page.getByRole('group', { name: 'Table contents', exact: true })).toBeFocused();
   }
 });
 

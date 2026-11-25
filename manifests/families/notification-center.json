@@ -41,7 +41,8 @@
     ],
     "visual": [],
     "story": [
-      "catalog/EnterpriseWorkspace.stories.tsx"
+      "catalog/EnterpriseWorkspace.stories.tsx",
+      "catalog/WorkflowRecovery.stories.tsx"
     ],
     "scenario": [],
     "style": []
@@ -49,10 +50,14 @@
   "cases": {
     "vitest": [
       "tests/notification-center/workflow-status.test.tsx | loading, permission denial, retrieval failure and empty notifications are distinct",
-      "tests/notification-center/workflow-status.test.tsx | reading an item focuses the next unread action and reading all focuses the heading"
+      "tests/notification-center/workflow-status.test.tsx | reading an item focuses the next unread action and reading all focuses the heading",
+      "tests/notification-center/workflow-status.test.tsx | retrying unavailable notifications restores focus to the Inbox heading",
+      "tests/notification-center/workflow-status.test.tsx | a later notification refresh leaves focus alone after the user focuses another control"
     ],
     "browser": [
-      "browser/workflow-regressions.spec.ts | completed notification and batch actions return focus to their headings"
+      "browser/workflow-regressions.spec.ts | completed notification and batch actions return focus to their headings",
+      "browser/workflow-regressions.spec.ts | retrying unavailable workflows restores focus inside the recovered region",
+      "browser/workflow-regressions.spec.ts | refreshing from an external action keeps focus outside the notification center"
     ]
   }
 }

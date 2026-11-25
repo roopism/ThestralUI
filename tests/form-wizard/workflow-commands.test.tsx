@@ -64,4 +64,21 @@ test('an invalid step cannot advance and pending submissions are disabled', () =
   expect(document.activeElement).toBe(next);
   next.click();
   expect(change).not.toHaveBeenCalled();
+
+  rerender(<Wizard {...props} />);
+  const field = screen.getByRole<HTMLInputElement>('textbox', { name: 'Name' });
+  field.focus();
+  expect(document.activeElement).toBe(field);
+  rerender(<Wizard {...props} busy />);
+  expect(field.matches(':disabled')).toBe(true);
+  expect(document.activeElement).toBe(next);
+  expect(next.disabled).toBe(false);
+
+  rerender(<Wizard {...props} />);
+  render(<button type="button">Other task</button>);
+  const outside = screen.getByRole('button', { name: 'Other task' });
+  outside.focus();
+  rerender(<Wizard {...props} busy />);
+  expect(document.activeElement).toBe(outside);
+  expect(change).not.toHaveBeenCalled();
 });

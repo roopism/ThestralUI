@@ -227,6 +227,7 @@
       "tests/button/native.test.cjs | press feedback honors the OS reduce motion setting (false)",
       "tests/button/native.test.cjs | press feedback honors the OS reduce motion setting (true)",
       "tests/button/native.test.cjs | uses a bounded Android theme ripple on both active public controls",
+      "tests/button/native.test.cjs | iOS keeps Android ripple props off active, busy and disabled public controls",
       "tests/native/scenarios.test.cjs | button.disabled-named",
       "tests/native/scenarios.test.cjs | button.pending-keeps-name",
       "tests/native/scenarios.test.cjs | button.save-once",

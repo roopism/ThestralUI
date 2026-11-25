@@ -100,9 +100,9 @@ A filtered list with no rows shows an empty message. Loading and request errors 
 
 ### Localization
 
-Default messages are mapped to `dataTable.search`, `dataTable.selectPage`, `dataTable.previousPage`, `dataTable.nextPage`, `dataTable.empty`, `dataTable.cancel`, `dataTable.save`, `dataTable.saveFailed`, `dataTable.select`, `dataTable.edit`, `dataTable.page`, `dataTable.selected`, `dataTable.loading`, `dataTable.bulkFailed`, `dataTable.details`, `dataTable.ascending` and `dataTable.descending`. Pass translated strings and formatters through `labels`. Values and column headings belong to the caller. [Message inventory](../library-strings.md)
+Default messages are mapped to `dataTable.search`, `dataTable.viewport`, `dataTable.selectPage`, `dataTable.previousPage`, `dataTable.nextPage`, `dataTable.empty`, `dataTable.cancel`, `dataTable.save`, `dataTable.saveFailed`, `dataTable.select`, `dataTable.edit`, `dataTable.page`, `dataTable.selected`, `dataTable.loading`, `dataTable.bulkFailed`, `dataTable.details`, `dataTable.ascending` and `dataTable.descending`. Pass translated strings and formatters through `labels`. Values and column headings belong to the caller. [Message inventory](../library-strings.md)
 
-The ten checked-in dictionaries supply message templates. The application selects one and passes its strings and callbacks through `labels`. An Arabic right-to-left consumer used the row name عائشة in its checkbox and edit actions and `Intl.NumberFormat('ar-EG')` for selected counts and pagination. It announced `عدد العناصر المحددة: ١` after selection and `الصفحة ٢ من ١٢` on the second page. Automatic dictionary selection through a shared locale provider remains open for 1.0. [Arabic messages](../../packages/messages/locales/ar.json)
+The ten checked-in dictionaries supply message templates. The application selects one and passes its strings and callbacks through `labels`. On web, `labels={{ viewport: messages['dataTable.viewport'] }}` names the keyboard-focusable group while `label` names the table. An Arabic right-to-left consumer used the row name عائشة in its checkbox and edit actions and `Intl.NumberFormat('ar-EG')` for selected counts and pagination. It announced `عدد العناصر المحددة: ١` after selection and `الصفحة ٢ من ١٢` on the second page. Automatic dictionary selection through a shared locale provider remains open for 1.0. [Arabic messages](../../packages/messages/locales/ar.json)
 
 ### Tokens
 
@@ -130,7 +130,7 @@ The caller owns record data, column definitions and persistence. The table owns 
 | `collections:DataTable` | `error` | `ReactNode` | Unspecified | Caller input | — |
 | `collections:DataTable` | `getRowLabel` | `(row: R) => string` | Required | Caller input | — |
 | `collections:DataTable` | `label` | `string` | Required | Caller input | — |
-| `collections:DataTable` | `labels` | `Partial<{ search: string; loading: string; bulkFailed: string; selectPage: string; previous: string; next: string; empty: string; cancel: string; save: string; saveFailed: string; select: (name: string) => string; edit: (column: string, name: string) => string; page: (current: number, total: number) => string; selected: (count: number) => string; }> \| undefined` | Unspecified | Caller input | — |
+| `collections:DataTable` | `labels` | `Partial<{ search: string; viewport: string; loading: string; bulkFailed: string; selectPage: string; previous: string; next: string; empty: string; cancel: string; save: string; saveFailed: string; select: (name: string) => string; edit: (column: string, name: string) => string; page: (current: number, total: number) => string; selected: (count: number) => string; }> \| undefined` | Unspecified | Caller input | — |
 | `collections:DataTable` | `layout` | `"table" \| "adaptive" \| undefined` | Unspecified | Caller input | — |
 | `collections:DataTable` | `loading` | `boolean \| undefined` | Unspecified | Caller input | — |
 | `collections:DataTable` | `locale` | `string \| undefined` | Unspecified | Caller input | — |
@@ -159,7 +159,7 @@ The caller owns record data, column definitions and persistence. The table owns 
 | `data-table:DataTable` | `error` | `ReactNode` | Unspecified | Caller input | — |
 | `data-table:DataTable` | `getRowLabel` | `(row: R) => string` | Required | Caller input | — |
 | `data-table:DataTable` | `label` | `string` | Required | Caller input | — |
-| `data-table:DataTable` | `labels` | `Partial<{ search: string; loading: string; bulkFailed: string; selectPage: string; previous: string; next: string; empty: string; cancel: string; save: string; saveFailed: string; select: (name: string) => string; edit: (column: string, name: string) => string; page: (current: number, total: number) => string; selected: (count: number) => string; }> \| undefined` | Unspecified | Caller input | — |
+| `data-table:DataTable` | `labels` | `Partial<{ search: string; viewport: string; loading: string; bulkFailed: string; selectPage: string; previous: string; next: string; empty: string; cancel: string; save: string; saveFailed: string; select: (name: string) => string; edit: (column: string, name: string) => string; page: (current: number, total: number) => string; selected: (count: number) => string; }> \| undefined` | Unspecified | Caller input | — |
 | `data-table:DataTable` | `layout` | `"table" \| "adaptive" \| undefined` | Unspecified | Caller input | — |
 | `data-table:DataTable` | `loading` | `boolean \| undefined` | Unspecified | Caller input | — |
 | `data-table:DataTable` | `locale` | `string \| undefined` | Unspecified | Caller input | — |
@@ -250,13 +250,13 @@ The existing regressions exercise the following bindings. The linked test identi
 
 | State | Observed trigger | Current binding behavior | Activation | Focus | Existing regression |
 | --- | --- | --- | --- | --- | --- |
-| Default | Render initial rows | Native table announces column headers and data cells | Sort, edit and paging controls | Controls in DOM order | [Sort, paging and empty-state test](../../tests/data-table/collections.test.tsx#L50) |
-| Sorted | Activate a sortable heading | aria-sort changes to ascending or descending | Sort again to reverse | Sort button | [Sort, paging and empty-state test](../../tests/data-table/collections.test.tsx#L50) |
-| Empty | Search for absent text | Table exposes localized empty text | Search remains available | Search input | [Sort, paging and empty-state test](../../tests/data-table/collections.test.tsx#L50) |
-| Selected | Check records and filter or page | Checked, mixed or unchecked page checkbox | Bulk button when selection exists | Visible controls | [Selection test](../../tests/data-table/collections.test.tsx#L28) |
-| Editing | Open the edit control | Named textbox and Save and Cancel controls | Yes | Draft input | [Edit, save and retry test](../../tests/data-table/collections.test.tsx#L66) |
-| Saving | Submit an asynchronous edit | Draft is read-only while the promise is outstanding | Submit and cancel blocked | Draft input | [Edit, save and retry test](../../tests/data-table/collections.test.tsx#L66) |
-| Failed | Reject the edit promise | Error alert plus retained input | Retry Save | Draft and controls | [Edit, save and retry test](../../tests/data-table/collections.test.tsx#L66) |
+| Default | Render initial rows | Native table announces column headers and data cells | Sort, edit and paging controls | Controls in DOM order | [Sort, paging and empty-state test](../../tests/data-table/collections.test.tsx#L52) |
+| Sorted | Activate a sortable heading | aria-sort changes to ascending or descending | Sort again to reverse | Sort button | [Sort, paging and empty-state test](../../tests/data-table/collections.test.tsx#L52) |
+| Empty | Search for absent text | Table exposes localized empty text | Search remains available | Search input | [Sort, paging and empty-state test](../../tests/data-table/collections.test.tsx#L52) |
+| Selected | Check records and filter or page | Checked, mixed or unchecked page checkbox | Bulk button when selection exists | Visible controls | [Selection test](../../tests/data-table/collections.test.tsx#L30) |
+| Editing | Open the edit control | Named textbox and Save and Cancel controls | Yes | Draft input | [Edit, save and retry test](../../tests/data-table/collections.test.tsx#L70) |
+| Saving | Submit an asynchronous edit | Draft is read-only while the promise is outstanding | Submit and cancel blocked | Draft input | [Edit, save and retry test](../../tests/data-table/collections.test.tsx#L70) |
+| Failed | Reject the edit promise | Error alert plus retained input | Retry Save | Draft and controls | [Edit, save and retry test](../../tests/data-table/collections.test.tsx#L70) |
 
 #### Performance
 
@@ -264,13 +264,13 @@ The packed canonical entry measures 3,409 B of JavaScript and 990 B for its styl
 
 #### Tests
 
-- Default. [Sort, paging and empty-state test](../../tests/data-table/collections.test.tsx#L50)
-- Sorted. [Sort, paging and empty-state test](../../tests/data-table/collections.test.tsx#L50)
-- Empty. [Sort, paging and empty-state test](../../tests/data-table/collections.test.tsx#L50)
-- Selected. [Selection test](../../tests/data-table/collections.test.tsx#L28)
-- Editing. [Edit, save and retry test](../../tests/data-table/collections.test.tsx#L66)
-- Saving. [Edit, save and retry test](../../tests/data-table/collections.test.tsx#L66)
-- Failed. [Edit, save and retry test](../../tests/data-table/collections.test.tsx#L66)
+- Default. [Sort, paging and empty-state test](../../tests/data-table/collections.test.tsx#L52)
+- Sorted. [Sort, paging and empty-state test](../../tests/data-table/collections.test.tsx#L52)
+- Empty. [Sort, paging and empty-state test](../../tests/data-table/collections.test.tsx#L52)
+- Selected. [Selection test](../../tests/data-table/collections.test.tsx#L30)
+- Editing. [Edit, save and retry test](../../tests/data-table/collections.test.tsx#L70)
+- Saving. [Edit, save and retry test](../../tests/data-table/collections.test.tsx#L70)
+- Failed. [Edit, save and retry test](../../tests/data-table/collections.test.tsx#L70)
 - [Server requests, paging, edits and retained cross-page selection](../../tests/data-table/data-table.spec.ts)
 - [Phone and desktop visual cases](../../tests/data-table/data-table.visual.ts)
 - [Headless, unstyled, server-rendered and failed bulk action cases](../../tests/data-table/ownership.test.tsx)

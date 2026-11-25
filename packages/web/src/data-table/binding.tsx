@@ -6,6 +6,7 @@ import { useDataTable, type DataColumn, type UseDataTableOptions } from './state
 export type { DataColumn } from './state.js';
 export const english = {
   search: 'Search records',
+  viewport: 'Table contents',
   loading: 'Loading records',
   bulkFailed: 'Could not apply changes. Try again.',
   selectPage: 'Select page',
@@ -181,7 +182,7 @@ export function DataTable<R extends { id: string }>({
       {toolbar}
     </div>
     {(error || bulkFailed) && <div data-part="status" role="alert">{error || labels.bulkFailed}</div>}
-    <div data-part="viewport" className={classes('uld-data-scroll')} tabIndex={0}>
+    <div data-part="viewport" className={classes('uld-data-scroll')} role="group" aria-label={labels.viewport} tabIndex={0}>
       {loading && <span data-part="status" role="status">{labels.loading}</span>}
       <table data-part="table" id={id} role="table" aria-label={label} aria-busy={loading || undefined}>
         <thead data-part="header" role="rowgroup"><tr role="row">

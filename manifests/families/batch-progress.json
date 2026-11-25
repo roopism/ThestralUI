@@ -42,7 +42,8 @@
     ],
     "visual": [],
     "story": [
-      "catalog/EnterpriseWorkspace.stories.tsx"
+      "catalog/EnterpriseWorkspace.stories.tsx",
+      "catalog/WorkflowRecovery.stories.tsx"
     ],
     "scenario": [],
     "style": []
@@ -52,11 +53,15 @@
       "tests/batch-progress/workflow-status.test.tsx | batch progress handles partial failure, retries a single failed item and resumes from external state",
       "tests/batch-progress/workflow-status.test.tsx | two or more failures offer one retry for every failed operation",
       "tests/batch-progress/workflow-status.test.tsx | the batch heading names the region, list and progress, and keeps its outline level",
-      "tests/batch-progress/workflow-status.test.tsx | retrying a failed item focuses the next failed action and preserves a vetoed action"
+      "tests/batch-progress/workflow-status.test.tsx | retrying a failed item focuses the next failed action and preserves a vetoed action",
+      "tests/batch-progress/workflow-status.test.tsx | retrying an unavailable batch restores focus to its heading",
+      "tests/batch-progress/workflow-status.test.tsx | a later batch refresh cannot take focus after a pointer press outside the retry button",
+      "tests/batch-progress/workflow-status.test.tsx | unmounting an active retry leaves no document focus or pointer listeners"
     ],
     "browser": [
       "browser/enterprise-workspace.spec.ts | restores a saved workflow after reload and retries interrupted batch items",
-      "browser/workflow-regressions.spec.ts | completed notification and batch actions return focus to their headings"
+      "browser/workflow-regressions.spec.ts | completed notification and batch actions return focus to their headings",
+      "browser/workflow-regressions.spec.ts | retrying unavailable workflows restores focus inside the recovered region"
     ]
   }
 }

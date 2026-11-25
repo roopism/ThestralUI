@@ -2,6 +2,8 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 
 import { afterEach, expect, test, vi } from 'vitest';
 
+import englishMessages from '../../packages/messages/locales/en.json';
+import frenchMessages from '../../packages/messages/locales/fr.json';
 import { DataTable, type DataColumn } from '../../packages/web/src/collections';
 
 afterEach(cleanup);
@@ -49,6 +51,8 @@ test('retains selected IDs across search and pages and excludes removed records'
 
 test('sorts numbers by value, pages safely after data changes, and provides an empty state', () => {
   const { rerender } = render(<DataTable {...props} />);
+  const viewport = screen.getByRole('group', { name: englishMessages['dataTable.viewport'] });
+  expect(viewport.contains(screen.getByRole('table', { name: props.label }))).toBe(true);
   const sort = screen.getByRole('button', { name: 'Score' });
   fireEvent.click(sort);
   expect(screen.getByRole('columnheader', { name: 'Score' }).getAttribute('aria-sort')).toBe(
@@ -92,6 +96,7 @@ test('reports sort, page, search and selection changes and honors an initial sor
     <DataTable
       {...props}
       defaultSort={{ column: 'score', ascending: false }}
+      labels={{ viewport: frenchMessages['dataTable.viewport'] }}
       onSortChange={sort}
       onPageChange={page}
       onSearchChange={search}
@@ -100,6 +105,7 @@ test('reports sort, page, search and selection changes and honors an initial sor
     />,
   );
   const table = screen.getByRole('table', { name: 'Queue' });
+  expect(screen.getByRole('group', { name: 'Contenu du tableau' }).contains(table)).toBe(true);
   const score = within(table).getByRole('columnheader', { name: /Score/ });
   expect(score.getAttribute('aria-sort')).toBe('descending');
   expect(within(table).getAllByRole('row')[1].textContent).toContain('Beta');

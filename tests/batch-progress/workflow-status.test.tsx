@@ -91,3 +91,60 @@ test('retrying a failed item focuses the next failed action and preserves a veto
   rerender(<BatchProgress {...props} items={[{ ...items[0], state: 'running' }, items[1]]} />);
   expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Retry Receipt' }));
 });
+
+
+test('retrying an unavailable batch restores focus to its heading', () => {
+  const onRetry = vi.fn();
+  const props = { label: 'Exports', items: [] };
+  const { rerender } = render(<BatchProgress {...props}
+    availability={{ kind: 'error', message: 'Offline', retryLabel: 'Reload exports', onRetry }} />);
+  const retry = screen.getByRole('button', { name: 'Reload exports' });
+  retry.focus();
+  fireEvent.click(retry);
+  expect(onRetry).toHaveBeenCalledOnce();
+  rerender(<BatchProgress {...props} />);
+  expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Exports' }));
+});
+
+test('a later batch refresh cannot take focus after a pointer press outside the retry button', () => {
+  const items = ['Invoice', 'Receipt'].map(label => ({ label, id: label, state: 'failed' as const }));
+  const onRetry = vi.fn();
+  const batch = (running: boolean) => <>
+    <p>Outside the batch</p>
+    <BatchProgress label="Exports" items={running ? [{ ...items[0], state: 'running' }, items[1]] : items} onRetry={onRetry} />
+  </>;
+  const { rerender } = render(batch(false));
+  const retry = screen.getByRole('button', { name: 'Retry Invoice' });
+  retry.focus();
+  fireEvent.click(retry);
+  expect(onRetry).toHaveBeenCalledWith('Invoice');
+  rerender(batch(false));
+  fireEvent.pointerDown(screen.getByText('Outside the batch'));
+  rerender(batch(true));
+  expect(document.activeElement).toBe(document.body);
+  expect(screen.getByRole('button', { name: 'Retry Receipt' })).toBeTruthy();
+});
+
+test('unmounting an active retry leaves no document focus or pointer listeners', () => {
+  const added = vi.spyOn(document, 'addEventListener');
+  const removed = vi.spyOn(document, 'removeEventListener');
+  const capture = (options?: boolean | EventListenerOptions) =>
+    typeof options === 'boolean' ? options : Boolean(options?.capture);
+  try {
+    const view = render(<BatchProgress label="Exports" items={[{ id: 'x', label: 'Invoice', state: 'failed' }]} onRetry={() => {}} />);
+    const retry = screen.getByRole('button', { name: 'Retry Invoice' });
+    retry.focus();
+    fireEvent.click(retry);
+    view.unmount();
+    const remaining = added.mock.calls.filter(([type, listener, options]) => {
+      if (type !== 'focusin' && type !== 'pointerdown') return false;
+      if (typeof options === 'object' && options.signal?.aborted) return false;
+      return !removed.mock.calls.some(([event, callback, removal]) =>
+        event === type && callback === listener && capture(removal) === capture(options));
+    });
+    expect(remaining.map(([type]) => type)).toEqual([]);
+  } finally {
+    added.mockRestore();
+    removed.mockRestore();
+  }
+});
