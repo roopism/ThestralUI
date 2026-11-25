@@ -1,3 +1,4 @@
+import { isTypedGateInput } from '../typed-tools.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -40,7 +41,7 @@ function entries(root, revision) {
 
 export function gitInputs(root, tree, base) {
   const candidate = entries(root, tree);
-  const trustedInput = path => protectedInput(path) || /^(?:scripts\/|packages\/(?:policy|style-policy)\/|tests\/(?:android|simulator|scenarios)\/|manifests\/|package(?:-lock)?\.json$)/.test(path);
+  const trustedInput = path => isTypedGateInput(path) || protectedInput(path) || /^(?:scripts\/|packages\/(?:policy|style-policy)\/|tests\/(?:android|simulator|scenarios)\/|manifests\/|package(?:-lock)?\.json$)/.test(path);
   const basePipeline = entries(root, base).filter(row => trustedInput(row.path));
   const candidatePipeline = candidate.filter(row => trustedInput(row.path));
   return { candidate, basePipeline: canonicalFingerprint(basePipeline), pipelineChanged:

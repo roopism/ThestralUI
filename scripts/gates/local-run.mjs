@@ -253,7 +253,8 @@ step('No weakening', () => {
   node(trustedGate('maestro-canary.mjs'), '--offline');
   const tests = globSync('*.test.mjs', { cwd: trustedGate('tests/') }).sort();
   assert.ok(tests.includes('hardening.test.mjs'));
-  node('--test', ...tests.map(file => trustedGate('tests/' + file)));
+  // Keep the fixed-deadline reservation controls responsive on the shared host.
+  node('--test', '--test-concurrency=2', ...tests.map(file => trustedGate('tests/' + file)));
 });
 step('Fast', fast);
 step('Typed and unit rosters', typed, ['Fast', 'No weakening']);

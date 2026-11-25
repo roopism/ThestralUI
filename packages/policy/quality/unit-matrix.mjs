@@ -65,6 +65,8 @@ export function nodeCases(files, root = process.cwd()) {
       process.execPath,
       [
         '--test',
+        // Reservation controls use real subprocesses with a fixed deadline.
+        '--test-concurrency=2',
         '--test-reporter=spec',
         '--test-reporter=' + fileURLToPath(new URL('./unit-reporter.mjs', import.meta.url)),
         '--test-reporter-destination=stdout',
