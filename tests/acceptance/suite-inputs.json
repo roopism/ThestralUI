@@ -1,0 +1,253 @@
+{
+  "contractVersion": 1,
+  "groups": {
+    "No weakening": {
+      "reusable": false,
+      "mode": "never",
+      "exclude": [],
+      "extraInputs": [],
+      "envFacts": []
+    },
+    "Fast": {
+      "reusable": false,
+      "mode": "never",
+      "exclude": [],
+      "extraInputs": [],
+      "envFacts": []
+    },
+    "Typed and unit rosters": {
+      "reusable": true,
+      "mode": "tree",
+      "exclude": [],
+      "extraInputs": [],
+      "envFacts": [
+        "node",
+        "lockfile",
+        "macos-build",
+        "hardware-model"
+      ]
+    },
+    "Browser and visual rosters": {
+      "reusable": true,
+      "mode": "tree",
+      "exclude": [
+        "docs/**",
+        "*.md"
+      ],
+      "extraInputs": [],
+      "envFacts": [
+        "node",
+        "lockfile",
+        "macos-build",
+        "hardware-model",
+        "playwright-browsers"
+      ]
+    },
+    "Catalog build": {
+      "reusable": true,
+      "mode": "tree",
+      "exclude": [
+        "docs/**",
+        "*.md"
+      ],
+      "extraInputs": [],
+      "envFacts": [
+        "node",
+        "lockfile",
+        "macos-build",
+        "hardware-model"
+      ]
+    },
+    "Packed component specifications": {
+      "reusable": true,
+      "mode": "tree",
+      "exclude": [],
+      "extraInputs": [],
+      "envFacts": [
+        "node",
+        "lockfile",
+        "macos-build",
+        "hardware-model"
+      ]
+    },
+    "Packed consumers min": {
+      "reusable": true,
+      "mode": "tree",
+      "exclude": [],
+      "extraInputs": [],
+      "envFacts": [
+        "node",
+        "lockfile",
+        "macos-build",
+        "hardware-model",
+        "playwright-browsers",
+        "gpu",
+        "display-scale",
+        "fonts"
+      ]
+    },
+    "Packed consumers max": {
+      "reusable": true,
+      "mode": "tree",
+      "exclude": [],
+      "extraInputs": [],
+      "envFacts": [
+        "node",
+        "lockfile",
+        "macos-build",
+        "hardware-model",
+        "playwright-browsers",
+        "gpu",
+        "display-scale",
+        "fonts"
+      ]
+    },
+    "Packed bundle limits": {
+      "reusable": true,
+      "mode": "tree",
+      "exclude": [],
+      "extraInputs": [],
+      "envFacts": [
+        "node",
+        "lockfile",
+        "macos-build",
+        "hardware-model"
+      ]
+    },
+    "Portable web scenarios": {
+      "reusable": true,
+      "mode": "tree",
+      "exclude": [
+        "*.md"
+      ],
+      "extraInputs": [],
+      "envFacts": [
+        "node",
+        "lockfile",
+        "macos-build",
+        "hardware-model",
+        "playwright-browsers",
+        "gpu",
+        "display-scale",
+        "fonts"
+      ]
+    },
+    "Mac browser behavior": {
+      "reusable": true,
+      "mode": "tree",
+      "exclude": [
+        "docs/**",
+        "*.md"
+      ],
+      "extraInputs": [],
+      "envFacts": [
+        "node",
+        "lockfile",
+        "macos-build",
+        "hardware-model",
+        "playwright-browsers",
+        "gpu",
+        "display-scale",
+        "fonts"
+      ]
+    },
+    "Mac visual comparisons": {
+      "reusable": true,
+      "mode": "tree",
+      "exclude": [
+        "docs/**",
+        "*.md"
+      ],
+      "extraInputs": [],
+      "envFacts": [
+        "node",
+        "lockfile",
+        "macos-build",
+        "hardware-model",
+        "playwright-browsers",
+        "gpu",
+        "display-scale",
+        "fonts"
+      ]
+    },
+    "Scoped styles": {
+      "reusable": true,
+      "mode": "tree",
+      "exclude": [],
+      "extraInputs": [],
+      "envFacts": [
+        "node",
+        "lockfile",
+        "macos-build",
+        "hardware-model",
+        "playwright-browsers",
+        "gpu",
+        "display-scale",
+        "fonts"
+      ]
+    },
+    "Mac browser performance": {
+      "reusable": false,
+      "mode": "never",
+      "exclude": [],
+      "extraInputs": [],
+      "envFacts": []
+    },
+    "Native package consumer": {
+      "reusable": true,
+      "mode": "tree",
+      "exclude": [],
+      "extraInputs": [],
+      "envFacts": [
+        "node",
+        "lockfile",
+        "macos-build",
+        "hardware-model"
+      ]
+    },
+    "Linux browser behavior": {
+      "reusable": true,
+      "mode": "tree",
+      "exclude": [
+        "*.md"
+      ],
+      "extraInputs": [],
+      "envFacts": [
+        "node",
+        "lockfile",
+        "playwright-browsers",
+        "vm-image",
+        "fonts"
+      ]
+    },
+    "iPhone Simulator": {
+      "reusable": true,
+      "mode": "app",
+      "exclude": [],
+      "extraInputs": [],
+      "envFacts": [
+        "node",
+        "lockfile",
+        "macos-build",
+        "hardware-model",
+        "xcode",
+        "ios-runtime",
+        "maestro"
+      ]
+    },
+    "Android standard and low-end": {
+      "reusable": true,
+      "mode": "app",
+      "exclude": [],
+      "extraInputs": [],
+      "envFacts": [
+        "node",
+        "lockfile",
+        "macos-build",
+        "hardware-model",
+        "android-system-image",
+        "maestro"
+      ]
+    }
+  }
+}
