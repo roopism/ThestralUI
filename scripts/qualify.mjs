@@ -21,6 +21,14 @@ const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 const root = git('rev-parse', '--show-toplevel');
 const common = git('rev-parse', '--path-format=absolute', '--git-common-dir');
 const args = process.argv.slice(2);
+if (args[0] === '--cloud-evidence') {
+  assert.ok(args.length === 2 || args.length === 3, 'Expected a PR number and an optional existing qualification attempt');
+  const { hostedEvidence } = await import('./gates/cloud/coordinator.mjs');
+  console.log(await hostedEvidence(root, common, args[1], args[2]));
+  process.exit(0);
+}
+const noReuse = args[0] === '--no-reuse';
+if (noReuse) args.shift();
 const mode = args[0] === '--staged' ? 'hook' : args[0] === '--release' ? 'release' : 'qualification';
 if (mode !== 'qualification') args.shift();
 assert.ok(args.length <= 1 && !args.some(arg => arg.startsWith('-')), 'Usage: npm run qualify [-- <commit>]');
@@ -62,9 +70,12 @@ function verify(snapshot, tree, env) {
     const extraJudge = 'scripts/gates/review/qualification-policy.mjs';
     if (git('ls-tree', base, '--', extraJudge))
       execFileSync(process.execPath, [join(trusted, extraJudge), root, base, tree], { cwd: trusted, env: trustedEnv, stdio: 'inherit' });
+    const reuseJudge = 'scripts/gates/reuse/strength.mjs';
+    if (git('ls-tree', base, '--', reuseJudge))
+      execFileSync(process.execPath, [join(trusted, reuseJudge), root, base, tree], { cwd: trusted, env: trustedEnv, stdio: 'inherit' });
     installSnapshotDependencies(snapshot, join(common, 'uld-dependencies'), env);
     return new Promise((resolve, reject) => {
-      runnerProcess = spawn(process.execPath, [join(trusted, runner), root, base, commit, mode, ...(initial ? [initial.id] : [])], {
+      runnerProcess = spawn(process.execPath, [join(trusted, runner), root, base, commit, mode, ...(initial ? [initial.id] : []), ...(noReuse ? ['--no-reuse'] : [])], {
         cwd: snapshot, stdio: 'inherit', detached: true, env: { ...env, ULD_ARTIFACT_COMMON: common },
       });
       runnerProcess.once('error', reject);

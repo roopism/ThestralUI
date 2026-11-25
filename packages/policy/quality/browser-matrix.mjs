@@ -61,11 +61,10 @@ export function validateBrowser(report, baseline) {
     'Unregistered browser project',
   );
 }
-function runBrowserReport(args, env = process.env) {
+export function runBrowserReport(args, env = process.env, command = resolve('node_modules/@playwright/test/cli.js')) {
   const scratch = mkdtempSync(join(tmpdir(), 'ui-browser-report-'));
   const file = join(scratch, 'results.json');
   try {
-    const command = resolve('node_modules/@playwright/test/cli.js');
     const result = spawnSync(process.execPath, [command, 'test', ...args, '--reporter=line,json', '--workers=1'], {
       stdio: 'inherit', env: { ...env, PLAYWRIGHT_JSON_OUTPUT_FILE: file },
     });

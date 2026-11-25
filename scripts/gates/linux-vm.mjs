@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { withTiming } from '../workers/resource-guard.mjs';
 import { prepareGuest } from './linux-prepare.mjs';
 import { isIPv4 } from 'node:net';
 import { homedir } from 'node:os';
@@ -15,6 +16,7 @@ const exec = (bin, args, options = {}) => execFileSync(bin, args, { encoding: 'u
 const state = () => exec(utm, ['status', vm]).trim();
 export async function stopVm() {
   if (state() === 'stopped') return;
+  assert.notEqual(process.env.ULD_CLOUD_LOCAL, '1', 'Local cloud timing requires the project VM to already be stopped');
   exec(utm, ['stop', vm, '--request']);
   for (let n = 0; n < 60; n++) {
     if (state() === 'stopped') return;
@@ -60,7 +62,54 @@ export function prepareLinuxDependencies(root, sshArgs, image, cache) {
   }, cache, runtime);
 }
 
-export async function linuxBrowsers(root, commit, record) {
+export async function withLinuxImageFacts(observe) {
+  return withTiming('activity', 'Read current Linux guest identity', async () => {
+    try {
+      if (state() === 'stopped') exec(utm, ['start', vm]);
+      let sshArgs;
+      for (let n = 0; n < 60; n++) {
+        try {
+          const address = exec(utm, ['ip-address', vm], { stdio: ['ignore', 'pipe', 'pipe'] }).split(/\s+/).find(isIPv4);
+          assert.ok(address);
+          sshArgs = [...sshOptions, '-o', 'HostName=' + address, vm];
+          exec('ssh', [...sshArgs, 'true'], { stdio: 'ignore' });
+          break;
+        } catch (error) { if (n === 59) throw error; await delay(1000); }
+      }
+      const image = JSON.parse(exec('ssh', [...sshArgs, 'cat /etc/uld-image.json']));
+      assert.equal(image.uuid, '8E1A0BED-BE5C-4A3C-9814-6543FB229DB7');
+      assert.equal(image.sha256, '50e24e1fb79e89116e939d90aa7738f7af48c442fa1bc2510131e0b39c50348e');
+      return await observe(image, sshArgs);
+    } finally { await stopVm(); }
+  });
+}
+
+function withGuestReadRestrictions(sshArgs, exclude, commands) {
+  assert.ok(exclude.length && exclude.every(glob => ['docs/**', '*.md'].includes(glob)));
+  const source = readFileSync(new URL('./reuse/sandbox-linux.mjs', import.meta.url)).toString('base64');
+  const script = [
+    'set -eu', 'cd "$HOME/qualification"', 'proof=$(mktemp -d)', "trap 'rm -rf -- \"$proof\"' EXIT",
+    'printf %s ' + source + ' | base64 --decode > "$proof/sandbox-linux.mjs"',
+    'restricted() { node "$proof/sandbox-linux.mjs" "$globs" -- "$@"; }',
+    'globs="$1"', ...commands,
+  ].join('\n');
+  exec('ssh', [...sshArgs, "bash -s -- '" + JSON.stringify(exclude) + "'"], { input: script, stdio: ['pipe', 'inherit', 'inherit'] });
+}
+
+function runLinuxBrowserGroups(sshArgs, exclude) {
+  if (exclude.length) {
+    withGuestReadRestrictions(sshArgs, exclude, [
+      'mkdir -p dist release test-results playwright-report',
+      'restricted npm run build',
+      'UI_GATE_SNAPSHOT=1 CI=1 restricted node scripts/gates/linux-browser-suites.mjs',
+    ]);
+  } else {
+    exec('ssh', [...sshArgs, 'cd ~/qualification && npm run build && UI_GATE_SNAPSHOT=1 CI=1 node scripts/gates/linux-browser-suites.mjs'],
+      { stdio: 'inherit' });
+  }
+}
+
+export async function linuxBrowsers(root, commit, record, { exclude = [] } = {}) {
   assert.match(commit, /^[a-f0-9]{40}$/);
   try {
     if (state() === 'stopped') exec(utm, ['start', vm]);
@@ -101,11 +150,28 @@ export async function linuxBrowsers(root, commit, record) {
     const preparation = prepareLinuxDependencies(process.cwd(), sshArgs, image, cache);
     metadata.preparation = preparation;
     record(metadata);
-    exec('ssh', [...sshArgs, 'cd ~/qualification && npm run build && UI_GATE_SNAPSHOT=1 CI=1 node scripts/gates/linux-browser-suites.mjs'],
-      { stdio: 'inherit' });
+    runLinuxBrowserGroups(sshArgs, exclude);
+    metadata.enforcedExclusions = [...exclude];
     const browsers = exec('ssh', [...sshArgs, 'cd ~/qualification && node node_modules/@playwright/test/cli.js --version']).trim();
     return { ...metadata, browsers };
   } finally {
     await stopVm();
   }
+}
+
+if (import.meta.main && process.argv[2] === '--reuse-image') {
+  const [snapshot, encoded] = process.argv.slice(3);
+  const facts = await withLinuxImageFacts(async (image, sshArgs) => {
+    if (!snapshot && !encoded) return image;
+    const ids = JSON.parse(encoded);
+    assert.ok(Array.isArray(ids) && ids.length && ids.every(id => typeof id === 'string'));
+    // Prove that this guest still enforces read exclusions before admitting a cached result.
+    const probe = 'const fs=require("node:fs"),assert=require("node:assert/strict");' +
+      'assert.ok(fs.readFileSync("package.json").length);' +
+      'assert.throws(()=>fs.readFileSync("README.md"),e=>e.code==="EACCES"||e.code==="EPERM");';
+    withGuestReadRestrictions(sshArgs, ['*.md'], ['test -s README.md', "restricted node -e '" + probe + "'"]);
+    const { environmentFacts } = await import('./reuse/environment.mjs');
+    return environmentFacts(ids, { root: snapshot, groupId: 'Linux browser behavior' });
+  });
+  console.log(JSON.stringify(facts));
 }

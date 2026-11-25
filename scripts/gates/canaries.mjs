@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { androidTiming, apkDigest, apkIdentity, timingForIdenticalApk } from './android-timing-reuse.mjs';
 import { summarizeTrials } from '../../tests/android/frame-budget.mjs';
+import { reuseCanaries } from './reuse/canaries.mjs';
 import { noWeakening } from './no-weakening.mjs';
 
 const root = process.cwd();
@@ -36,6 +37,8 @@ function canary(path, edit, expected, seed) {
 try {
   assert.deepEqual(noWeakening(root, base, base), []);
   console.log('Unchanged tree passed.');
+  reuseCanaries();
+  console.log('Verified result reuse and its independent audit.');
   const sample = { frames: 20, inputs: 10, p95FrameMs: 12, p95InputToCommitMs: 15, deadlineMissFraction: 0 };
   const measured = summarizeTrials([sample, sample, sample]);
   const frameBudget = { press: measured, scroll: measured };

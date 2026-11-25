@@ -51,7 +51,7 @@ function onlyFamilyChecks(before, after) {
 }
 
 function gateIdentity({ headBranch, headRepository, repository }) {
-  return headBranch === 'feat/gates' && headRepository === repository;
+  return (headBranch === 'feat/gates' || /^gates\/[a-z0-9][a-z0-9-]*$/.test(headBranch)) && headRepository === repository;
 }
 
 export function checkProposal(files, owners, identity, revisions, validateDepth, budgetAdoption = false) {
@@ -60,6 +60,13 @@ export function checkProposal(files, owners, identity, revisions, validateDepth,
   const gateBranch = gateIdentity(identity);
   const isOwned = file => owners.findLast(({ path, directory }) =>
     file === path || (directory && file.startsWith(path + '/')))?.owned === true;
+  const modern = /^(?:gates|docs|family)\//.test(headBranch);
+  if (modern) {
+    const gateCode = file => /^(?:scripts|\.github|\.githooks|packages\/(?:policy|style-policy)|tests\/(?:android|simulator))(?:\/|$)/.test(file);
+    if (gateBranch && !files.every(gateCode)) throw Error('A gates/ topic accepts only gate code.');
+    if (!gateBranch && files.some(file => file !== depthRegistry && gateCode(file)))
+      throw Error('Propose these gate changes separately on a gates/ topic.');
+  }
   const ownedChange = files.some(isOwned);
   const invalid = files.filter(file => {
     if (file === depthRegistry) {
