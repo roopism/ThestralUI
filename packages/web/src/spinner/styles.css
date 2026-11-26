@@ -4,7 +4,8 @@
   display: inline-block;
   inline-size: 1em;
   block-size: 1em;
-  border: var(--uld-indicator-stroke) solid currentColor;
+  --uld-spinner-stroke: var(--uld-indicator-stroke, 2px);
+  border: var(--uld-spinner-stroke) solid;
   border-inline-end-color: transparent;
   border-radius: 50%;
 }

@@ -8,6 +8,7 @@ import type { DataTableLabels, DataTableProps } from '@ui-lazy-dev/ui-web/data-t
 import englishMessages from '../../packages/messages/locales/en.json';
 import frenchMessages from '../../packages/messages/locales/fr.json';
 import { DataTable, type DataColumn } from '../../packages/web/src/collections';
+import { english } from '../../packages/web/src/data-table/binding';
 
 afterEach(cleanup);
 
@@ -81,6 +82,14 @@ test('sorts numbers by value, pages safely after data changes, and provides an e
   const { rerender } = render(<DataTable {...props} />);
   const viewport = screen.getByRole('group', { name: englishMessages['dataTable.viewport'] });
   expect(viewport.contains(screen.getByRole('table', { name: props.label }))).toBe(true);
+
+  const { viewport: defaultViewport, ...olderDictionary } = english;
+  const legacyLabels: CollectionProps<(typeof rows)[number]>['labels'] & DataTableProps<(typeof rows)[number]>['labels'] = olderDictionary;
+  rerender(<DataTable {...props} labels={legacyLabels} />);
+  expect(screen.getByRole('group', { name: defaultViewport })).toBe(viewport);
+  rerender(<DataTable {...props} labels={{ ...legacyLabels, viewport: undefined }} />);
+  expect(screen.getByRole('group', { name: defaultViewport })).toBe(viewport);
+
   const sort = screen.getByRole('button', { name: 'Score' });
   fireEvent.click(sort);
   expect(screen.getByRole('columnheader', { name: 'Score' }).getAttribute('aria-sort')).toBe(
@@ -220,4 +229,26 @@ test('all ten catalogs cover the table, command palette and batch keys including
       expect((messages[id].match(/\{\w+\}/g) ?? []).sort()).toEqual((catalogs.en[id].match(/\{\w+\}/g) ?? []).sort());
     }
   }
+});
+
+test('returning to a rejected cell restores the submitted title for retry', async () => {
+  let reject!: (reason: Error) => void;
+  const edit = vi.fn().mockImplementationOnce(() => new Promise<void>((_, fail) => { reject = fail; }));
+  render(<DataTable {...props} pageSize={1} columns={[{ ...columns[0], onEdit: edit }]} />);
+  const click = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
+  const name = 'Edit Name, Gamma';
+  click(name);
+  fireEvent.change(screen.getByRole('textbox', { name }), { target: { value: 'Revised title' } });
+  click('Save');
+  click('Next page');
+  await act(async () => reject(Error('offline')));
+  expect(screen.queryByRole('alert')).toBeNull();
+  click('Previous page');
+  expect(screen.getByRole('alert').textContent).toBe('Could not save changes. Try again.');
+  expect(screen.getByRole('button', { name }).textContent).toBe('Revised title');
+  click(name);
+  expect((screen.getByRole('textbox', { name }) as HTMLInputElement).value).toBe('Revised title');
+  await act(async () => { click('Save'); });
+  expect(edit.mock.calls).toEqual([[rows[0], 'Revised title'], [rows[0], 'Revised title']]);
+  expect(screen.queryByRole('alert')).toBeNull();
 });

@@ -26,7 +26,7 @@
 
 .uld-split-handle:focus-visible,
 .uld-split-pane:focus-visible {
-  --uld-resizable-list-and-detail-ring: var(--uld-indicator-stroke, 2px);
+  --uld-resizable-list-and-detail-ring: var(--uld-focus-width, 3px);
   outline: var(--uld-resizable-list-and-detail-ring) solid Highlight;
   outline-offset: calc(0px - var(--uld-resizable-list-and-detail-ring));
 }

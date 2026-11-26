@@ -44,18 +44,19 @@ function TableAction({ busy, ...props }: ComponentPropsWithRef<'button'> & { bus
 }
 
 function useCellSaves() {
-  const [pending, setPending] = useState(() => new Set<string>());
-  const latest = useRef(pending);
-  function mark(key: string, saving: boolean) {
-    if (latest.current.has(key) === saving) return false;
-    const next = new Set(latest.current);
-    if (saving) next.add(key);
-    else next.delete(key);
+  // A pending save holds its draft in the request. Keep rejected text here across cell unmounts.
+  const [cells, setCells] = useState(() => new Map<string, string | null>());
+  const latest = useRef(cells);
+  function update(key: string, rejectedDraft?: string | null) {
+    if (latest.current.get(key) === rejectedDraft) return false;
+    const next = new Map(latest.current);
+    if (rejectedDraft === undefined) next.delete(key);
+    else next.set(key, rejectedDraft);
     latest.current = next;
-    setPending(next);
+    setCells(next);
     return true;
   }
-  return { pending, mark, isSaving: (key: string) => latest.current.has(key) };
+  return { cells, latest, update };
 }
 
 export function EditableCell<R extends { id: string }>({
@@ -75,15 +76,17 @@ export function EditableCell<R extends { id: string }>({
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const key = JSON.stringify([row.id, column.id]);
-  const pending = saves.pending.has(key);
-  const [failed, setFailed] = useState(false);
+  const rejectedDraft = saves.cells.get(key);
+  const pending = rejectedDraft === null;
+  const locked = disabled || busy;
   const trigger = useRef<HTMLButtonElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const restoreFocus = useRef(false);
-  const ownsFocus = () => input.current?.form?.contains(input.current.ownerDocument.activeElement) === true;
+  const ownsFocus = (control: HTMLElement | null | undefined = input.current?.form) =>
+    control?.contains(control.ownerDocument.activeElement) === true;
   useLayoutEffect(() => () => {
     const control = trigger.current ?? input.current?.form;
-    if (control?.contains(control.ownerDocument.activeElement)) {
+    if (control && ownsFocus(control)) {
       control.closest<HTMLElement>('[data-part="viewport"]')?.focus({ preventScroll: true });
     }
   }, []);
@@ -96,12 +99,14 @@ export function EditableCell<R extends { id: string }>({
   }, [draft]);
   const finish = () => {
     restoreFocus.current = ownsFocus();
+    saves.update(key);
     setDraft(null);
   };
   const accessibleName = labels.edit(column.label, name);
+  const error = typeof rejectedDraft === 'string' && <span role="alert" aria-label={labels.saveFailed}>{labels.saveFailed}</span>;
   if (draft === null)
     return (
-      <TableAction
+      <><TableAction
         ref={trigger}
         aria-label={accessibleName}
         disabled={disabled}
@@ -109,31 +114,27 @@ export function EditableCell<R extends { id: string }>({
         data-part="edit"
         className={unstyled ? undefined : "uld-cell-edit"}
         onClick={() => {
-          setFailed(false);
-          setDraft(String(column.value(row)));
+          setDraft(rejectedDraft ?? String(column.value(row)));
         }}
       >
-        {column.render ? column.render(row) : column.value(row)}
-      </TableAction>
+        {rejectedDraft ?? (column.render ? column.render(row) : column.value(row))}
+      </TableAction>{error}</>
     );
   return (
     <form data-part="editor"
       onSubmit={async (event) => {
         event.preventDefault();
-        if (disabled || busy || !saves.mark(key, true)) return;
-        setFailed(false);
+        if (locked || !saves.update(key, null)) return;
         try {
           await column.onEdit!(row, draft);
           finish();
         } catch {
-          setFailed(true);
+          saves.update(key, draft);
           if (ownsFocus()) input.current?.focus({ preventScroll: true });
-        } finally {
-          saves.mark(key, false);
         }
       }}
       onKeyDown={(event) => {
-        if (event.key === 'Escape' && !saves.isSaving(key)) {
+        if (event.key === 'Escape' && saves.latest.current.get(key) !== null) {
           event.preventDefault();
           event.stopPropagation();
           finish();
@@ -141,14 +142,14 @@ export function EditableCell<R extends { id: string }>({
       }}
     >
       <TableField ref={input} mode="edit" label={accessibleName} value={draft}
-        readOnly={pending || disabled || busy} onValueChange={setDraft} />
-      <TableAction type="submit" disabled={disabled || busy} busy={pending}>
+        readOnly={pending || locked} onValueChange={setDraft} />
+      <TableAction type="submit" disabled={locked} busy={pending}>
         {labels.save}
       </TableAction>
-      <TableAction disabled={pending || disabled || busy} onClick={finish}>
+      <TableAction disabled={pending || locked} onClick={finish}>
         {labels.cancel}
       </TableAction>
-      {failed && <span role="alert" aria-label={labels.saveFailed}>{labels.saveFailed}</span>}
+      {error}
     </form>
   );
 }
