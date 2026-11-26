@@ -7,6 +7,12 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { installSnapshotDependencies } from '../../../packages/policy/quality/snapshot-dependencies.mjs';
 
+const { groups } = JSON.parse(readFileSync(new URL('../../../tests/acceptance/suite-inputs.json', import.meta.url)));
+
+test('packed component reuse requires the installed browser fact', () => {
+  assert.ok(groups['Packed component specifications'].envFacts.includes('playwright-browsers'));
+});
+
 test('a snapshot installed in production mode caches the development tools needed by the next snapshot', t => {
   const root = mkdtempSync(join(tmpdir(), 'snapshot-dev-tools-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));

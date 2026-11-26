@@ -178,6 +178,7 @@
   "scripts/gates/tests/review2-renderer-integrity.test.mjs | renderer integrity rejects imperative image source assignments",
   "scripts/gates/tests/review2-renderer-integrity.test.mjs | renderer integrity rejects reflective global property reads",
   "scripts/gates/tests/review6-reuse.test.mjs | a snapshot installed in production mode caches the development tools needed by the next snapshot",
+  "scripts/gates/tests/review6-reuse.test.mjs | packed component reuse requires the installed browser fact",
   "scripts/gates/tests/style-component-tokens.test.mjs | a component token used or declared outside its family is rejected",
   "scripts/gates/tests/style-component-tokens.test.mjs | a component token with a raw literal, a wrong fallback or no declaration is rejected",
   "scripts/gates/tests/style-component-tokens.test.mjs | missing native token sources preserve raw findings and grant no native tokens",
