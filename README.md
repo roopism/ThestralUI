@@ -1,6 +1,6 @@
 # @ui-lazy-dev
 
-Mobile-first UI for web, iOS and Android. Elevate adoption is paused while the library is qualified. See the [frozen library goal](docs/frozen-goal.md), the [enterprise completion checklist](docs/enterprise-checklist.md) for current progress, the [roadmap](docs/system-roadmap.md) for delivery order and the [catalog](https://ui.lazy-dev.site) for working examples.
+Mobile-first UI for web, iOS and Android. See the [frozen library goal](docs/frozen-goal.md), the [enterprise completion checklist](docs/enterprise-checklist.md) for current progress, the [roadmap](docs/system-roadmap.md) for delivery order and the [catalog](https://ui.lazy-dev.site) for working examples.
 
 ## Packages
 
@@ -23,6 +23,6 @@ MAIN integrates on `feat/enterprise-ui`. Workers use independent worktrees, assi
 
 ## Install a release
 
-The GitHub repo is private. Release tarballs and SHA-256 checksums are built by `npm run pack:release` in `release/`. Download the archives and checksum manifest from the tagged GitHub release. Verify with `shasum -a 256 -c SHA256SUMS`. Install the tokens tarball and the renderer tarball together. Set `@ui-lazy-dev:registry=` in the consuming project’s `.npmrc` to its private registry before installing. For tarball-only installs, use an unreachable registry for this scope so a missing archive fails. The Elevate integration commits its pinned tarballs and lockfile so builds need neither registry credentials nor a connection to the catalog. Web consumers provide React and React DOM. Native consumers provide React and React Native. [Consumer installation example](docs/compatibility-web.md#install-from-tarballs)
+ThestralUI development takes place in this public repository. Release tarballs and SHA-256 checksums are built by `npm run pack:release` in `release/`. Download the archives and checksum manifest from the tagged GitHub release. Verify with `shasum -a 256 -c SHA256SUMS`. Before installing, set `@ui-lazy-dev:registry=` in the consuming project’s `.npmrc` to the registry your team controls. For tarball-only installs, use an unreachable registry for this scope so a missing archive fails. Install the tokens tarball and the renderer tarball together. Web consumers provide React and React DOM. Native consumers provide React and React Native. [Consumer installation example](docs/compatibility-web.md#install-from-tarballs)
 
-Elevate’s first pushed pilot pins v0.1.0. Its local integration at `3fb2cc0` pins v0.2.0. This release adds an adaptive grid, opt-in press motion, an editorial shortlist example and the first experimental native renderer. private archive release v0.2.0 · [Shortlist example](https://ui.lazy-dev.site/?path=/story/patterns-opportunityshortlist--adaptive)
+The catalog includes an adaptive grid, opt-in press motion, an editorial shortlist and an experimental native renderer. [Shortlist example](https://ui.lazy-dev.site/?path=/story/patterns-opportunityshortlist--adaptive)

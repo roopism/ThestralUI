@@ -18,6 +18,8 @@ Read the [frozen library goal](docs/frozen-goal.md) and the [delivery ledger](do
 12. Work only from the numbered plan in the ledger. Give each item a clear completion check and propose extra work in the ledger.
 13. Record anything that needs the owner under **Owner decisions**. Send one short message listing those decisions and continue with the next unblocked item.
 
+Keep the owner’s processes and ports untouched. Before Android timing, record machine load and HID idle time, wait up to 20 minutes for a quiet interval, then retain the readings and all trials. A pass under contention cannot qualify a change.
+
 Every standing rule preserves the strength of each test, limit and check.
 
 ## Family cycle
