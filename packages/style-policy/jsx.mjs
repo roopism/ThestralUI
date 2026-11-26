@@ -45,7 +45,7 @@ export function inspectScript(path, source, options, report) {
     ts.forEachChild(node, collect);
   }
   collect(file);
-  const native = path.startsWith('packages/native/src/') ? nativeProvenance(file, options.tokenPaths) : undefined;
+  const native = path.startsWith('packages/native/src/') ? nativeProvenance(file, options.tokenPaths, options.nativeTokenPaths) : undefined;
   const initializer = node => native ? native.constant(node) : definitions.get(node.text);
 
   function unwrap(node) {
@@ -72,6 +72,10 @@ export function inspectScript(path, source, options, report) {
     return 'module';
   }
   function checkValue(key, expr, site, seen = new Set()) {
+    // A component token belongs to its own family. Literal values reach literalIssue below.
+    const foreign = options.componentTokens?.family(key);
+    if (foreign && foreign !== options.componentTokens.owner && !ts.isStringLiteralLike(unwrap(expr)) && !ts.isNumericLiteral(unwrap(expr)))
+      report('style/token', line(site), owner(site), key, expr.getText(file));
     if (!designProperty(key)) return;
     const value = unwrap(expr);
     if (native?.tokenLeaf(expr)) return;

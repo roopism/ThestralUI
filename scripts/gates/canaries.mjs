@@ -8,6 +8,8 @@ import { androidTiming, apkDigest, apkIdentity, timingForIdenticalApk } from './
 import { summarizeTrials } from '../../tests/android/frame-budget.mjs';
 import { reuseCanaries } from './reuse/canaries.mjs';
 import { noWeakening } from './no-weakening.mjs';
+import { depthRegistry, derivedRegistrations } from './registrations.mjs';
+import { renderDepthRegistry } from '../manifests/depth-registry.mjs';
 
 const root = process.cwd();
 const dir = mkdtempSync(join(tmpdir(), 'uld-gate-canaries-'));
@@ -118,6 +120,33 @@ with zipfile.ZipFile(apk, "w") as archive:
     "step('Control', () => run('engine'));");
   execFileSync(process.execPath, ['--test', fileURLToPath(new URL('./tests/landing-evidence.test.mjs', import.meta.url))],
     { stdio: 'inherit' });
+  // A family branch may carry only its own regenerated API-depth row.
+  const manifests = git(['ls-tree', '--name-only', base + ':manifests/families']).split('\n')
+    .map(name => [name, git(['show', base + ':manifests/families/' + name])]);
+  const shared = JSON.parse(git(['show', base + ':manifests/shared.json']));
+  function registration(edit) {
+    git(['read-tree', base]);
+    const rows = manifests.map(([name, body]) => ({ name, row: JSON.parse(body) }));
+    const before = rows.map(({ row }) => JSON.stringify(row));
+    edit(new Map(rows.map(({ row }) => [row.id, row])));
+    rows.forEach(({ name, row }, index) => {
+      if (JSON.stringify(row) !== before[index]) writeBlob('manifests/families/' + name, JSON.stringify(row, null, 2) + '\n');
+    });
+    const ordered = rows.map(({ row }) => row).sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
+    writeBlob(depthRegistry, renderDepthRegistry(ordered, shared));
+    return git(['write-tree']);
+  }
+  const addBinding = families => families.get('Breadcrumb').inventory.api.push('breadcrumb:Breadcrumbs');
+  assert.deepEqual([...derivedRegistrations(root, base, registration(addBinding), 'family/breadcrumb')], [depthRegistry]);
+  console.log('Allowed a family registering its own depth row');
+  for (const [name, branch, edit, expected] of [
+    ['another family', 'family/badge', addBinding, /owned by family\/breadcrumb/],
+    ['a removed row', 'family/breadcrumb', families => { delete families.get('Breadcrumb').depth; }, /removed or reordered/],
+    ['a malformed row', 'family/breadcrumb', families => { families.get('Breadcrumb').depth.waiver = true; }, /product-registration/],
+  ]) {
+    assert.throws(() => derivedRegistrations(root, base, registration(edit), branch), expected);
+    console.log('Rejected depth registration from', name);
+  }
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }

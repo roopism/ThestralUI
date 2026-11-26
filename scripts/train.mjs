@@ -184,6 +184,8 @@ async function withTrainContext(operation, inspectOnly = false) {
       { cwd, env: { ...env, ...extra, GIT_NO_REPLACE_OBJECTS: '1' }, stdio: 'inherit' });
     const { passing, requireProposalHistory } = await import(join(trusted, 'scripts/land.mjs'));
     const { requireGateIsolation } = await import(join(trusted, 'scripts/gates/landing-policy.mjs'));
+    const registrations = join(trusted, 'scripts/gates/registrations.mjs');
+    const derived = existsSync(registrations) ? (await import(registrations)).derivedRegistrations : undefined;
     const context = { ...client, passing, root, directory, liveBase: client.base,
       base() { assert.equal(client.base(), base, 'Integration moved'); return base; },
       history: (tree, parent, commit) => requireProposalHistory(tree, parent, directory, { root, commit }),
@@ -200,7 +202,7 @@ async function withTrainContext(operation, inspectOnly = false) {
             HEAD_REPOSITORY: repository, GITHUB_REPOSITORY: repository });
           const paths = execFileSync('git', ['--no-replace-objects', 'diff', '--no-renames', '--name-only', '-z', parent, commit],
             { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean);
-          requireGateIsolation(member.branch, paths);
+          requireGateIsolation(member.branch, paths, undefined, derived?.(root, parent, tree, member.branch));
         }
       },
       async checkMember(request) {

@@ -1,13 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { baselineRows } from '../cli.mjs';
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { baselineRows, publishedTokenProperties } from '../cli.mjs';
 import { inspectSource, checkBaseline, validateTokens } from '../policy.mjs';
 
 const options = { scopes: ['uld-'], variables: ['--uld-text', '--uld-space-md'] };
 function scan(path, code) {
   return inspectSource(path, code, options);
 }
+// Native-only token declarations, read from the token sources.
+import { nativeTokens } from '../tokens.mjs';
 
 test('rejects a literal appended to the real workflow or Elevate admin component', () => {
   for (const path of ['packages/web/src/application-shell/binding.tsx', 'src/components/admin.tsx']) {
@@ -82,6 +88,25 @@ test('checks colors, typography, spacing, radius, focus, elevation and motion', 
     scan(
       'a.css',
       '.uld-frame{padding-bottom:env(safe-area-inset-bottom);width:100%;color:currentColor}',
+    ),
+    [],
+  );
+  // A reference is a token only when its name and every nested fallback are declared tokens.
+  for (const rule of [
+    'font-size:var(--uld-text,12px)',
+    'font-size:var(--uld-undeclared)',
+    'font-size:var(--uld-undeclared,var(--uld-text))',
+    'font-size:var(--uld-text,var(--uld-undeclared))',
+    'font-size:var(--uld-text,var(--uld-space-md,12px))',
+    'font-family:monospace',
+    'font-family:var(--uld-text,monospace)',
+  ]) {
+    assert.equal(scan('a.css', '.uld-box{' + rule + '}').filter((hit) => hit.rule === 'style/token').length, 1, rule);
+  }
+  assert.deepEqual(
+    scan(
+      'a.css',
+      '.uld-type{font-size:var(--uld-text, var(--uld-space-md));font-family:var(--uld-text,var(--uld-space-md,var(--uld-text)))}',
     ),
     [],
   );
@@ -183,6 +208,39 @@ test('rejects bad types, missing aliases, cycles and incomplete themes', () => {
     },
   ])
     assert.ok(validateTokens(variant).length);
+  // Native-only tokens never enter the web manifest and must be complete, unshared native leaves.
+  const marker = { $extensions: { 'ui-lazy-dev.platforms': ['native'] } };
+  const native = { ...value, ...marker };
+  assert.ok(validateTokens({ ...valid, borderWidth: { thin: native } }).some(error => /web token manifest/.test(error)));
+  const web = { ...valid, size: { gap: value } };
+  const check = source => nativeTokens([source], web).errors;
+  assert.deepEqual(check({ borderWidth: { thin: native }, fontFamily: { mono: { $type: 'fontFamily', $value: 'Menlo', ...marker } },
+    size: { gap: value }, lineHeight: { body: { $type: 'dimension', $value: '{size.gap}', ...marker } } }), []);
+  assert.deepEqual(nativeTokens([{ borderWidth: { thin: native } }], web).paths, ['borderWidth.thin']);
+  assert.deepEqual([...nativeTokens([{ borderWidth: { thin: native } }], web).variables].sort(), ['--uld-border-width-thin', '--uld-thin']);
+  for (const source of [
+    { borderWidth: { thin: { ...native, $extensions: { 'ui-lazy-dev.platforms': ['web'] } } } },
+    { borderWidth: { thin: { ...native, $extensions: { 'ui-lazy-dev.platforms': ['native', 'web'] } } } },
+    { borderWidth: { thin: { ...native, $extensions: { 'ui-lazy-dev.platforms': 'native' } } } },
+    { light: { space: native } },
+    { size: { gap: native } },
+    { borderWidth: { gap: native } },
+    { borderWidth: { thin: { ...native, $value: { unit: 'wat', value: 1 } } } },
+    { fontFamily: { mono: { $type: 'fontFamily', $value: ' ', ...marker } } },
+    { lineHeight: { body: { $type: 'color', $value: '{size.gap}', ...marker } } },
+  ])
+    assert.ok(check(source).length, JSON.stringify(source));
+  assert.ok(nativeTokens([{ borderWidth: { thin: native } }], { ...web, size: { gap: { $type: 'dimension', $value: '{borderWidth.thin}' } } })
+    .errors.some(error => /cannot alias/.test(error)));
+  // A scaled native token multiplies a web dimension alias by a web number.
+  const scaled = (base, scale, type = 'dimension') => ({ lineHeight: { body: { $type: type, $value: base,
+    $extensions: { 'ui-lazy-dev.platforms': ['native'], 'ui-lazy-dev.scale': scale } } } });
+  const typed = { ...web, type: { bodySize: value, bodyLeading: { $type: 'number', $value: 1.5 } } };
+  assert.deepEqual(nativeTokens([scaled('{type.bodySize}', '{type.bodyLeading}')], typed).errors, []);
+  for (const source of [scaled('{type.bodySize}', '{type.bodySize}'), scaled('{type.bodyLeading}', '{type.bodyLeading}', 'number'),
+    scaled({ unit: 'px', value: 24 }, '{type.bodyLeading}'), scaled('{type.bodySize}', 1.5),
+    { ...scaled('{borderWidth.thin}', '{type.bodyLeading}'), borderWidth: { thin: native } }])
+    assert.ok(nativeTokens([source], typed).errors.length, JSON.stringify(source));
 });
 
 test('unknown JS token references and unknown CSS aliases fail despite a valid import shape', () => {
@@ -193,6 +251,39 @@ test('unknown JS token references and unknown CSS aliases fail despite a valid i
   );
   assert.equal(finding[0]?.rule, 'style/token');
   assert.equal(scan('a.css', '.uld-row{padding:var(--made-up)}')[0]?.rule, 'style/token');
+  // Published token names come from the default scope and top-level registrations of a fresh
+  // build of the exported sheets. Private brand variables and unexported sheets declare nothing.
+  const dir = mkdtempSync(join(tmpdir(), 'ui-style-published-'));
+  try {
+    const tokens = join(dir, 'tokens');
+    mkdirSync(join(tokens, 'dist'), { recursive: true });
+    writeFileSync(join(tokens, 'dist/styles.css'), ':root, [data-uld-theme="light"] { --uld-stale: 1px; }');
+    writeFileSync(join(tokens, 'package.json'), JSON.stringify({
+      type: 'module',
+      exports: { './styles.css': './dist/styles.css', './brand.css': './dist/brand.css', '.': './dist/index.js' },
+    }));
+    const sheets = {
+      'styles.css': [
+        '@layer uld.tokens { :root, [data-uld-theme="light"] { --uld-base: 1px; --other-name: 1px; }',
+        '  [data-uld-theme="dark"] { --uld-dark-only: 1px; }',
+        '  @property --uld-layered { syntax: "*"; inherits: true; } }',
+        '@property --uld-override { syntax: "*"; inherits: true; }',
+        '@media print { @property --uld-conditional { syntax: "*"; inherits: true; } }',
+      ].join('\n'),
+      'brand.css': '@scope ([data-uld-brand]) { :scope { --uld-if-private: 1px; } }',
+      'hidden.css': ':root, [data-uld-theme="light"] { --uld-unexported: 1px; }',
+    };
+    writeFileSync(join(tokens, 'build.mjs'), ["import { mkdirSync, writeFileSync } from 'node:fs';", "mkdirSync('dist', { recursive: true });",
+      ...Object.entries(sheets).map(([file, css]) => 'writeFileSync(' + JSON.stringify('dist/' + file) + ', ' + JSON.stringify(css) + ');')].join('\n'));
+    assert.deepEqual([...publishedTokenProperties(tokens)].sort(), ['--uld-base', '--uld-layered', '--uld-override']);
+    assert.deepEqual(readdirSync(join(tokens, 'dist')), ['styles.css'], 'The caller build output is unchanged');
+    assert.deepEqual([...publishedTokenProperties(join(dir, 'missing'))], []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  const library = [...publishedTokenProperties(fileURLToPath(new URL('../../tokens', import.meta.url)))];
+  assert.ok(library.includes('--uld-text'));
+  assert.ok(library.every((name) => /^--uld-[a-z0-9-]+$/.test(name) && !/^--uld-(?:if|forced)-/.test(name)), library.join());
 });
 
 test('a forged baseline with an impossible date or a line-count ceiling is rejected', () => {
@@ -227,6 +318,38 @@ test('requires native shadow and elevation values to use semantic tokens', () =>
     'const x=<View style={{shadowRadius:5}}/>',
   ])
     assert.ok(scan('view.tsx', source).length, source);
+  // Native-only tokens are semantic only through the native entry, only in native sources.
+  const native = nativeTokens([{ borderWidth: { thin: { $type: 'dimension', $value: { value: 1, unit: 'px' },
+    $extensions: { 'ui-lazy-dev.platforms': ['native'] } } } }], { size: { gap: { $type: 'dimension', $value: { value: 8, unit: 'px' } } } });
+  const rules = (path, code) => inspectSource(path, code, { ...options, tokenPaths: ['size.gap'],
+    nativeTokenPaths: native.paths, nativeVariables: native.variables }).map(hit => hit.rule);
+  const imports = "import {View} from 'react-native';import {tokens} from '@ui-lazy-dev/tokens';" +
+    "import {nativeTokens} from '@ui-lazy-dev/tokens/native';";
+  const view = style => imports + 'export function Probe(){return <View style={' + style + '}/>}';
+  const nativeFile = 'packages/native/src/probe/binding.tsx';
+  assert.deepEqual(rules(nativeFile, view('{borderWidth: nativeTokens.borderWidth.thin, gap: tokens.size.gap}')), []);
+  assert.deepEqual(rules(nativeFile, view('{borderWidth: 1}')), ['style/token']);
+  assert.deepEqual(rules(nativeFile, view('{borderWidth: tokens.borderWidth.thin}')), ['style/token']);
+  assert.deepEqual(rules(nativeFile, view('{borderWidth: nativeTokens.borderWidth.hair}')), ['style/runtime']);
+  assert.deepEqual(rules(nativeFile, view('{borderWidth: nativeTokens.size.gap}')), ['style/runtime']);
+  assert.deepEqual(rules(nativeFile, imports + 'mutate(nativeTokens);' +
+    'export function Probe(){return <View style={{borderWidth: nativeTokens.borderWidth.thin}}/>}'), ['style/runtime']);
+  for (const path of ['packages/web/src/probe/binding.tsx', 'catalog/native/Probe.tsx'])
+    assert.notDeepEqual(rules(path, view('{borderWidth: nativeTokens.borderWidth.thin}')), [], path);
+  for (const sheet of ['.uld-row{border-width:var(--uld-thin)}', '.uld-row{border-width:var(--uld-border-width-thin)}',
+    '.uld-row{--uld-thin:var(--uld-space-md)}', '.uld-row{--uld-border-width-thin:0}'])
+    assert.deepEqual(rules('packages/web/src/probe/styles.css', sheet), ['style/token'], sheet);
+  assert.deepEqual(rules('packages/web/src/probe/styles.css', '.uld-row{--uld-gap-wide:var(--uld-space-md)}'), []);
+  // A resolved native theme reads the mode's tokens and the native-only tokens derived from it.
+  const themed = body => "import {View, type StyleProp, type ViewStyle} from 'react-native';" +
+    "import type {NativeResolvedTokens} from '@ui-lazy-dev/tokens/native';" +
+    'export interface Props { theme?: NativeResolvedTokens; style?: StyleProp<ViewStyle> }' +
+    'export function Probe({theme}: Props){' + body + '}';
+  assert.deepEqual(rules(nativeFile, themed('return <View style={{borderWidth: theme?.borderWidth.thin, gap: theme?.size.gap}}/>')), []);
+  assert.notDeepEqual(rules(nativeFile, themed('return <View style={{borderWidth: theme?.borderWidth.hair}}/>')), []);
+  assert.notDeepEqual(rules(nativeFile, themed('mutate(theme);return <View style={{borderWidth: theme?.borderWidth.thin}}/>')), []);
+  assert.notDeepEqual(rules(nativeFile, themed('return <View style={{borderWidth: theme?.borderWidth.thin}}/>')
+    .replace("from '@ui-lazy-dev/tokens/native'", "from '@example/other'")), []);
 });
 
 test('accepts the keyboard height and safe-area geometry, rejecting arbitrary environment names and nonzero fallbacks', () => {

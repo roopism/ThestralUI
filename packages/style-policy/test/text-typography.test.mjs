@@ -35,7 +35,7 @@ function ownedTextStyles(root) {
     selectors[index] ? `[data-uld-text-variant='${selectors[index]}']` : '[data-uld-text-variant]',
     ['font-size', `var(--uld-text-size, var(--uld-text-${mode}-size))`],
   ]));
-  expected.set("[data-uld-text-variant='code']", ['font-family', 'monospace']);
+  expected.set("[data-uld-text-variant='code']", ['font-family', 'var(--uld-font-mono)']);
   const checked = new Set();
   sheet.walkDecls(decl => {
     // The token package defines each relative companion. The application owns the outer override.

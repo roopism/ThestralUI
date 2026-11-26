@@ -6,6 +6,8 @@ import {
 } from 'node:fs';
 import { dirname, join } from 'node:path';
 
+const installArgs = ['ci', '--include=dev', '--ignore-scripts', '--no-audit', '--no-fund'];
+
 function copyModules(source, target) {
   mkdirSync(dirname(target), { recursive: true });
   // Preserve the relative workspace links. Resolving them here would copy
@@ -27,7 +29,7 @@ function copyModules(source, target) {
 }
 
 export function installSnapshotDependencies(snapshot, cache, env, install = () =>
-  execFileSync('npm', ['ci', '--ignore-scripts', '--no-audit', '--no-fund'], {
+  execFileSync('npm', installArgs, {
     cwd: snapshot, env, stdio: 'inherit',
   }),
 ) {
@@ -41,6 +43,7 @@ export function installSnapshotDependencies(snapshot, cache, env, install = () =
     return;
   }
   const hash = createHash('sha256').update(lock)
+    .update(JSON.stringify(installArgs))
     .update([process.version, process.platform, process.arch].join('/'));
   // npm also checks the manifests when validating its lockfile. Never let a
   // cached install hide an unrecorded addition to workspace dependencies.

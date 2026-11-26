@@ -61,6 +61,18 @@ public final class MaestroSession {
         return (String) unwrap.invoke(null, response);
     }
 
+    private static Object iosElements(Maestro maestro) throws ReflectiveOperationException {
+        // Maestro's own iOS tree drops the XCTest element type. Read the raw snapshot from the
+        // same driver so the scenario adapter can verify each target's native role.
+        var driver = maestro.getDriver();
+        var field = driver.getClass().getDeclaredField("iosDevice");
+        field.setAccessible(true);
+        var device = field.get(driver);
+        var snapshot = Class.forName("device.IOSDevice").getMethod("viewHierarchy", boolean.class).invoke(device, false);
+        if (snapshot == null) throw new IllegalStateException("Missing raw iOS hierarchy");
+        return snapshot.getClass().getMethod("getAxElement").invoke(snapshot);
+    }
+
     public static void main(String[] args) throws Exception {
         Path dir = Path.of(args[0]).toRealPath();
         String device = args[1], platform = args[2];
@@ -92,6 +104,8 @@ public final class MaestroSession {
                                 return 0;
                             } else if (op.equals("android-xml") && android) {
                                 Files.writeString(step.resolve("nodes.xml"), androidHierarchy(maestro));
+                            } else if (op.equals("ios-elements") && !android) {
+                                publish(step.resolve("elements.json"), iosElements(maestro));
                             } else if (op.equals("reconnect-ios") && !android) {
                                 // A cold simulator boot terminates its XCTest runner. Keep the CLI
                                 // and Maestro session, and reopen the same driver's transport.

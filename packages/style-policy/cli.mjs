@@ -8,9 +8,11 @@ import {
   rmSync,
   appendFileSync,
   realpathSync,
+  existsSync,
 } from 'node:fs';
-import { resolve, join, dirname } from 'node:path';
+import { resolve, join, dirname, basename } from 'node:path';
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import postcss from 'postcss';
 import ts from 'typescript';
@@ -18,6 +20,7 @@ import {registeredFallback} from './family-fallback.mjs';
 import { parseArgs } from 'node:util';
 import { pathToFileURL } from 'node:url';
 import { checkBaseline, inspectSource, validateTokens } from './policy.mjs';
+import { nativeTokens } from './tokens.mjs';
 
 function read(path) {
   return readFileSync(path, 'utf8');
@@ -34,6 +37,45 @@ function contents(root, path, files) {
     else if (/\.(?:css|tsx?|jsx?|svg)$/i.test(child)) files.set(child, read(join(root, child)));
   }
 }
+// The unbranded default scope of a published token sheet. Brand, mode and forced-color
+// sheets also declare private compiler variables, which never become component tokens.
+const defaultTokenScope = ':root, [data-uld-theme="light"]';
+
+/**
+ * Names that the token package publishes in addition to its source domains: custom
+ * properties declared in the default scope of an exported style sheet, and properties
+ * registered with a top-level @property rule. Build a disposable copy so the result
+ * matches the packed sheets without reading or mutating the caller's build output.
+ */
+export function publishedTokenProperties(packageDir) {
+  const names = new Set();
+  if (!existsSync(join(packageDir, 'build.mjs'))) return names;
+  const dir = mkdtempSync(join(tmpdir(), 'ui-style-tokens-'));
+  try {
+    const copy = join(dir, basename(packageDir));
+    cpSync(packageDir, copy, {
+      recursive: true,
+      filter: (path) => ![join(packageDir, 'dist'), join(packageDir, 'node_modules')].includes(path),
+    });
+    execFileSync(process.execPath, ['build.mjs'], { cwd: copy, stdio: 'pipe' });
+    const exported = Object.values(JSON.parse(read(join(copy, 'package.json'))).exports ?? {});
+    for (const target of exported.filter((entry) => typeof entry === 'string' && entry.endsWith('.css'))) {
+      postcss.parse(read(join(copy, target))).walk((node) => {
+        if (node.type === 'decl' && node.prop.startsWith('--uld-') && node.parent.selector === defaultTokenScope)
+          names.add(node.prop);
+        // A registration without a scope declares the property. It supplies no component value.
+        const registered = node.type === 'atrule' && node.name === 'property' && /^--uld-[a-z0-9-]+$/.test(node.params);
+        const parent = node.parent;
+        if (registered && (parent.type === 'root' || (parent.type === 'atrule' && parent.name === 'layer')))
+          names.add(node.params);
+      });
+    }
+    return names;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 export function scanProject(root, profileName) {
   if (!['elevate', 'library'].includes(profileName))
     throw new Error('Use --profile elevate or --profile library.');
@@ -41,6 +83,16 @@ export function scanProject(root, profileName) {
   const tokens = JSON.parse(read(join(root, profile.tokenFile)));
   const tokenErrors = validateTokens(tokens);
   if (tokenErrors.length) throw new Error(tokenErrors.join('\n'));
+  const findings = [];
+  // A missing registry cannot grant any token. Keep its error alongside independent source findings.
+  let native;
+  try {
+    native = nativeTokenSources(root, profile, tokens);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    findings.push({ rule: 'style/config', path: profile.nativeTokenSources, message: error.message });
+    native = { paths: [], variables: new Set() };
+  }
   const tokenPaths = Object.entries(tokens)
     .filter(([name]) => name !== 'palette')
     .flatMap(([group, leaves]) => Object.keys(leaves).map((key) => group + '.' + key));
@@ -61,26 +113,53 @@ export function scanProject(root, profileName) {
     if (group !== 'palette')
       for (const key of Object.keys(leaves))
         vars.add('--uld-' + key.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase()));
+  const tokenPackage = dirname(profile.tokenFile);
+  try {
+    for (const name of publishedTokenProperties(join(root, tokenPackage))) vars.add(name);
+  } catch (error) {
+    // Compiling published CSS may need the same missing registry. Record both errors.
+    if (!findings.length) throw error;
+    findings.push({ rule: 'style/config', path: tokenPackage, message: error.message });
+  }
   const files = new Map();
   for (const dir of profile.paths) contents(root, dir, files);
   for (const path of profile.required)
     if (!files.has(path)) throw new Error('Missing style-policy adoption target: ' + path);
+  // Registered web families may declare --uld-<family>-<name> component tokens in their
+  // own CSS. Those tokens exist only for that family's files; global tokens keep their names.
+  const families = componentFamilies(root, profileName);
+  const familyOf = (name) => {
+    if (vars.has(name) || !name.startsWith('--uld-')) return undefined;
+    return families.filter((slug) => name.startsWith('--uld-' + slug + '-'))
+      .sort((a, b) => b.length - a.length)[0];
+  };
+  const owned = new Map();
+  const ownerOf = (path) => families.find((slug) => path.startsWith('packages/web/src/' + slug + '/'));
   for (const [path, source] of files) {
     if (path.endsWith('.css'))
       postcss.parse(source).walkDecls((decl) => {
-        if (decl.prop.startsWith('--')) vars.add(decl.prop);
+        if (!decl.prop.startsWith('--') || native.variables.has(decl.prop)) return;
+        const family = familyOf(decl.prop);
+        if (!family) vars.add(decl.prop);
+        else if (ownerOf(path) === family) {
+          if (!owned.has(family)) owned.set(family, new Set());
+          owned.get(family).add(decl.prop);
+        }
       });
   }
   const variables = [...vars];
-  const findings = [];
   for (const [path, source] of files) {
     const scopes = path.startsWith('catalog/')
       ? [...profile.scopes, ...(profile.catalogScopes ?? [])]
       : profile.scopes;
     try {
       const standalone = profile.standaloneStyles?.[path];
+      const owner = ownerOf(path);
       findings.push(...inspectSource(path, source, {
-        scopes, variables, tokenPaths, scopeBoundary: standalone?.scopeBoundary,
+        scopes, tokenPaths, scopeBoundary: standalone?.scopeBoundary,
+        variables: owner ? [...variables, ...(owned.get(owner) ?? [])] : variables,
+        componentTokens: { owner, family: familyOf, published: dimensions },
+        nativeTokenPaths: native.paths, nativeVariables: native.variables,
         familyFallback: profileName === 'library' && !standalone ? registeredFallback(root, path, tokens) : undefined,
         dimensionFallbacks: standalone?.publishedDimensions === true ? dimensions : undefined,
       }));
@@ -89,6 +168,35 @@ export function scanProject(root, profileName) {
     }
   }
   return { count: files.size, findings };
+}
+
+// Read the native-only declarations from the token sources the profile names.
+export function nativeTokenSources(root, profile, tokens) {
+  const dir = profile.nativeTokenSources;
+  const sources = [];
+  if (dir) for (const dirent of readdirSync(join(root, dir), { withFileTypes: true }).sort((a, b) => a.name < b.name ? -1 : 1)) {
+    if (dirent.isSymbolicLink()) throw new Error('Unexpected symbolic link in token sources: ' + join(dir, dirent.name));
+    if (dirent.isFile() && dirent.name.endsWith('.json')) sources.push(JSON.parse(read(join(root, dir, dirent.name))));
+  }
+  const native = nativeTokens(sources, tokens);
+  if (native.errors.length) throw new Error(native.errors.join('\n'));
+  return native;
+}
+
+// A component family is a web source directory with its own registered family manifest.
+function componentFamilies(root, profileName) {
+  if (profileName !== 'library') return [];
+  const source = join(root, 'packages/web/src');
+  return readdirSync(source, { withFileTypes: true })
+    .filter((dirent) => dirent.isDirectory() && /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(dirent.name))
+    .map((dirent) => dirent.name)
+    .filter((slug) => {
+      try {
+        return JSON.parse(read(join(root, 'manifests/families', slug + '.json'))).id !== undefined;
+      } catch {
+        return false;
+      }
+    });
 }
 
 export function baselineRows(groups, transitions, readSource) {
@@ -195,12 +303,14 @@ export function proveProject(root, name) {
   try {
     const manifests = (source.baselineAdditions ?? []).map(({ path }) =>
       'manifests/families/' + path.split('/')[3] + '.json');
-    const familyInputs = name === 'library' ? ['packages/web/package.json', 'packages/native/package.json', 'packages/tokens/package.json', 'manifests/families', 'docs/components'] : manifests;
+    const familyInputs = name === 'library' ? ['packages/web/package.json', 'packages/native/package.json', 'packages/tokens', 'manifests/families', 'docs/components'] : manifests;
     for (const path of [...source.paths, source.tokenFile, ...familyInputs]) {
       const target = join(dir, path);
       mkdirSync(dirname(target), { recursive: true });
       cpSync(join(root, path), target, { recursive: true });
     }
+    if (source.nativeTokenSources)
+      cpSync(join(root, source.nativeTokenSources), join(dir, source.nativeTokenSources), { recursive: true });
     const file = name === 'library' ? 'packages/web/src/application-shell/binding.tsx' : 'src/components/admin.tsx';
     appendFileSync(
       join(dir, file),

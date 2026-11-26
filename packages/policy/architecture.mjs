@@ -25,7 +25,7 @@ function layer(path) {
 export function inspectArchitecture(ctx) {
   const { files, program, config, rel, emit, options } = ctx;
   const graph = new Map();
-  const registered = ctx.registeredEntries;
+  const registered = new Map(Array.from(ctx.registeredEntries, ([entry, { slug }]) => [entry, slug]));
   for (const path of files) {
     const source = program.getSourceFile(path),
       file = rel(path),

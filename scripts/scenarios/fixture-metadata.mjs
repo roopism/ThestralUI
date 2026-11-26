@@ -23,5 +23,5 @@ export function readCandidateScenarios(root) {
       render && (ts.isArrowFunction(render) || ts.isFunctionExpression(render)), 'Invalid native fixture ' + id);
     records[id] = label.text;
   });
-  return nativeReader.nativeScenarios(root, undefined, records);
+  return nativeReader.deviceScenarios(root, undefined, records);
 }

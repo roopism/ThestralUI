@@ -291,14 +291,23 @@ test('registered family imports need a matching package target, public binding a
 });
 
 test('foundation helpers retain dependency and cycle checks through relative and public family routes', t => {
+  const target = { types: './dist/modal-dialog/binding.d.ts', default: './dist/modal-dialog/binding.js' };
+  const binding = 'packages/web/src/modal-dialog/binding.tsx';
   const result = fixture(t, {
-    'packages/web/src/modal-dialog/binding.tsx': "import './focus.js';",
+    'manifests/families/modal-dialog.json': JSON.stringify({
+      id: 'Modal dialog', entries: [{ pkg: 'web', path: './modal-dialog', target }],
+      files: { source: [binding] }, inventory: { api: ['modal-dialog:Dialog'] },
+    }),
+    'packages/web/package.json': JSON.stringify({ name: '@ui-lazy-dev/ui-web', exports: { './modal-dialog': target } }),
+    [binding]: "import './focus.js'; export const Dialog = 1;",
+    'packages/web/src/box/helper.ts': "import '@ui-lazy-dev/ui-web/modal-dialog';",
     'packages/web/src/modal-dialog/focus.ts': "import '../queue/binding.js'; import '../button/handle.js';",
     'packages/web/src/button/handle.ts': "import '../modal-dialog/focus.js';",
     'packages/web/src/queue/binding.ts': 'export const queue=1;',
     'packages/web/src/icon-button/binding.tsx': "import '../button/handle.js';",
     'packages/tokens/color.ts': "import '@ui-lazy-dev/ui-web/review-panel';",
-  });
+  }, { registeredFamilyEntries: true });
+  assert.deepEqual(result.findings.filter(f => f.file === 'packages/web/src/box/helper.ts'), []);
   assert.deepEqual(result.findings.filter(f => f.rule === 'layer').map(f => f.detail).sort(), ['../queue/binding.js', '@ui-lazy-dev/ui-web/review-panel']);
   assert.equal(result.findings.filter(f => f.rule === 'cycle').length, 1);
 });
