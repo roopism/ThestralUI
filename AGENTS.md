@@ -9,7 +9,7 @@ Read the [frozen library goal](docs/frozen-goal.md) and the [delivery ledger](do
 3. Keep the frozen goal, every registered test, scenario, rule and roster entry, and all numeric ceilings. Style exceptions require an expiry. When a family would require weaker acceptance, enter the evidence under **Owner decisions** and advance to the next family.
 4. Record permission denials and continue independent work. A denial stands across credentials, applications and sign-ins.
 5. Keep every ref under `refs/uld-archive/`. Before removing a checkout or branch, prove its commits and working changes are reachable from a pushed branch or verified archive ref.
-6. Use at most one supervisor and three workers. Reserve one device at a time. Shut down the Linux VM and finish all builds and other browser tests before measuring timing.
+6. Reserve each device separately; the iPhone, Android and Mac functional lanes may run at the same time. Run the two timed stages alone, after every other lane has finished. Shut down the Linux VM and finish all builds and other browser tests before measuring timing.
 7. Keep every trial. Repeat an expensive suite only after a specific fix or to answer a recorded diagnostic question. After 15 minutes without clear ownership, write down what passed, what failed and why, then move on.
 8. Only new failures block a change. When the same check fails on unchanged `feat/enterprise-ui`, record the test, base commit and evidence path in the ledger. Unrelated changes may proceed. Every change must avoid new or worse failures.
 9. When a timing probe, sampling method or count changes, remeasure the reference and its limit in the same commit, on the same device and with the same protocol. Record the old and new values in the ledger.

@@ -17,6 +17,22 @@ The first audit gate change landed as PR #24 (private archive PR #24) at `bad9ba
 
 The independent workflow change landed in PR #29 (private archive PR #29) at `09b118c5a`. The 18 checks passed in 48 min 32 s, and the merged tree matches the receipt for `4b6ab360e`. Linux passed 258 cases across three browsers in 16 min 27 s. The iPhone took 9 min 18 s. Both Android profiles passed in 11 min 53 s. All three devices ran the full scenario roster. The Android app entries matched the passing integration receipt for `95d0eafc2`, so its recorded timing applied.
 
+### Level 1 landings
+
+**PR #18** merged at `e6c792611cfc8aecf2088f60d7dc9c5e47b42d84` (tree `c89530da488232fc98d7e9a9995e8f0d8bf74ae0`). It disabled device skipping for proposals, train members and diagnostic prefixes. The owner requested the landing in chat on 2026-11-26.
+
+The commit hook, 13 focused cases, three base policies and five repository checks passed. On the first manual run, the Mac snapshot path prevented 56 web test files from loading. The same failure reproduced on the unchanged base. Preflight, Linux and device work stopped early. The rerun reused the hook result and passed all eight preflight checks, the Mac checks, all 273 Linux browser cases and functional checks on the iPhone simulator and both Android profiles. It skipped Mac browser performance and low-end Android timing and earned no daily full-run credit. The landing command refused the retained first failure. The PR subsequently merged outside that command.
+
+**PR #19** merged at `2062caace6e887664c2b40538f3f119652a11351` (tree `996664813df3211045c518d29321be65b4e26b9e`). It closed R11-1 through R11-8, added ordered publication of verified train members and parallelized Mac and device functional checks before exclusive timing. Device skipping was still off. The owner requested the landing in chat on 2026-11-26.
+
+The no-weakening, qualification-policy and gate-isolation checks passed, along with all 252 registered gate tests, 15 additional controls and five repository checks. The landing skipped the commit hook’s browser suites, preflight, full qualification, device stages and the daily full run.
+
+**PR #20** merged at `e83f0e88d2affddda6c9eb23c00ab80cd0c8f8a6` (tree `011d3124fa518086d0bb5791f2e94f7367804398`). Gate test fixtures now run Git in a hermetic environment. At the owner’s request in chat on 2026-11-26, the PR landed after its focused checks without full qualification.
+
+On 2026-11-26, at the owner’s request, rule 6 dropped the limit of one supervisor and three workers. Each device has its own reservation. Mac, iPhone and Android functional checks can overlap. The two timed stages run alone after the other lanes finish and the Linux VM shuts down.
+
+These entries are history, not approval records; formal owner decisions await the signing bootstrap.
+
 ### Audit findings
 
 The audit covers 25 original findings, four security findings and 30 follow-up findings. The per-finding tests, measurements and archive references are in the local audit plan.
