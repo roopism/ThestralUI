@@ -1,17 +1,19 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { withIntegrationGate } from '../../workers/lock.mjs';
 import { withTimingReservation } from '../../workers/timing-reservation.mjs';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 const source = (path) => readFileSync(new URL('../../../' + path, import.meta.url), 'utf8');
 function scratch(t) {
   const root = mkdtempSync(join(tmpdir(), 'uld-resource-check-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  execFileSync('git', ['init', '--quiet', '--template=', root]);
+  fixtureGit(root, ['init', '--quiet', '--template=']);
   return root;
 }
 

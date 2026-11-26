@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -7,6 +6,9 @@ import test from 'node:test';
 import { assertAuditResult, disabledGroups, disableGroup, selectAudit } from '../reuse/audit.mjs';
 import { compareFullRun, sealedClaims } from '../reuse/full-run.mjs';
 import { reusePolicyIssues } from '../reuse/strength.mjs';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 function scratch(t) {
   const dir = mkdtempSync(join(tmpdir(),'uld-reuse-safety-'));
@@ -51,7 +53,7 @@ test('a manual full run compares prior reused fingerprints across trees and reco
     {name:'Catalog build',fingerprint:match,result:'reused',reusedFrom:'source'},
     {name:'Scoped styles',fingerprint:match,result:'reused',reusedFrom:'another source'}]};
   const root=dirname(dir);
-  const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8'}).trim();
+  const git = (...args) => fixtureGit(root, args);
   git('init','--quiet','--template=');
   const sealed={...claim,id:'00000000-0000-0000-0000-0000000000af',reuseSchema:1,finished:'2026-01-01T10:00:00Z'};
   const file=join(root,'old-attempt.json');
@@ -74,7 +76,7 @@ test('a manual full run compares prior reused fingerprints across trees and reco
 test('trusted reuse guardrails reject relaxed limits, removed facts and disabled sandbox or canary code', t => {
   const dir = scratch(t), rules = 'scripts/gates/reuse/guardrails.json', inputs = 'tests/acceptance/suite-inputs.json';
   const wrapper = 'scripts/gates/reuse/sandbox-mac.mjs', runner='scripts/gates/local-run.mjs', canary='scripts/gates/reuse/canaries.mjs';
-  const git = (...args) => execFileSync('git',args,{cwd:dir,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+  const git = (...args) => fixtureGit(dir, args);
   git('init','--quiet','--template=');
   const write = (path,body) => {
     mkdirSync(dirname(join(dir,path)),{recursive:true}); writeFileSync(join(dir,path),typeof body==='string'?body:JSON.stringify(body));

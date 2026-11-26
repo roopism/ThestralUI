@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -11,6 +10,9 @@ import { decideRow, executeChoice, rowIdentity, sealReceipt, useRecord } from '.
 import { projectStoredPasses } from '../reuse/store.mjs';
 import { selectAudit } from '../reuse/audit.mjs';
 import { compareFullRun } from '../reuse/full-run.mjs';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 async function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'uld-preflight-reuse-'));
@@ -19,8 +21,7 @@ async function fixture(t) {
     mkdirSync(dirname(join(root, path)), { recursive: true });
     writeFileSync(join(root, path), value);
   }
-  const git = (...args) => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=test@example.invalid', ...args],
-    { cwd: root, encoding: 'utf8' }).trim();
+  const git = (...args) => fixtureGit(root, args);
   git('init', '--quiet', '--template=');
   write('.gitignore', 'dist/\nrelease/\n');
   write('scripts/verify-preflight.mjs', '// trusted producer\n');

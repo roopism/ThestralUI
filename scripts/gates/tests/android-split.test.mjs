@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -9,11 +8,14 @@ import { requireCompletedProfiles } from '../../../tests/android/qualification.m
 import { abi, config, requireManagedEmulator } from '../../../tests/android/emulator.mjs';
 import { joinAndroidTiming, readAndroidFunctional, recordAndroidFunctional, runAndroidProfilePhase } from '../../../tests/android/split-qualification.mjs';
 import { admission } from '../android-host-activity.mjs';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'uld-split-android-'));
   t.after(() => rmSync(root, {recursive:true, force:true}));
-  execFileSync('git',['init','-q','--template='],{cwd:root});
+  fixtureGit(root, ['init', '-q', '--template=']);
   const common = join(root,'.git'), hardware = {fingerprint:'fixture-low-end'};
   const flows = ['workspace.yaml','appearance.yaml'], ids = ['button.save-once','stack.child-order'];
   const profiles = config.profiles.map(profile => ({id:profile.id, hardware, serial:'emulator-5554',

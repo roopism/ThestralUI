@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import test from 'node:test';
 import { compareWithBase } from './fixtures/protected-inputs.mjs';
+import { fixtureGit } from './fixtures/hermetic-git.mjs';
 
 const gateFiles = ['scripts/gates/no-weakening.mjs', 'scripts/selection/staged-tree.mjs'];
 const pinRegistry = 'scripts/gates/immutable-paths.json';
 const pins = { [pinRegistry]: JSON.stringify(gateFiles) };
 const ledger = 'docs/ui-lazy-dev-state.md';
 const before = '// original fixture\n', after = '// reviewed fixture\n';
-const blobId = text => execFileSync('git', ['hash-object', '--stdin'], { encoding: 'utf8', input: text }).trim();
+const blobId = text => fixtureGit(process.env.HOME, ['hash-object', '--stdin'], text);
 
 test('gate diagnostics retain their rejection obligations', t => {
   const compare = compareWithBase(t, 'scripts/gates/sample.mjs', "issues.push('incomplete'); problem('name', 'missing');");

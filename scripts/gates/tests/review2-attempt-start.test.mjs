@@ -1,20 +1,19 @@
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
+import { fixtureGit, fixtureGitEnv, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 test('a committed input keeps its attempt and Git objects when preflight stops before the suites', t => {
   const root = mkdtempSync(join(tmpdir(), 'uld-attempt-start-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const env = { ...process.env };
-  for (const key of execFileSync('git', ['rev-parse', '--local-env-vars'], { encoding: 'utf8' }).trim().split('\n')) delete env[key];
-  const git = (...args) => execFileSync('git', args, { cwd: root, env, encoding: 'utf8' }).trim();
+  const git = (...args) => fixtureGit(root, args);
   git('init', '--quiet', '--template=');
-  git('config', 'user.name', 'Fixture');
-  git('config', 'user.email', 'fixture@example.invalid');
   mkdirSync(join(root, 'scripts/gates'), { recursive: true });
   writeFileSync(join(root, 'scripts/gates/qualification-attempt.mjs'), '// Attempt protocol is present.\n');
   git('add', '.');
@@ -27,7 +26,7 @@ test('a committed input keeps its attempt and Git objects when preflight stops b
   git('commit', '--quiet', '-m', 'candidate');
   const commit = git('rev-parse', 'HEAD');
   const cli = fileURLToPath(new URL('../../qualify.mjs', import.meta.url));
-  const result = spawnSync(process.execPath, [cli, commit], { cwd: root, env, encoding: 'utf8' });
+  const result = spawnSync(process.execPath, [cli, commit], { cwd: root, env: fixtureGitEnv(root), encoding: 'utf8' });
   assert.notEqual(result.status, 0, 'An incomplete fixture must fail preflight');
   const dir = join(root, '.git/uld-receipts/attempts');
   assert.ok(existsSync(dir), 'Missing initial attempt before the suite runner');

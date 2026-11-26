@@ -3,11 +3,12 @@ import { createHash, randomUUID } from 'node:crypto';
 import { mkdtempSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { git } from '../../../selection/device-observations.mjs';
+import { fixtureGit } from './hermetic-git.mjs';
 import { deviceInputs } from '../../../selection/device-inputs.mjs';
 import { admission } from '../../android-host-activity.mjs';
 import { summarizeTrials } from '../../../../tests/android/frame-budget.mjs';
 
+const git = (root, ...args) => fixtureGit(root, ['--no-replace-objects', ...args]);
 const created = new Set();
 
 // Register a new, empty directory before either test creates its fixture repository.

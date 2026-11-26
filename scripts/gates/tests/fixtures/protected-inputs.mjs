@@ -1,13 +1,15 @@
-import { execFileSync } from 'node:child_process';
+import { fixtureGit, isolateFixtureProcess } from './hermetic-git.mjs';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { noWeakening } from '../../no-weakening.mjs';
 
+isolateFixtureProcess();
+
 export function compareWithBase(t, path, before, baseFiles = {}, localDecision, judge = noWeakening) {
   const root = mkdtempSync(join(tmpdir(), 'uld-protected-inputs-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const git = (args, input) => execFileSync('git', args, { cwd: root, input, encoding: 'utf8' }).trim();
+  const git = (args, input) => fixtureGit(root, args, input);
   git(['init', '--template=', '--quiet']);
   function blob(path, content) {
     const object = git(['hash-object', '-w', '--stdin'], content);
