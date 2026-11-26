@@ -1,3 +1,4 @@
+import { scopedSkip, verifiedDevicePlan } from '../device-verdict.mjs';
 import { gateGroup, preflightSource, reuseRows } from './preflight.mjs';
 import assert from 'node:assert/strict';
 import { readArtifact } from '../../build-cache/artifact-cache.mjs';
@@ -67,8 +68,16 @@ function validate(directory, record, groupId, fingerprint) {
   const [row] = rows;
   assert.deepEqual([row.result,row.fingerprint,row.retries,row.evidenceSha256],['passed',fingerprint,0,record.evidenceSha256]);
   assert.ok(row.reusedFrom === null && Number.isFinite(row.durationMs) && row.durationMs >= 0);
-  assert.ok(source.suites.every(stage=>stage.retries===0 && (stage.result==='passed' || stage.result==='reused' ||
-    stage.name==='iPhone Simulator' && stage.result==='web-only' && !source.scope.iphone)));
+  switch (source.devicePlan?.run) {
+    case false:
+      assert.equal(verifiedDevicePlan(directory, source.base, source.tree, source), 'scoped');
+      assert.ok(source.suites.every(stage => stage.retries === 0 &&
+        (stage.result === 'passed' || stage.result === 'reused' || scopedSkip(source, stage))));
+      break;
+    default:
+      assert.ok(source.suites.every(stage=>stage.retries===0 && (stage.result==='passed' || stage.result==='reused' ||
+        stage.name==='iPhone Simulator' && stage.result==='web-only' && !source.scope.iphone)));
+  }
   const data = readBytes(directory,record.evidencePath);
   assert.equal(sha256(data),record.evidenceSha256);
   const evidence = json(data);

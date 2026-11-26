@@ -11,6 +11,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { join, relative } from 'node:path';
 
@@ -252,6 +253,13 @@ export function bundleJavaScript(host, { platform, hermesc, out, extra = [] }) {
       'false',
       ...extra,
     ];
+  }
+  if (env.ULD_DEVICE_READS) {
+    env.ULD_METRO_INPUTS = join(out, 'metro-inputs.json');
+    // Resolve the hook's literal Metro import against the same install as the Release CLI.
+    const capture = join(host, 'device-metro.cjs');
+    cpSync(fileURLToPath(new URL('../gates/device-metro.cjs', import.meta.url)), capture);
+    cli.unshift('--require', capture);
   }
   step(host, process.execPath, cli, env);
   const output = join(out, platform === 'ios' ? 'main.jsbundle' : 'index.android.bundle');

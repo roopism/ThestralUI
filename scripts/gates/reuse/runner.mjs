@@ -13,6 +13,7 @@ import { readDeviceReuse } from './device-run.mjs';
 import { captureOutputs, restoreOutputs } from './outputs.mjs';
 import { evidencePath, freshHistory, projectStoredPasses, readRecord, sha256, verifiedSource } from './store.mjs';
 import { timingForIdenticalApk } from '../android-timing-reuse.mjs';
+import { proposalScope } from '../../selection/proposal-devices.mjs';
 import { deviceScope } from '../../selection/local-device.mjs';
 
 const matrix = 'tests/acceptance/suite-inputs.json';
@@ -161,7 +162,8 @@ export function verifyLandingReuse({directory,root,snapshot},receipt) {
   if (!claims.length && !audits.length) return;
   assert.equal(receipt.mode,'qualification');
   assert.equal(receipt.noReuse,false);
-  const scope = deviceScope(root,receipt.base,receipt.tree);
+  const scope = receipt.devicePlan ? proposalScope(root, receipt.base, receipt.tree, receipt.devicePlan) :
+    deviceScope(root,receipt.base,receipt.tree);
   assert.deepEqual(receipt.scope,scope);
   const context = {directory,root,snapshot,scope,base:receipt.base,commit:receipt.commit,tree:receipt.tree,attemptId:receipt.id,mode:receipt.mode};
   const ids = [...claims,...audits].map(row=>row.name);

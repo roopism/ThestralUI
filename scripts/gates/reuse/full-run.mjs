@@ -1,3 +1,4 @@
+import { recordScopeFailure } from '../../selection/device-observations.mjs';
 import { reuseRows } from './preflight.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -40,7 +41,7 @@ export function sealedClaims(root, started) {
     assert.equal(receipt.reuseSchema,1);
     assert.equal(receipt.status,'passed');
     assert.ok(Number.isFinite(Date.parse(receipt.finished)));
-    if (receipt.mode==='qualification' && Date.parse(receipt.finished)<=cutoff && reuseRows(receipt).some(row=>row.result==='reused'))
+    if (receipt.mode==='qualification' && Date.parse(receipt.finished)<=cutoff && (receipt.devicePlan?.run === false || reuseRows(receipt).some(row=>row.result==='reused')))
       claims.push(receipt);
   }
   return claims;
@@ -52,6 +53,12 @@ export function compareFullRun(directory, fresh, history, disable = disableGroup
   fresh = {...fresh,suites:reuseRows(fresh)};
   history = history.map(attempt => ({...attempt,suites:reuseRows(attempt)}));
   assert.equal(fresh.noReuse, true);
+  if (fresh.devicePlan) {
+    assert.equal(fresh.devicePlan.run, true, 'Daily qualification requires both devices');
+    assert.equal(fresh.devicePlan.full, true);
+    assert.deepEqual(fresh.scope, { iphone: true, families: null });
+  }
+  assert.ok(fresh.suites.every(row => row.result !== 'web-only'), 'Daily qualification cannot skip a device');
   assert.equal(fresh.mode, 'qualification');
   assert.ok(['passed', 'failed'].includes(fresh.status) && Array.isArray(fresh.suites));
   assert.ok(fresh.suites.every(row => row.result !== 'reused' && !row.reusedFrom),
@@ -92,7 +99,9 @@ function checkDailyReport(root,directory,commit,tree,fresh,path,requireOriginalR
   const groups=Object.keys(readJson(join(root,'tests/acceptance/suite-inputs.json')).groups);
   assert.deepEqual(fresh.suites.map(row=>row.name).sort(),groups.sort());
   if (fresh.status==='passed') assert.equal(fresh.androidTiming?.result,'timing measured');
-  const comparisons=compareFullRun(directory,fresh,sealedClaims(root,fresh.started),(dir,group,reason)=>{
+  const earlier = sealedClaims(root, fresh.started);
+  recordScopeFailure(root, fresh, earlier);
+  const comparisons=compareFullRun(directory,fresh,earlier,(dir,group,reason)=>{
     if (!disabledGroups(dir).includes(group)) disableGroup(dir,group,reason);
   });
   const expected={commit,tree,attempt:fresh.id,status:fresh.status,comparisons,finished:fresh.finished,
@@ -151,6 +160,7 @@ export async function manualFullRun(root = process.cwd()) {
   if (fresh.status === 'passed') assert.equal(fresh.androidTiming?.result,'timing measured','Daily Android timing must run fresh');
   if (fresh.status==='passed') requireOriginalReceipt(root,fresh,commit);
   const earlier=sealedClaims(root,fresh.started);
+  recordScopeFailure(root, fresh, earlier);
   const comparisons=compareFullRun(directory,fresh,earlier);
   const report={commit,tree,attempt:fresh.id,status:fresh.status,comparisons,finished:fresh.finished,
     durationMs:Date.parse(fresh.finished)-Date.parse(fresh.started)};
