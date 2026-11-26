@@ -1,3 +1,4 @@
+import { trainSuiteDeviceScope } from './train-checks.mjs';
 // Run one trusted suite against an immutable prefix. This diagnostic never
 // publishes a qualification receipt or a reusable group result.
 import assert from 'node:assert/strict';
@@ -12,7 +13,7 @@ import { verifyCandidatePassed } from '../../packages/policy/quality/api-depth/e
 import { runMacPerformance } from './mac-performance.mjs';
 import { linuxBrowsers, stopVm } from './linux-vm.mjs';
 import { deviceSuites } from './device-verdict.mjs';
-import { proposalDevices, proposalScope, requireFullDevices } from '../selection/proposal-devices.mjs';
+import { requireFullDevices } from '../selection/proposal-devices.mjs';
 import { withLock } from '../workers/lock.mjs';
 import { withTiming, usingSimulator, shutdownSimulators } from '../workers/resource-guard.mjs';
 
@@ -22,9 +23,8 @@ const node = (...args) => execFileSync(process.execPath, args, { stdio: 'inherit
 const read = file => JSON.parse(readFileSync(file));
 const tree = execFileSync('git', ['rev-parse', commit + '^{tree}'], { cwd: root, encoding: 'utf8' }).trim();
 assert.equal(execFileSync('git', ['rev-parse','HEAD^{tree}'], { encoding:'utf8' }).trim(), tree);
-const full = requireFullDevices && deviceSuites.includes(suite);
-const devicePlan = proposalDevices(root, base, tree, full);
-const scope = proposalScope(root, base, tree, devicePlan);
+const full = deviceSuites.includes(suite);
+const {devicePlan, scope} = trainSuiteDeviceScope(root, base, tree, suite, requireFullDevices);
 if (full) {
   assert.deepEqual(scope, {iphone:true, families:null});
   process.env.ULD_FRESH_ANDROID_TIMING = '1';
@@ -63,7 +63,7 @@ async function executeSuite() {
   } else if (['Android standard and low-end','iPhone Simulator'].includes(suite)) {
     const iphone = suite === 'iPhone Simulator';
     if (iphone && !scope.iphone) {
-      console.log(suite, devicePlan.reason);
+      throw Error('Requested physical suite cannot be skipped: ' + suite + ' ' + devicePlan.reason);
     } else {
       await withTiming('activity', 'Prepare device packages', buildPackages);
       await stopVm();
@@ -80,6 +80,6 @@ async function executeSuite() {
 }
 
 const usesDevice = ['Linux browser behavior', 'Mac browser performance', 'Android standard and low-end', 'iPhone Simulator'].includes(suite);
-if (suite === 'Android standard and low-end' && !devicePlan.run) console.log(suite, devicePlan.reason);
+if (suite === 'Android standard and low-end' && !devicePlan.run) throw Error('Requested physical suite cannot be skipped: ' + suite + ' ' + devicePlan.reason);
 else if (usesDevice) await withLock(root, 'integration', 'Train diagnostic ' + suite, executeSuite);
 else await executeSuite();

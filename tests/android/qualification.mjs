@@ -9,14 +9,18 @@ export function requireBothProfiles(profiles) {
   );
 }
 
-export function requireCompletedProfiles(profiles, flows, neutralIds, limits, selectedIds = neutralIds) {
-  requireBothProfiles(profiles);
-  const expectedFlows = flows
+export function androidJourneys(flows) {
+  return flows
     .map(
       (file) => file.slice(0, -5) + '-' + (file === 'typography-largest.yaml' ? 'dark' : 'light'),
     )
     .concat('appearance-dark')
     .sort();
+}
+
+export function requireCompletedProfiles(profiles, flows, neutralIds, limits, selectedIds = neutralIds) {
+  requireBothProfiles(profiles);
+  const expectedFlows = androidJourneys(flows);
   for (const id of ['workspace-light', 'appearance-light', 'appearance-dark'])
     assert.ok(expectedFlows.includes(id), 'Missing required Android journey ' + id);
   for (const id of ['button.save-once', 'stack.child-order'])

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { proposalDevices, proposalScope } from '../selection/proposal-devices.mjs';
+import { replayProposalDevices, proposalScope } from '../selection/proposal-devices.mjs';
 
 export const deviceSuites = ['iPhone Simulator', 'Android standard and low-end'];
 
@@ -22,7 +22,7 @@ export function verifiedDevicePlan(root, base, tree, receipt) {
   }
   assert.equal(receipt.reuseSchema, 1);
   assert.equal(typeof receipt.noReuse, 'boolean');
-  const plan = proposalDevices(root, base, tree, receipt.mode !== 'qualification' || receipt.noReuse || receipt.devicePlan?.full === true);
+  const plan = replayProposalDevices(root, base, tree, receipt.mode !== 'qualification' || receipt.noReuse || receipt.devicePlan?.full === true, receipt.devicePlan);
   assert.deepEqual(receipt.devicePlan, plan, 'Device decision differs from the integration-to-proposal diff');
   assert.deepEqual(receipt.scope, proposalScope(root, base, tree, plan));
   return plan.run ? 'measured' : 'scoped';

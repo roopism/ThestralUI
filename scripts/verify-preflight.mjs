@@ -60,8 +60,23 @@ export async function gateIsolation(ctx) {
   // The landing policy owns the definition of a gate path: alone on a product branch, it is refused.
   const gatePath = path => { try { requireGateIsolation('docs/preflight-probe', [path]); return false; } catch { return true; } };
   if (ctx.branch.startsWith('gates/')) {
-    const product = paths.filter(path => !gatePath(path));
+    const command = ctx.branch === 'gates/train-command' && paths.length === 1 && paths[0] === 'package.json' &&
+      existsSync(join(ctx.trusted, '.github/gate-review.mjs')) &&
+      (await fromTrusted(ctx, '.github/gate-review.mjs')).trainEntryAdoption?.(ctx.root, ctx.base, ctx.tree);
+    const product = paths.filter(path => !gatePath(path) && !command);
     if (product.length && !paths.some(gatePath)) issues.push('A gates/ branch must touch only gate paths: ' + product.join(', '));
+  }
+  return issues;
+}
+
+// A train retains a separate branch review for every solo and stacked proposal.
+async function memberReviews(ctx, review) {
+  if (!ctx.train) return review(ctx);
+  const issues = [];
+  for (const m of ctx.train.members) {
+    const check = (base, commit, tree) => review({ ...ctx, train: undefined, branch: m.branch, base, commit, tree });
+    issues.push(...await check(ctx.base, m.soloCommit, m.soloTree));
+    if (m.parent !== ctx.base) issues.push(...await check(m.parent, m.commit, m.tree));
   }
   return issues;
 }
@@ -243,11 +258,11 @@ export function prepareSnapshot(snapshot, base) {
 
 // Committed-tree checks run first and all report. Snapshot checks then stop at the first failure.
 export const phases = [
-  ['Gate isolation', 'branch paths', gateIsolation],
+  ['Gate isolation', 'branch paths', ctx => memberReviews(ctx, gateIsolation)],
   ['No weakening', 'integration base', integrationNoWeakening],
   ['Qualification policy review', 'integration base', policyReview],
   ['Banned words and owners', 'commit messages', commitMessages],
-  ['Banned words and owners', 'code owners', codeOwners],
+  ['Banned words and owners', 'code owners', ctx => memberReviews(ctx, codeOwners)],
   ['Commit hook on the exact tree', 'each commit against its parent', commitHooks],
   ['Roster completeness', 'registered files', rosterFiles],
   ['Generated files', 'manifests', async ctx => (await node(ctx, ['scripts/manifests/generate.mjs', '--check']), []), true],
@@ -304,8 +319,9 @@ export async function runPreflight(ctx, snapshotted, selected = phases) {
 
 async function main() {
   const { values, positionals } = parseArgs({ allowPositionals: true, options: {
-    branch: { type: 'string' }, base: { type: 'string' },
+    branch: { type: 'string' }, base: { type: 'string' }, 'train-plan': { type: 'string' }, 'train-id': { type: 'string' },
   } });
+  assert.equal(Boolean(values['train-id']), Boolean(values['train-plan']), 'Expected both train ID and plan');
   assert.ok(positionals.length <= 1, 'Usage: node scripts/verify-preflight.mjs [<commit>] --branch <branch> [--base <commit>]');
   const root = git(process.cwd(), 'rev-parse', '--show-toplevel');
   const common = git(root, 'rev-parse', '--path-format=absolute', '--git-common-dir');
@@ -346,13 +362,21 @@ async function main() {
       const judge = runner.source === 'integration' ? async check => check({ snapshot: trusted }) : candidate;
       return judge(async ({ snapshot }) => {
         const result = spawnSync(process.execPath, [join(snapshot, 'scripts/verify-preflight.mjs'), commit,
-          '--branch', branch, '--base', base], { cwd: root, stdio: 'inherit', env: { ...env, ULD_PREFLIGHT_TRUSTED: trusted } });
+          '--branch', branch, '--base', base, ...(values['train-plan'] ? ['--train-plan', values['train-plan'], '--train-id', values['train-id']] : [])], { cwd: root, stdio: 'inherit', env: { ...env, ULD_PREFLIGHT_TRUSTED: trusted } });
         process.exitCode = result.status ?? 1;
       });
     }
     const receipt = { schema: 1, kind: 'preflight', id: randomUUID(), tree, commit, base, branch,
       runner: { ...runner, path: 'scripts/verify-preflight.mjs' }, started: new Date().toISOString(), status: 'running' };
     const ctx = { root, common, base, commit, tree, branch, trusted, env: { ...env, ULD_ARTIFACT_COMMON: common } };
+    if (values['train-plan']) {
+      assert.equal(runner.source, 'integration');
+      const { checkedPlan, requirePlanRef } = await fromTrusted(ctx, 'scripts/gates/train-plan.mjs');
+      receipt.trainId = values['train-id'];
+      requirePlanRef(root, receipt.trainId, values['train-plan']);
+      ctx.train = await checkedPlan(root, values['train-plan'], base, commit, tree);
+      receipt.trainPlan = values['train-plan'];
+    }
     if (runner.source === 'integration') {
       receipt.reuseSchema = 1;
       ctx.reuseStages = receipt.reuseStages = [];
@@ -365,6 +389,10 @@ async function main() {
     receipt.finished = new Date().toISOString();
     if (receipt.status === 'passed' && receipt.reuseSchema === 1) sealReceipt(root, receipt);
     const path = writePreflightReceipt(common, receipt);
+    if (receipt.trainId && receipt.status === 'passed') {
+      const { bindTrainPreflight } = await fromTrusted(ctx, 'scripts/gates/train-plan.mjs');
+      bindTrainPreflight(root, receipt);
+    }
     console.table(receipt.checks.map(({ name, result, durationMs }) => ({ name, result, durationMs })));
     console.log('Preflight', receipt.status, 'for tree', tree, 'in', (receipt.durationMs / 1000).toFixed(1), 's:', path);
     if (receipt.status !== 'passed') process.exitCode = 1;

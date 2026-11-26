@@ -39,9 +39,9 @@ function readOwner(directory, id) {
   } catch (error) { if (error.code !== 'ENOENT') throw error; }
 }
 
-function blocker(directory, claim) {
+function blocker(directory, claim, ancestors = new Set()) {
   for (const id of readdirSync(directory)) {
-    if (id === claim.id || id.startsWith('.pending-') && uuid.test(id.slice(9))) continue;
+    if (ancestors.has(id) || id === claim.id || id.startsWith('.pending-') && uuid.test(id.slice(9))) continue;
     const owner = readOwner(directory, id);
     if (!owner) continue;
     // A dead owner can leave compilers and drivers behind. Never admit a measurement
@@ -78,13 +78,27 @@ export async function withTimingReservation(root, mode, holder, run, options) {
   const directory = join(locks, 'timing-activities');
   mkdirSync(directory, { recursive: true });
   const local = scope.getStore();
-  const inherited = local?.id ?? process.env.ULD_TIMING_RESERVATION;
+  const env = options?.env ?? process.env;
+  const inherited = local?.id ?? env.ULD_TIMING_RESERVATION;
   const parent = inherited && parentLease(directory, inherited, Boolean(local));
   if (parent?.mode === 'activity' && mode === 'measurement') throw Error('An activity cannot upgrade to a measurement');
   const effectiveMode = parent?.mode ?? mode;
+  if (options?.activityOnly && effectiveMode !== 'activity')
+    throw Error('Functional work cannot borrow a measurement reservation');
+  const ancestors = new Set();
+  if (parent && effectiveMode === 'measurement') {
+    let ancestor = parent;
+    while (ancestor) {
+      if (ancestors.has(ancestor.id)) throw Error('Invalid timing reservation ancestry');
+      ancestors.add(ancestor.id);
+      if (!ancestor.parent) break;
+      ancestor = readOwner(directory, ancestor.parent);
+      if (ancestor?.state !== 'active') throw Error('Measurement ancestor has expired');
+    }
+  }
   const where = processInfo(process.pid);
   const claim = { id: randomUUID(), host: hostname(), pid: process.pid, group: where.group,
-    birth: where.birth, mode: effectiveMode, holder };
+    birth: where.birth, mode: effectiveMode, holder, ...(parent ? { parent: parent.id } : {}) };
   const file = join(directory, claim.id);
   const temporary = join(directory, '.pending-' + claim.id);
   function publish(state) {
@@ -92,17 +106,17 @@ export async function withTimingReservation(root, mode, holder, run, options) {
     renameSync(temporary, file);
   }
   function checkOthers() {
-    const owner = blocker(directory, claim);
+    const owner = blocker(directory, claim, ancestors);
     if (owner) throw Error('Timing reservation held by ' + owner.holder, { cause: { code: 'EEXIST' } });
   }
   function enter() {
-    if (!parent) checkOthers();
+    if (!parent || effectiveMode === 'measurement') checkOthers();
     publish('pending');
     try {
       // A pair of simultaneous queue registrations may briefly each see itself at the front.
       // Publishing intent before rechecking compatibility prevents both conflicting claims entering.
       if (parent) parentLease(directory, inherited, Boolean(local));
-      else checkOthers();
+      if (!parent || effectiveMode === 'measurement') checkOthers();
       publish('active');
     } catch (error) {
       rmSync(file, { force: true });
@@ -112,7 +126,7 @@ export async function withTimingReservation(root, mode, holder, run, options) {
   try {
     if (parent) enter();
     else await waitForLock(join(locks, 'timing-admissions-queue'), holder, enter, options);
-    return await scope.run(claim, () => run({ ...process.env, ULD_TIMING_RESERVATION: claim.id }));
+    return await scope.run(claim, () => run({ ...env, ULD_TIMING_RESERVATION: claim.id }));
   } finally {
     rmSync(temporary, { force: true });
     rmSync(file, { force: true });

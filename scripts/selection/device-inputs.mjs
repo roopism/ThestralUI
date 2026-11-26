@@ -4,6 +4,7 @@ import { isBuiltin } from 'node:module';
 import { posix as path } from 'node:path';
 import ts from 'typescript';
 import postcss from 'postcss';
+import yaml from 'js-yaml';
 import { references } from './import-graph.mjs';
 import { treeFiles } from './staged-tree.mjs';
 
@@ -66,6 +67,84 @@ function importedBody(file, body, used) {
   return statements.map(stmt => stmt.getText(ast)).join('\n');
 }
 
+const maestroCommands = new Set(['launchApp', 'assertVisible', 'assertNotVisible', 'tapOn', 'inputText', 'pressKey', 'scrollUntilVisible']);
+const maestroOptions = new Set(['id', 'text', 'enabled', 'stopApp', 'direction', 'element', 'repeat', 'delay',
+  'visible', 'notVisible', 'platform', 'true', 'times', 'while', 'timeout', 'speed', 'optional', 'index', 'label']);
+
+// Only model commands whose file inputs are understood. A new command, field
+// or computed filename must keep both phones until its dependencies are modeled.
+function maestroFlow(file, source, reference) {
+  const unsupported = detail => { throw Error('unmodeled Maestro ' + detail + ' in ' + file); };
+  const docs = yaml.safeLoadAll(source, undefined, { schema: yaml.JSON_SCHEMA });
+  const seen = new WeakSet();
+  function check(value) {
+    if (value && typeof value === 'object') {
+      if (seen.has(value)) unsupported('alias');
+      seen.add(value);
+      Object.values(value).forEach(check);
+    } else if (typeof value === 'string' && value.replace(/\$\{[\w.]+\}/g, '').includes('${')) unsupported('expression');
+  }
+  docs.forEach(check);
+  function options(value) {
+    if (value && typeof value === 'object') {
+      for (const [name, child] of Object.entries(value)) {
+        if (!maestroOptions.has(name)) unsupported('option ' + name);
+        options(child);
+      }
+    }
+  }
+  function commands(list) {
+    if (!Array.isArray(list)) unsupported('commands');
+    for (const step of list) {
+      const command = typeof step === 'string' ? step : Object.keys(step ?? {}).length === 1 && Object.keys(step)[0];
+      const value = typeof step === 'string' ? null : step[command];
+      if (maestroCommands.has(command)) { options(value); continue; }
+      if (!['runScript', 'runFlow', 'repeat', 'retry'].includes(command)) unsupported('command ' + command);
+      const args = typeof value === 'string' ? { file: value } : value;
+      if (!args || typeof args !== 'object' || Array.isArray(args)) unsupported(command);
+      for (const [name, child] of Object.entries(args)) {
+        if (name === 'env' && child && typeof child === 'object' && !Array.isArray(child) &&
+            Object.values(child).every(x => x !== null && typeof x !== 'object')) continue;
+        if (['when', 'label', 'times', 'while', 'maxRetries'].includes(name)) options(child);
+        else if (name !== 'file' && name !== 'commands') unsupported(command + ' option ' + name);
+      }
+      if (Object.hasOwn(args, 'file') === Object.hasOwn(args, 'commands')) unsupported(command + ' target');
+      if (Object.hasOwn(args, 'file')) {
+        if (!['runScript','runFlow'].includes(command) || typeof args.file !== 'string' ||
+            !/^[\w.@ /+-]+$/.test(args.file) || !(command === 'runFlow' ? /\.ya?ml$/i : /\.[cm]?js$/i).test(args.file))
+          unsupported(command + ' filename');
+        reference(args.file, command);
+      } else {
+        if (command === 'runScript') unsupported(command + ' commands');
+        commands(args.commands);
+      }
+    }
+  }
+  if (docs.length === 2) {
+    const header = docs.shift();
+    if (!header || typeof header !== 'object' || Array.isArray(header)) unsupported('header');
+    for (const [name, value] of Object.entries(header)) {
+      if (name === 'onFlowStart' || name === 'onFlowComplete') commands(value);
+      else if (!['appId','name'].includes(name) || typeof value !== 'string') unsupported('header ' + name);
+    }
+  }
+  if (docs.length !== 1) unsupported('document count');
+  commands(docs[0]);
+}
+
+// Maestro JavaScript runs in its own interpreter. An ordinary literal output
+// assignment cannot read other files. More general scripts require device runs.
+function closedMaestroScript(file, body) {
+  const ast = ts.createSourceFile(file, body, ts.ScriptTarget.Latest, true);
+  return !ast.parseDiagnostics.length && ast.statements.every(statement => {
+    if (!ts.isExpressionStatement(statement) || !ts.isBinaryExpression(statement.expression)) return false;
+    const { left, operatorToken, right } = statement.expression;
+    return operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isPropertyAccessExpression(left) &&
+      ts.isIdentifier(left.expression) && left.expression.text === 'output' && (ts.isStringLiteralLike(right) ||
+      ts.isNumericLiteral(right) || [ts.SyntaxKind.TrueKeyword, ts.SyntaxKind.FalseKeyword, ts.SyntaxKind.NullKeyword].includes(right.kind));
+  });
+}
+
 export function deviceInputs(root, tree) {
   const cacheKey = /^[a-f0-9]{40}$/.test(tree) && root + '\0' + tree;
   if (cacheKey && cache.has(cacheKey)) return cache.get(cacheKey);
@@ -125,6 +204,20 @@ export function deviceInputs(root, tree) {
     }
   }
   const imported = new Map();
+  const activeFlows = new Set(), readFlows = new Set();
+  function readFlow(file) {
+    if (readFlows.has(file)) return;
+    if (activeFlows.has(file)) error('recursive Maestro flow in ' + file);
+    activeFlows.add(file);
+    maestroFlow(file, files.get(file), (ref, command) => {
+      local(file, ref, true);
+      const target = path.join(path.dirname(file), ref);
+      if (command === 'runFlow') readFlow(target);
+      else if (!closedMaestroScript(target, files.get(target))) error('unmodeled Maestro script in ' + target);
+    });
+    activeFlows.delete(file);
+    readFlows.add(file);
+  }
   let opaque;
   try {
     const project = json('package.json');
@@ -154,6 +247,7 @@ export function deviceInputs(root, tree) {
       if (processed.has(signature)) continue;
       processed.add(signature);
       const body = files.get(file);
+      if (/\.ya?ml$/i.test(file) && !/\.scenarios\.ya?ml$/i.test(file)) readFlow(file);
       if (/(?:^|\/)tsconfig[^/]*\.json$/.test(file)) {
         const { config: cfg, error: invalid } = ts.parseConfigFileTextToJson(file, body);
         if (invalid || cfg.references || ['paths','rootDirs','baseUrl','plugins','moduleSuffixes','typeRoots'].some(k => cfg.compilerOptions?.[k]))

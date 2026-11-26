@@ -138,3 +138,25 @@ test('preflight reuse participates in the random audit and daily fresh compariso
   compareFullRun(ctx.directory, daily, history, (_directory, name) => disabled.push(name));
   assert.deepEqual(disabled, [gateGroup]);
 });
+
+test('batch admission retains its exact sealed preflight when a parallel preflight replaces the pointer', async t => {
+  const { bindTrainPreflight, requireTrainPreflight } = await import('../train-plan.mjs');
+  const { ctx, git } = await fixture(t);
+  assert.equal(git('cat-file', '-t', 'HEAD:package-lock.json'), 'blob');
+  const trainId = randomUUID(), trainPlan = git('rev-parse', 'HEAD:package-lock.json');
+  git('update-ref', 'refs/uld-archive/train-plans/' + trainId, trainPlan);
+  const original = requirePreflight(ctx.root, ctx.common, ctx.base, ctx.commit, ctx.tree);
+  const exact = { ...original, id: randomUUID(), trainId, trainPlan };
+  sealReceipt(ctx.root, exact);
+  writePreflightReceipt(ctx.common, exact);
+  bindTrainPreflight(ctx.root, exact);
+  const competing = { ...original, id: randomUUID() };
+  sealReceipt(ctx.root, competing);
+  writePreflightReceipt(ctx.common, competing);
+  assert.equal(requirePreflight(ctx.root, ctx.common, ctx.base, ctx.commit, ctx.tree).id, competing.id);
+  const admit = () => requireTrainPreflight(ctx.root, ctx.common, ctx.base, ctx.commit, ctx.tree, trainId);
+  assert.deepEqual(admit(), exact);
+  assert.throws(() => requireTrainPreflight(ctx.root, ctx.common, ctx.base, ctx.commit, ctx.tree, randomUUID()));
+  writeFileSync(join(ctx.common, 'uld-receipts', 'preflight', 'attempts', exact.id + '.json'), JSON.stringify(competing));
+  assert.throws(admit);
+});

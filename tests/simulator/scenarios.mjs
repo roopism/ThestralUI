@@ -90,10 +90,15 @@ export function inAccessibilityOrder(tree, targets, platform = 'ios') {
   return targets.map(({ role, name }) => {
     const id = 'scenario.' + role + '.' + name;
     const identifier = new RegExp(resourceId(id, platform));
-    const matches = nodes.filter((item) => identifier.test(item['resource-id']) &&
-      [item.accessibilityText, item['content-desc'], item.text].includes(name));
+    const matches = nodes.filter(item => identifier.test(item['resource-id']));
     assert.equal(matches.length, 1, 'Expected one accessible fixture element ' + id);
-    return nodes.indexOf(matches[0]);
+    const [node] = matches;
+    const label = platform === 'android' && nativeRoles.nativeRole(role).android?.value
+      ? new RegExp(roleSelector({ role, name }, platform).text) : null;
+    assert.ok([node.accessibilityText, node['content-desc'], node.text].includes(name) ||
+      typeof node['content-desc'] === 'string' && label?.test(node['content-desc']),
+      'Expected one accessible fixture element ' + id + ' named ' + name);
+    return nodes.indexOf(node);
   });
 }
 

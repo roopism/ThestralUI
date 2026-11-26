@@ -17,8 +17,8 @@ export function requireGateIsolation(branch, paths, _owners, derived = new Set()
   if (!paths.every(gateCode)) throw Error('Cannot mix protected gate paths and other paths');
 }
 
-export function recordMergeResult(directory, commit, actualTree, qualifiedTree) {
-  if (actualTree === qualifiedTree) return;
+export function recordMergeResult(directory, commit, actualTree, qualifiedTree, identityMismatch = false) {
+  if (actualTree === qualifiedTree && !identityMismatch) return;
   const file = join(directory, 'landing-blocked.json');
   const tmp = file + '.' + process.pid;
   writeFileSync(tmp, JSON.stringify({ commit, actualTree, qualifiedTree }) + '\n', { mode: 0o600 });

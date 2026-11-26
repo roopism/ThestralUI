@@ -20,17 +20,18 @@ import { trustedVerdict } from './gates/verdict.mjs';
 
 const number = process.argv[2];
 if (import.meta.main && number === '--train') {
-  const { landTrainCommand } = await import('./train.mjs');
+  const { resumeTrainCommand: landTrainCommand, reportEjections } = await import('./train.mjs');
   const train = await landTrainCommand(process.argv.slice(3));
-  console.log('Landed train', train.id, 'at', train.finalCommit, 'with tree', train.finalTree);
+  reportEjections(train);
+  if (train.status === 'passed') console.log('Landed train', train.id, 'at', train.landedCommit ?? train.finalCommit, 'with tree', train.finalTree);
   process.exit(0);
 }
 if (import.meta.main) assert.match(number ?? '', /^[1-9]\d*$/, 'Usage: npm run land <PR number>');
-const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
+const git = (...args) => execFileSync('git', ['--no-replace-objects', ...args], { encoding: 'utf8' }).trim();
 const root = git('rev-parse', '--show-toplevel');
 const common = git('rev-parse', '--path-format=absolute', '--git-common-dir');
 const repo = 'roopism/ThestralUI', integration = 'feat/enterprise-ui';
-const slug = 'repos/' + repo + '/pulls/' + number;
+const pull = number => 'repos/' + repo + '/pulls/' + number;
 const api = (endpoint, method = 'GET', body) => JSON.parse(execFileSync('gh', ['api', '--method', method,
   endpoint, ...(body ? ['--input', '-'] : [])], { input: body && JSON.stringify(body), encoding: 'utf8' }));
 const oid = /^[0-9a-f]{40}$/;
@@ -38,8 +39,8 @@ export const required = ['No weakening', 'Fast', 'Typed and unit rosters', 'Brow
   'Packed component specifications', 'Packed consumers min', 'Packed consumers max', 'Packed bundle limits',
   'Portable web scenarios', 'Mac browser behavior', 'Mac visual comparisons', 'Scoped styles', 'Mac browser performance',
   'Native package consumer', 'Linux browser behavior', 'iPhone Simulator', 'Android standard and low-end'];
-function proposal() {
-  const reported = api(slug);
+export function proposal(number = process.argv[2]) {
+  const reported = api(pull(number));
   // The PR can retain the SHA at opening. Get the current target from GitHub
   // and verify it against the fetched branch and the actual merge parents.
   const target = api('repos/' + repo + '/git/ref/heads/' + integration);
@@ -160,6 +161,50 @@ export function passing(tree, base, directory = join(common, 'uld-receipts'), pr
   if (r.base !== base) return;
   return selected?.evidence ? { ...selected.verdict, landingEvidence: selected.evidence } : raw;
 }
+export function archiveProposal(number, head) {
+  const archive = 'refs/uld-archive/landed/' + number + '/' + head;
+  if (!git('for-each-ref', '--format=%(refname)', archive)) git('update-ref', archive, head, '0'.repeat(40));
+  assert.equal(git('rev-parse', archive), head);
+  return archive;
+}
+
+export function postQualification(number, pr, tree, receipt, message = 'Local qualification passed for tree ' + tree + '.') {
+  const summary = [message, '',
+    ...(receipt.landingEvidence ?? []).map(({ failed, diagnostic }) =>
+      '- Reviewed failure ' + failed + (diagnostic ? ' with timing diagnostic ' + diagnostic : ' against unchanged base')),
+    ...receipt.suites.map(row => '- ' + row.name + ' — ' + row.result + ' (' + (row.durationMs / 1000).toFixed(1) + ' s)')].join('\n');
+  api('repos/' + repo + '/issues/' + number + '/comments', 'POST', { body: summary });
+  const status = spawnSync('gh', ['api', '--method', 'POST', 'repos/' + repo + '/statuses/' + pr.head.sha,
+    '--input', '-'], { input: JSON.stringify({ state: 'success', context: 'local/qualification',
+    description: 'Qualified merge tree ' + tree }), encoding: 'utf8' });
+  return status;
+}
+
+function recordDenial(number) {
+  mkdirSync(join(common, 'uld-receipts'), { recursive: true });
+  appendFileSync(join(common, 'uld-receipts', 'status-denials.log'), new Date().toISOString() + ' PR ' + number + '\n');
+}
+
+export function checkStatus(number, status) {
+  if (status.status !== 0) {
+    if (!/HTTP 403|Resource not accessible|insufficient.*permission/i.test(status.stderr ?? '')) throw Error('Unable to post commit status: ' + status.stderr);
+    recordDenial(number);
+  }
+}
+
+export function mergeProposal(number, head) {
+  return api(pull(number) + '/merge', 'PUT', { sha: head, merge_method: 'squash' });
+}
+
+export function confirmedCommit(sha) {
+  assert.match(sha, oid);
+  return api('repos/' + repo + '/git/commits/' + sha);
+}
+
+export function removeArchivedBranch(ref, head) {
+  git('-c', 'push.followTags=false', 'push', '--force-with-lease=' + ref + ':' + head, 'origin', ':' + ref);
+}
+
 if (import.meta.main) await withLock(root, 'landing', 'PR ' + number, async () => {
   const directory = join(common, 'uld-receipts');
   if (existsSync(join(directory, 'train-landing-blocked.json'))) {
@@ -202,21 +247,12 @@ if (import.meta.main) await withLock(root, 'landing', 'PR ' + number, async () =
   assert.equal(latest.pr.base.sha, receipt.base, 'Integration moved while qualifying');
   assert.equal(latest.tree, tree, 'The merge result changed while qualifying');
   assert.equal(latest.pr.head.sha, pr.head.sha, 'The proposed head changed');
-  const archive = 'refs/uld-archive/landed/' + number + '/' + pr.head.sha;
-  if (!git('for-each-ref', '--format=%(refname)', archive)) git('update-ref', archive, pr.head.sha, '0'.repeat(40));
+  const archive = archiveProposal(number, pr.head.sha);
   assert.equal(git('rev-parse', archive), pr.head.sha);
-  const summary = ['Local qualification passed for tree ' + tree + '.', '',
-    ...(receipt.landingEvidence ?? []).map(({ failed, diagnostic }) =>
-      '- Reviewed failure ' + failed + (diagnostic ? ' with timing diagnostic ' + diagnostic : ' against unchanged base')),
-    ...receipt.suites.map(row => '- ' + row.name + ' — ' + row.result + ' (' + (row.durationMs / 1000).toFixed(1) + ' s)')].join('\n');
-  api('repos/' + repo + '/issues/' + number + '/comments', 'POST', { body: summary });
-  const status = spawnSync('gh', ['api', '--method', 'POST', 'repos/' + repo + '/statuses/' + pr.head.sha,
-    '--input', '-'], { input: JSON.stringify({ state: 'success', context: 'local/qualification',
-    description: 'Qualified merge tree ' + tree }), encoding: 'utf8' });
+  const status = postQualification(number, pr, tree, receipt);
   if (status.status !== 0) {
     if (!/HTTP 403|Resource not accessible|insufficient.*permission/i.test(status.stderr ?? '')) throw Error('Unable to post commit status: ' + status.stderr);
-    mkdirSync(join(common, 'uld-receipts'), { recursive: true });
-    appendFileSync(join(common, 'uld-receipts', 'status-denials.log'), new Date().toISOString() + ' PR ' + number + '\n');
+    recordDenial(number);
   }
   const last = proposal();
   assert.equal(last.pr.base.sha, receipt.base, 'Integration moved before landing');
@@ -224,10 +260,10 @@ if (import.meta.main) await withLock(root, 'landing', 'PR ' + number, async () =
   assert.equal(last.pr.head.sha, pr.head.sha);
   assert.ok(passing(tree, last.pr.base.sha), 'Qualification history changed before landing');
   requireProposalHistory(tree, last.pr.base.sha, directory, { commit: last.merge });
-  const merged = api(slug + '/merge', 'PUT', { sha: pr.head.sha, merge_method: 'squash' });
+  const merged = mergeProposal(number, pr.head.sha);
   assert.equal(merged.merged, true);
   assert.match(merged.sha, oid);
-  const confirmed = api('repos/' + repo + '/git/commits/' + merged.sha);
+  const confirmed = confirmedCommit(merged.sha);
   recordMergeResult(directory, merged.sha, confirmed.tree.sha, tree);
   assert.equal(confirmed.tree.sha, tree, 'GitHub merged a different tree');
   git('fetch', '--no-tags', 'origin', '+refs/heads/' + integration + ':refs/remotes/origin/' + integration);
@@ -236,7 +272,7 @@ if (import.meta.main) await withLock(root, 'landing', 'PR ' + number, async () =
   const remote = git('ls-remote', '--refs', 'origin', ref);
   if (remote) {
     assert.equal(remote.split(/\s/)[0], git('rev-parse', archive));
-    git('-c', 'push.followTags=false', 'push', '--force-with-lease=' + ref + ':' + pr.head.sha, 'origin', ':' + ref);
+    removeArchivedBranch(ref, pr.head.sha);
   }
   console.log('Landed PR', number, 'at', merged.sha, 'with tree', tree);
 });

@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import { admission, observationIssues } from './android-host-activity.mjs';
 import { hasEarlierAndroidDiagnostic } from './diagnostic-slot.mjs';
+import { deviceSuites, scopedSkip, verifiedDevicePlan } from './device-verdict.mjs';
 import { budgetFailures } from '../../tests/browser/quality-perf-policy.mjs';
 import { requireCompletedProfiles } from '../../tests/android/qualification.mjs';
 import { enforceBudget, summarizeTrials } from '../../tests/android/frame-budget.mjs';
@@ -140,7 +141,8 @@ function windowOf(row) {
 }
 
 const passedSuite = (row, suite) => suite.result === 'passed' ||
-  suite.name === 'iPhone Simulator' && row.scope?.iphone === false && suite.result === 'web-only';
+  suite.name === 'iPhone Simulator' && row.scope?.iphone === false && suite.result === 'web-only' ||
+  row.status === 'failed' && scopedSkip(row, suite);
 
 function completed(row, roster, expectedStatus, fullRoster = true) {
   assert.ok(['qualification', 'release'].includes(row.mode) && !Object.hasOwn(row, 'error'));
@@ -164,6 +166,18 @@ function completePlatforms(row) {
 
 function wrapperError(error) {
   return /^(Command failed:|Process exited|exit code \d+$)/i.test(error) || / exited (?:\d+|SIG[A-Z]+)$/.test(error);
+}
+
+// Partial failed receipts may stop before device stages. Replay omissions before comparing errors.
+function verifyFailedDeviceScope(root, row) {
+  const claimsSkip = row.devicePlan?.run === false || row.suites.some(suite => suite.result === 'web-only');
+  if (!claimsSkip || verifiedDevicePlan(root, row.base, row.tree, row) !== 'scoped') return;
+  assert.deepEqual(row.devices, {});
+  assert.equal(row.androidTiming, undefined);
+  for (const suite of row.suites.filter(s => deviceSuites.includes(s.name))) {
+    const blocked = suite.result === 'blocked' && ['Prerequisite failed', 'Preflight failed'].includes(suite.reason);
+    assert.ok(scopedSkip(row, suite) || blocked, suite.name + ' differs from the verified device scope');
+  }
 }
 
 function detailedErrors(row, roster, errors) {
@@ -245,9 +259,11 @@ export function resolveFailure(root, directory, failed, history, tree, base, ros
     assert.deepEqual(saved.ref, ref);
     assert.equal(sourceTree(root, saved.row), runnerTree);
     assert.equal(saved.row.base, base);
+    if (saved.row.status === 'failed') verifyFailedDeviceScope(root, saved.row);
     return saved.row;
   }
   const errors = artifact('failed-errors.json');
+  verifyFailedDeviceScope(root, failed);
   detailedErrors(failed, roster, errors);
   const timingFailure = errors.some(e => timingChecks.has(e.suite) && e.check === timingChecks.get(e.suite));
   let pass;

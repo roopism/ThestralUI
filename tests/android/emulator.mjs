@@ -23,6 +23,11 @@ function avdName(profile) {
   return 'uld-api' + api + '-' + profile.id + '-' + abi;
 }
 
+export function requireManagedEmulator(profile, name, serial) {
+  assert.match(serial, /^emulator-[0-9]+$/, 'A managed Android emulator serial is required');
+  assert.equal(name, avdName(profile), 'Expected the configured Android AVD');
+}
+
 export function androidTools() {
   const sdk =
     process.env.ANDROID_HOME ||

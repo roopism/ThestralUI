@@ -226,7 +226,7 @@ export async function preparePackedIosApp(inputRoot, archives, phone, pods, repo
   return { key, host, bundle, app };
 }
 
-export function qualify() {
+export function qualify(functional = false) {
   // Missing packed inputs must fail before competing for a device or timing reservation.
   accessSync(join(evidence, 'provenance.json'), constants.R_OK);
   return usingSimulator('iPhone Simulator', async () => {
@@ -313,7 +313,7 @@ export function qualify() {
     } finally {
       setProfile(phone.udid, initialAppearance, initialSize);
     }
-  });
+  }, functional ? 'iphone' : undefined);
 }
 
 if (
@@ -321,5 +321,5 @@ if (
   existsSync(process.argv[1]) &&
   import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href
 ) {
-  await inCommandGroup(qualify, true);
+  await inCommandGroup(() => qualify(process.argv.includes('--functional')), true);
 }

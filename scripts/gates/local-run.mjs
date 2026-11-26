@@ -11,7 +11,10 @@ import { prepareDeviceReuse, reuseAndroidTiming, verifyFreshDeviceApplication } 
 import { macCommand } from './reuse/sandbox-mac.mjs';
 import { reusePolicyIssues } from './reuse/strength.mjs';
 import { trustedVerdict } from './verdict.mjs';
-import { shutdownSimulators, usingSimulator, withTiming } from '../workers/resource-guard.mjs';
+import { shutdownSimulators, usingSimulator, withFunctionalDeviceGroup, withTiming } from '../workers/resource-guard.mjs';
+import { withTimingReservation } from '../workers/timing-reservation.mjs';
+import { runQualificationLanes } from './qualification-lanes.mjs';
+import { admission, observationIssues, quiet, sampleHost, waitForQuiet } from './android-host-activity.mjs';
 import { publishFirstReceipt, relatedHistory } from './receipt-history.mjs';
 import { readAttempt } from './qualification-attempt.mjs';
 import { reviewPolicy } from './review/qualification-policy.mjs';
@@ -46,21 +49,39 @@ const initial = mode === 'hook' ? { id: randomUUID(), started: new Date().toISOS
   : readAttempt(directory, process.argv[6], base, commit, tree, mode);
 const id = initial.id;
 if (mode!=='hook') process.env.ULD_ANDROID_TIMING_ATTEMPT=id;
-const noReuse = mode !== 'qualification' || process.argv.includes('--no-reuse');
+const full = mode !== 'qualification' || process.argv.includes('--no-reuse');
+const trainPlanArg = process.argv.indexOf('--train-plan');
+const trainPlan = trainPlanArg === -1 ? undefined : process.argv[trainPlanArg + 1];
+const trainIdArg = process.argv.indexOf('--train-id');
+const trainId = trainIdArg < 0 ? undefined : process.argv[trainIdArg + 1];
+assert.equal(trainPlanArg < 0, trainIdArg < 0, 'Expected both train ID and plan');
+let trainDevices;
+if (trainPlanArg !== -1) {
+  assert.equal(mode, 'qualification');
+  const { checkedPlan, requirePlanRef, trainDeviceCoverage } = await import('./train-plan.mjs');
+  requirePlanRef(root, trainId, trainPlan);
+  trainDevices = trainDeviceCoverage(root, await checkedPlan(root, trainPlan, base, commit, tree), full || requireFullDevices);
+}
+const noReuse = full || trainDevices?.devicePlan.full === true;
+const freshSuites = noReuse || Boolean(trainPlan);
 const single = process.argv.indexOf('--reuse-operation');
 const snapshot = process.cwd();
-const context = {root, snapshot, trusted:fileURLToPath(new URL('../../',import.meta.url)), directory, base, commit, tree, mode, noReuse, attemptId:id};
-if (noReuse || requireFullDevices) process.env.ULD_FRESH_ANDROID_TIMING = '1';
+const context = {root, snapshot, trusted:fileURLToPath(new URL('../../',import.meta.url)), directory, base, commit, tree, mode, noReuse:freshSuites, attemptId:id};
+if (freshSuites || requireFullDevices) process.env.ULD_FRESH_ANDROID_TIMING = '1';
 else delete process.env.ULD_FRESH_ANDROID_TIMING;
-const devicePlan = proposalDevices(root, base, tree, noReuse || requireFullDevices);
-const scope = proposalScope(root, base, tree, devicePlan);
+const devicePlan = trainDevices?.devicePlan ?? proposalDevices(root, base, tree, noReuse || requireFullDevices);
+const parallelDevices = mode === 'qualification' && devicePlan.run;
+const scope = trainDevices?.scope ?? proposalScope(root, base, tree, devicePlan);
 writeFileSync('.git/gate-selection.json', JSON.stringify({ budgetComparisonBase: base }));
 context.scope = scope;
 // Pin the admitted attempt across concurrent preflights for the same tree.
 const preflightArg = process.argv.indexOf('--preflight-id');
 if (mode === 'qualification') context.preflightId = preflightArg < 0 ? null : process.argv[preflightArg + 1] ?? null;
+if (trainPlan) assert.ok(context.preflightId, 'Missing admitted train preflight');
 const receipt = { ...initial, schema: 1, androidHostActivityPolicy:1, tree, base, commit, id, mode, scope, devicePlan,
-  reuseSchema: 1, noReuse, auditSeed: noReuse ? null : randomBytes(32).toString('hex'), retries: null,
+  reuseSchema: 1, noReuse, ...(trainPlan ? { trainPlan, trainId,
+    trainPreflightId: context.preflightId, trainDeviceChecks: trainDevices.checks } : {}),
+  auditSeed: freshSuites ? null : randomBytes(32).toString('hex'), retries: null,
   status: 'running', vm: null, devices: {}, suites: [] };
 const steps = new Map();
 function step(name, operation, dependencies = []) {
@@ -81,19 +102,29 @@ function save(final = false) {
   if (final) publishFirstReceipt(directory, tree, id);
 }
 const collectInputs = mode === 'qualification' && noReuse && base === commit;
-function runDevice(script, reports, platform) {
+function runNodeChild(script, args, env) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [script, ...args], { env, stdio: 'inherit' });
+    child.once('error', reject);
+    child.once('close', (code, signal) => code === 0 ? resolve() :
+      reject(Error(script + ' exited ' + (signal ?? code))));
+  });
+}
+
+async function runDevice(script, reports, platform, phase, env = process.env) {
   try {
+    const args = phase ? ['release/evidence', '--' + phase] : [];
     if (collectInputs) {
       const output = join(snapshot, 'test-results', reports);
       mkdirSync(output, { recursive: true });
       const reads = join(output, id + '.reads.jsonl');
       const preload = fileURLToPath(new URL('./device-reads.cjs', import.meta.url));
-      execFileSync(process.execPath, [script], { stdio: 'inherit', env: { ...process.env,
+      await runNodeChild(script, args, { ...env,
         NODE_OPTIONS: '--require ' + JSON.stringify(preload), ULD_DEVICE_READS: reads,
-        ULD_DEVICE_ROOTS: JSON.stringify([snapshot, context.trusted]) } });
+        ULD_DEVICE_ROOTS: JSON.stringify([snapshot, context.trusted]) });
       receipt.deviceInputs ??= { platforms: {} };
       receipt.deviceInputs.platforms[platform] = collectObservation(platform, output, reads, snapshot);
-    } else node(script);
+    } else await runNodeChild(script, args, env);
   } finally {
     const root = join('test-results', reports);
     const versions = globSync(['device.json', '*/device.json'], { cwd: root }).map(file => read(join(root, file)));
@@ -166,7 +197,7 @@ async function runChild(name, exclusions, extraEnv, audit) {
 }
 
 async function runGroup(name, entry, operation, audit) {
-  if (mode==='hook' || alwaysFresh.includes(name) || (requireFullDevices && deviceNames.includes(name))) {
+  if (mode==='hook' || alwaysFresh.includes(name) || ((requireFullDevices || parallelDevices) && deviceNames.includes(name))) {
     entry.reuseReason = 'always fresh';
     return operation(entry);
   }
@@ -325,32 +356,121 @@ if (mode !== 'hook') {
     writeFileSync(visualCoveragePath, JSON.stringify({tree, ...observed}), {flag:'wx',mode:0o600});
   }, ['Catalog build']);
   step('Scoped styles', () => node('tests/browser/quality-style-scope.mjs'), ['Catalog build']);
-  step('Mac browser performance', () => usingSimulator('Mac browser performance', async () => {
+  step('Mac browser performance', () => reserveStandaloneTiming('Mac browser performance', async () => {
     await stopVm();
     shutdownSimulators();
-    runMacPerformance(root, base, commit);
+    if (parallelDevices) {
+      const samples = [];
+      const start = await waitForQuiet(() => {});
+      assert.ok(quiet(start), 'Mac timing requires a quiet host');
+      const tick = () => samples.push(sampleHost());
+      const timer = setInterval(tick, admission.pollMs);
+      try {
+        await runNodeChild(trustedGate('mac-performance.mjs'), [root, base, commit], timingEnv);
+      } finally {
+        clearInterval(timer);
+        tick();
+        receipt.macTiming = { start, samples, issues: observationIssues(start, samples) };
+        save();
+      }
+      assert.deepEqual(receipt.macTiming.issues, []);
+    } else runMacPerformance(root, base, commit);
   }), ['Catalog build']);
   step('Native package consumer', () => node(trustedVerdict('verify-native-consumer.mjs'), 'release/evidence'), preflight);
   step('Linux browser behavior', async (_entry,exclude) => { receipt.vm = await linuxBrowsers(root, commit, metadata => { receipt.vm = metadata; save(); },{exclude}); }, preflight);
   step('iPhone Simulator', async entry => {
     if (!scope.iphone) { entry.result = 'web-only'; entry.reason = 'Every input was verified web-only'; return; }
-    await stopVm();
-    await withLock(root, 'simulator', 'iPhone ' + tree, () => {
-      runDevice(trustedVerdict('verify-ios-simulator.mjs'), 'ios-simulator', 'iphone');
+    if (!parallelDevices) await stopVm();
+    await withLock(root, 'simulator', 'iPhone ' + tree, async () => {
+      await runDevice(trustedVerdict('verify-ios-simulator.mjs'), 'ios-simulator', 'iphone',
+        parallelDevices ? 'functional' : undefined, functionalEnv ?? process.env);
       receipt.devices.iphone = read('release/evidence/ios-simulator.json');
       assert.equal(receipt.devices.iphone.passed, true);
-    });
+      if (collectInputs) {
+        const reports = join(snapshot, 'test-results/ios-simulator');
+        receipt.deviceInputs.iphoneJourneys = Object.fromEntries(globSync('*.xml', { cwd: reports })
+          .map(file => [file, readFileSync(join(reports, file), 'utf8')]));
+      }
+    }, { ownedLease: functionalEnv?.ULD_FUNCTIONAL_DEVICE_GROUP });
   }, preflight);
   step('Android standard and low-end', async () => {
     await stopVm();
-    await withLock(root, 'simulator', 'Android ' + tree, () => {
-      runDevice(trustedVerdict('verify-android-emulator.mjs'), 'android-emulator', 'android');
+    await withLock(root, 'simulator', 'Android ' + tree, async () => {
+      await runDevice(trustedVerdict('verify-android-emulator.mjs'), 'android-emulator', 'android',
+        parallelDevices ? 'timing' : undefined, timingEnv ?? process.env);
       const android = read('release/evidence/android-emulator.json');
       assert.equal(android.passed, true);
+      if (collectInputs) receipt.deviceInputs.androidReport = android;
       receipt.devices.android = android.profiles.map(({ id, hardware }) => ({ id, hardware }));
-    });
+    }, { ownedLease: timingEnv?.ULD_SIMULATOR_RESERVATION });
   }, preflight);
 }
+let functionalEnv, timingEnv;
+function reserveStandaloneTiming(name, run) {
+  return parallelDevices ? run() : usingSimulator(name, run);
+}
+async function runParallelQualification() {
+  const macPerformance = 'Mac browser performance';
+  const [iphone, android] = deviceNames;
+  const prerequisites = steps.get(iphone).dependencies;
+  for (const name of prerequisites) await execute(name);
+  const passed = name => ['passed', 'reused'].includes(steps.get(name).entry.result);
+  const verdict = names => {
+    const failed = names.filter(name => !passed(name));
+    return failed.length ? {result:'failed', reason:failed.map(name => name + ': ' + steps.get(name).entry.reason).join(' / ')} :
+      {result:'passed'};
+  };
+  const mac = receipt.suites.slice(2).map(row => row.name)
+    .filter(name => ![...prerequisites, ...deviceNames, macPerformance, 'Linux browser behavior'].includes(name));
+  receipt.lanes = {};
+  const lanes = await runQualificationLanes({
+    ready(stage) {
+      if (stage === 'androidTiming') return receipt.lanes.android?.result === 'passed';
+      if (stage === 'macPerformance') return passed('Catalog build');
+      return prerequisites.every(passed);
+    },
+    reserveFunctional: run => withFunctionalDeviceGroup(root, 'Functional qualification ' + id, async env => {
+      functionalEnv = env;
+      try { return await run(env); } finally { functionalEnv = undefined; }
+    }),
+    functional: {
+      iphone: async () => { await execute(iphone); return verdict([iphone]); },
+      android: async env => {
+        await runDevice(trustedVerdict('verify-android-emulator.mjs'), 'android-emulator', 'android', 'functional', env);
+        return {result:'passed'};
+      },
+      mac: () => withTimingReservation(root, 'activity', 'Mac functional checks', async () => {
+        for (const name of mac) await execute(name);
+        return verdict(mac);
+      }, {activityOnly:true}),
+    },
+    audit: async () => {
+      await execute('Linux browser behavior');
+      await auditReuse();
+      return verdict(['Linux browser behavior']);
+    },
+    reserveTiming: (stage, run) => withLock(root, 'simulator', stage, lease =>
+      withTimingReservation(root, 'measurement', stage, async env => {
+        timingEnv = {...env, ULD_SIMULATOR_RESERVATION:lease};
+        try {
+          await stopVm();
+          shutdownSimulators();
+          const start = await waitForQuiet(() => {});
+          assert.ok(quiet(start), stage + ' requires a quiet host');
+          return await run(timingEnv);
+        } finally { timingEnv = undefined; }
+      })),
+
+    timed: {
+      macPerformance: async () => { await execute(macPerformance); return verdict([macPerformance]); },
+      androidTiming: async () => { await execute(android); return verdict([android]); },
+    },
+    record(stage, row) { receipt.lanes[stage] = row; save(); },
+  });
+  const failures = Object.entries(lanes).filter(([, row]) => row.result !== 'passed');
+  if (failures.length) throw Error(failures.map(([name, row]) => name + ': ' + row.reason).join(' / '));
+}
+
 if (single !== -1) {
   const name = process.argv[single+1];
   assert.ok(steps.has(name) && !alwaysFresh.includes(name) && !deviceNames.includes(name) && name!=='Linux browser behavior');
@@ -374,8 +494,11 @@ try {
     await runWithIntegrationReservation(mode, root, tree, async () => {
       if (mode !== 'hook') await stopVm();
       writeFileSync('.git/local-device-scope.json', JSON.stringify(scope));
-      for (const row of receipt.suites.slice(2)) await execute(row.name);
-      try { await auditReuse(); } finally { await finishAndroidTiming(); }
+      if (parallelDevices) await runParallelQualification();
+      else {
+        for (const row of receipt.suites.slice(2)) await execute(row.name);
+        try { await auditReuse(); } finally { await finishAndroidTiming(); }
+      }
     });
   }
 } catch (error) { receipt.error = String(error.message); }

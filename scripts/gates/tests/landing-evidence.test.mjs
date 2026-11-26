@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { passing, required } from '../../land.mjs';
@@ -12,6 +11,10 @@ import { summarizeTrials } from '../../../tests/android/frame-budget.mjs';
 import { admission, claimDiagnostic } from '../android-host-activity.mjs';
 import { sealReceipt } from '../reuse/runner.mjs';
 import { requireGateIsolation } from '../landing-policy.mjs';
+import { deviceSuites } from '../device-verdict.mjs';
+import { createObservationTestDirectory, dailyObservationFixture, dailyObservationFixtureFiles } from './fixtures/daily-observation.mjs';
+import { observation, registerObservation } from '../../selection/device-observations.mjs';
+import { proposalDevices, proposalScope } from '../../selection/proposal-devices.mjs';
 
 const android = 'Android standard and low-end', mac = 'Mac browser performance';
 const timing = 'android/frame-budget';
@@ -19,8 +22,8 @@ const asJson = data => JSON.stringify(data) + '\n';
 const iso = n => new Date(n).toISOString();
 const namespace = 'uld-landing-evidence-v1';
 
-function fixture(t, stage = 'Fast', features = []) {
-  const temp = realpathSync(mkdtempSync(join(tmpdir(), 'uld-evidence-')));
+function fixture(t, stage = 'Fast', features = [], scoped = false) {
+  const temp = createObservationTestDirectory(t, 'uld-evidence-', 'repo');
   t.after(() => rmSync(temp, { recursive: true, force: true }));
   const root = join(temp, 'repo'), key = join(temp, 'key');
   mkdirSync(root);
@@ -44,12 +47,29 @@ function fixture(t, stage = 'Fast', features = []) {
   }
   const flows = ['appearance.yaml', 'workspace.yaml'];
   mkdirSync(join(root, 'tests/simulator'));
-  for (const file of flows) writeFileSync(join(root, 'tests/simulator', file), 'fixture');
+  for (const file of flows) writeFileSync(join(root, 'tests/simulator', file), 'appId: example.app\n---\n- launchApp\n');
+  if (scoped) {
+    const suiteInputs = 'tests/acceptance/suite-inputs.json';
+    mkdirSync(dirname(join(root, suiteInputs)), { recursive: true });
+    copyFileSync(new URL('../../../' + suiteInputs, import.meta.url), join(root, suiteInputs));
+    for (const [file, body] of Object.entries({
+      ...dailyObservationFixtureFiles(),
+      'package.json': '{"workspaces":["packages/*"]}', 'tsconfig.json': '{}',
+      'packages/native/package.json': '{"name":"@fixture/native"}',
+      'packages/native/src/button.js': 'export const button = 1;',
+      'packages/tokens/package.json': '{"name":"@fixture/tokens"}',
+      'tests/simulator/host/package.json': '{}',
+    })) {
+      mkdirSync(dirname(join(root, file)), { recursive: true });
+      writeFileSync(join(root, file), body);
+    }
+  }
   git('add', '.');
   git('commit', '--quiet', '-m', 'base');
   const base = git('rev-parse', 'HEAD'), runnerTree = git('rev-parse', 'HEAD^{tree}');
-  writeFileSync(join(root, 'product'), 'changed');
-  git('add', 'product');
+  const changed = scoped ? 'README.md' : 'product';
+  writeFileSync(join(root, changed), 'changed');
+  git('add', changed);
   git('commit', '--quiet', '-m', 'proposal');
   const commit = git('rev-parse', 'HEAD'), tree = git('rev-parse', 'HEAD^{tree}');
   const directory = join(root, '.git', 'uld-receipts');
@@ -344,4 +364,43 @@ test('contention recovery checks the retained Android admission and measured fra
 test('ordinary gate and family proposals cannot enroll a landing evidence signer', () => {
   for (const branch of ['gates/proposal', 'family/button'])
     assert.throws(() => requireGateIsolation(branch, ['scripts/gates/landing-evidence.allowed-signers']), /owner-controlled/);
+});
+
+test('signed failure review accepts the original verified device scope and requires matching errors', t => {
+  const f = fixture(t, 'Fast', ['scripts/selection/proposal-devices.mjs'], true);
+  const platforms = Object.fromEntries(['android', 'iphone'].map(platform => [platform, observation(platform,
+    ['index.js', 'node_modules/@fixture/native/dist/button.js'], JSON.stringify(['file', 'catalog/native/scenarios/fixtures.cjs']),
+    new Map([['@fixture/native', 'packages/native']]), {})]));
+  f.git('update-ref', 'refs/remotes/origin/feat/enterprise-ui', f.base);
+  const witness = dailyObservationFixture(f.root, f.base, platforms);
+  sealReceipt(f.root, witness);
+  registerObservation(f.root, witness);
+  for (const row of [f.fail, f.reference, f.pass]) {
+    row.reuseSchema = 1;
+    row.noReuse = row === f.pass;
+    row.gateTests = { result: 'passed' };
+    row.devicePlan = proposalDevices(f.root, row.base, row.tree, row.noReuse);
+    row.scope = proposalScope(f.root, row.base, row.tree, row.devicePlan);
+    if (!row.devicePlan.run) {
+      row.devices = {};
+      for (const suite of row.suites.filter(s => deviceSuites.includes(s.name))) {
+        Object.assign(suite, { result: 'web-only', reason: row.devicePlan.reason, durationMs: 0 });
+      }
+    }
+  }
+  assert.equal(f.fail.devicePlan.run, false);
+  assert.equal(f.pass.devicePlan.run, true);
+  assert.equal(f.pass.devicePlan.full, true);
+  assert.equal(f.reference.devicePlan.run, true);
+  f.save(f.fail, true);
+  f.baseEvidence();
+  sealReceipt(f.root, f.pass);
+  assert.equal(f.check().id, f.pass.id);
+  f.put('base-errors.json', [{ ...f.errors[0], error: 'another field is missing' }]);
+  f.sign('base', [f.reference.id, f.pass.id]);
+  assert.throws(() => f.check());
+  f.fail.suites.find(s => s.name === android).reason = 'Different device decision';
+  f.save(f.fail, true);
+  f.baseEvidence();
+  assert.throws(() => f.check(), /verified device scope/);
 });

@@ -16,3 +16,5 @@ export function runMacPerformance(root, base, commit) {
     assert.equal(errors.length, 0, path + ' ' + errors.join('\n'));
   }
 }
+
+if (import.meta.main) runMacPerformance(...process.argv.slice(2));

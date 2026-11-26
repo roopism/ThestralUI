@@ -84,8 +84,9 @@ test('train members and diagnostic prefixes run the full iPhone and Android suit
     seen.push([member.tree,suite]);
     active = false;
     if (member.tree === 'one' && suite === ios) throw Error('iPhone failure only');
+    return { tree:member.tree, suite };
   }
-  const report = await diagnosePrefixes({train,receipt,folder,fullDevices:true,check:()=>assert.fail('already checked'),testSuite:run});
+  const report = await diagnosePrefixes({train,receipt,folder,fullDevices:true,verifyDevice:(member,suite,proof)=>assert.deepEqual(proof,{tree:member.tree,suite}),check:()=>assert.fail('already checked'),testSuite:run});
   const expected = targets => targets.flatMap(tree => [[tree,ios],[tree,android]]);
   assert.deepEqual(seen, expected(['start','one','two']));
   assert.deepEqual(report.suspects.map(s=>[s.suite,s.number]), [[android,3]]);
