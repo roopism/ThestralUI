@@ -232,7 +232,9 @@
       "tests/data-table/collections.test.tsx | paging preserves an in-flight save for only its row and column",
       "tests/data-table/collections.test.tsx | a save that resolves leaves focus in the search field",
       "tests/data-table/collections.test.tsx | a save that rejects leaves focus in the search field",
-      "tests/data-table/collections.test.tsx | legacy label dictionaries retain the viewport name with an undefined override"
+      "tests/data-table/collections.test.tsx | legacy label dictionaries retain the viewport name with an undefined override",
+      "tests/data-table/collections.test.tsx | an invalid table locale falls back for labels, sorting and search",
+      "tests/data-table/collections.test.tsx | all ten catalogs cover the table, command palette and batch keys including their placeholders"
     ],
     "browser": [
       "data-table/data-table.spec.ts | server paging, edits and cross-page bulk actions complete the same desktop and phone workflow",
@@ -263,7 +265,8 @@
       "tests/data-table/native.test.cjs | every gallery scroll view containing the active editor forwards the first keyboard-open action",
       "tests/native/catalog-presentation.test.cjs | the native work queue announces one archived record and retains plural results",
       "tests/data-table/native.test.cjs | removing the focused native cell returns focus to the stable table viewport",
-      "tests/data-table/native.test.cjs | paging keeps a native cell locked until its previous save settles"
+      "tests/data-table/native.test.cjs | paging keeps a native cell locked until its previous save settles",
+      "tests/data-table/native.test.cjs | native headless table falls back on a malformed locale while sorting and searching"
     ],
     "visual": [
       "data-table/data-table.visual.ts | data table audit queue light phone",

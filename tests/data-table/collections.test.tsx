@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 
 import { afterEach, expect, expectTypeOf, test, vi } from 'vitest';
@@ -189,4 +190,29 @@ test.each(['resolves', 'rejects'])('a save that %s leaves focus in the search fi
   expect(document.activeElement).toBe(search);
   if (outcome === 'resolves') expect(screen.getByRole('button', { name })).toBeTruthy();
   else expect(screen.getByRole('alert')).toBeTruthy();
+});
+
+test('an invalid table locale falls back for labels, sorting and search', () => {
+  render(<DataTable {...props} locale="en_US" defaultSort={{ column: 'name', ascending: true }} />);
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Search records' }), { target: { value: 'BETA' } });
+  expect(screen.getByText('Beta')).toBeTruthy();
+});
+
+test('all ten catalogs cover the table, command palette and batch keys including their placeholders', () => {
+  execFileSync(process.execPath, ['packages/messages/renderer.mjs', '--check']);
+  const modules = import.meta.glob<Record<string, string>>('../../packages/messages/locales/*.json', { eager: true, import: 'default' });
+  const catalogs = Object.fromEntries(Object.entries(modules).map(([path, messages]) => [path.split('/').pop()!.replace('.json', ''), messages]));
+  expect(Object.keys(catalogs).sort()).toEqual(['ar', 'de', 'en', 'es', 'fr', 'he', 'hi', 'ja', 'pt-BR', 'zh-Hans']);
+  const groups = {
+    dataTable: ['search', 'selectPage', 'previousPage', 'nextPage', 'empty', 'cancel', 'save', 'saveFailed', 'select', 'edit', 'page', 'selected', 'loading', 'bulkFailed', 'details', 'ascending', 'descending'],
+    commandPalette: ['search', 'empty', 'close'],
+    batch: ['queued', 'running', 'complete', 'failed', 'denied', 'empty', 'summary', 'retry'],
+  };
+  for (const [locale, messages] of Object.entries(catalogs)) {
+    for (const [group, keys] of Object.entries(groups)) for (const key of keys) {
+      const id = group + '.' + key;
+      expect(messages[id], locale + ' ' + id).toBeTruthy();
+      expect((messages[id].match(/\{\w+\}/g) ?? []).sort()).toEqual((catalogs.en[id].match(/\{\w+\}/g) ?? []).sort());
+    }
+  }
 });

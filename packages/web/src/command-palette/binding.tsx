@@ -1,5 +1,7 @@
 'use client';
 import { useEffect, useState, useId, useMemo } from "react";
+import { canonicalLocale } from '../_shared/messages/locale.js';
+import { commandLabels } from './messages.js';
 import { Dialog } from "../modal-dialog/binding.js";
 export interface CommandEntry {
   id: string;
@@ -23,10 +25,17 @@ export function CommandPalette({
   commands,
   onChoose,
   onDismiss,
-  locale,
+  locale: localeTag,
   returnFocusTo,
-  labels,
+  labels: overrides,
 }: CommandPaletteProps) {
+  const locale = canonicalLocale(localeTag);
+  const messages = commandLabels(locale);
+  const labels = {
+    search: overrides?.search ?? messages?.search,
+    empty: overrides?.empty ?? messages?.empty,
+    close: overrides?.close ?? messages?.close,
+  };
   useEffect(
     () => () => {
       if (returnFocusTo)
