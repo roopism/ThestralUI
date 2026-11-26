@@ -4,6 +4,8 @@ import { deviceScope } from './local-device.mjs';
 import { stagedDiff } from './staged-tree.mjs';
 
 const full = { iphone: true, families: null };
+// Keep every device stage active while the scope selector is under review.
+export const requireFullDevices = true;
 
 export function classifyDevicePath(map, records, learned, path, status) {
   if (learned.has(path)) return 'prior daily full failure';

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { passing, required } from '../../land.mjs';
-import { proposalDevices, proposalScope } from '../../selection/proposal-devices.mjs';
+import { proposalDevices, proposalScope, requireFullDevices } from '../../selection/proposal-devices.mjs';
 import { qualificationStatus } from '../qualification-policy.mjs';
 import { compareFullRun } from '../reuse/full-run.mjs';
 import { sealReceipt } from '../reuse/runner.mjs';
@@ -15,7 +15,7 @@ import { checkDeviceCompleteness } from '../device-completeness.mjs';
 import { deviceInputs } from '../../selection/device-inputs.mjs';
 import { observation, recordScopeFailure, registerObservation } from '../../selection/device-observations.mjs';
 import { classifyDevicePath } from '../../selection/proposal-devices.mjs';
-import { deviceSuites } from '../device-verdict.mjs';
+import { deviceSuites, verifiedDevicePlan } from '../device-verdict.mjs';
 
 function repository(t) {
   const root = mkdtempSync(join(tmpdir(), 'uld-proposal-devices-'));
@@ -153,6 +153,19 @@ test('landing replays sealed device decisions and preserves every non-device ver
   assert.throws(save({ ...receipt, suites: receipt.suites.map(row => row.name === 'Fast' ? { ...row, result: 'web-only' } : row) }));
   const phone = edit(base, { 'packages/native/src/button.js': 'export const button = 2;' });
   assert.throws(save({ ...receipt, tree: phone, commit: commit(phone, base) }), /diff/);
+});
+
+test('the device hold runs the full roster for an ordinary web-only qualification', t => {
+  const { root, base, edit } = repository(t);
+  const tree = edit(base, { 'docs/guide.md': 'Guide' });
+  assert.equal(proposalDevices(root, base, tree).run, false);
+  const devicePlan = proposalDevices(root, base, tree, requireFullDevices);
+  const scope = proposalScope(root, base, tree, devicePlan);
+  assert.equal(devicePlan.run, true);
+  assert.deepEqual(scope, { iphone: true, families: null });
+  assert.equal(verifiedDevicePlan(root, base, tree, {
+    mode: 'qualification', reuseSchema: 1, noReuse: false, devicePlan, scope,
+  }), 'measured');
 });
 
 test('daily and release device selection always requires the full roster and rejects scoped daily evidence', t => {

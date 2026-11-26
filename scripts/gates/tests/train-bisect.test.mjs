@@ -64,3 +64,39 @@ test('member preflight requires fast and typed checks, changed gate tests and ap
   assert.equal(runMemberChecks(['README.md'], new Set(), operations).macBehavior, 'no-web-inputs');
   assert.deepEqual(seen, ['preflight']);
 });
+
+test('train members and diagnostic prefixes run the full iPhone and Android suites in order', async t => {
+  const folder = mkdtempSync(join(tmpdir(), 'uld-train-device-dispatch-'));
+  t.after(() => rmSync(folder, {recursive:true, force:true}));
+  const members = ['one','two','three'].map((tree,i) => ({
+    number:i+1, tree, commit:tree, soloTree:i?'solo-'+tree:tree, soloCommit:i?'solo-'+tree:tree, parent:i?'prior':'base',
+  }));
+  const train = {id:'fixture', qualificationId:'attempt', base:'base', baseTree:'start', finalTree:'three', members,
+    cheapChecks:members.map(m => ({number:m.number, tree:m.tree, status:'passed', result:{tree:m.tree}}))};
+  const [ios,android] = ['iPhone Simulator','Android standard and low-end'];
+  const receipt = {id:'attempt', tree:'three', status:'failed', suites:[{name:android, result:'failed'}]};
+  const seen = [];
+  let active = false;
+  async function run(member,suite) {
+    assert.equal(active,false);
+    active = true;
+    await Promise.resolve();
+    seen.push([member.tree,suite]);
+    active = false;
+    if (member.tree === 'one' && suite === ios) throw Error('iPhone failure only');
+  }
+  const report = await diagnosePrefixes({train,receipt,folder,fullDevices:true,check:()=>assert.fail('already checked'),testSuite:run});
+  const expected = targets => targets.flatMap(tree => [[tree,ios],[tree,android]]);
+  assert.deepEqual(seen, expected(['start','one','two']));
+  assert.deepEqual(report.suspects.map(s=>[s.suite,s.number]), [[android,3]]);
+  seen.length = 0;
+  const {runMemberDevices} = await import('../train-checks.mjs');
+  await runMemberDevices(train.base,members[1],run);
+  assert.deepEqual(seen, expected(['solo-two','two']));
+  seen.length = 0;
+  await runMemberDevices(train.base,members[2],run);
+  assert.deepEqual(seen, expected(['solo-three','three']));
+  seen.length = 0;
+  await runMemberDevices(train.base,{...members[1],soloTree:'two',soloCommit:'two'},run);
+  assert.deepEqual(seen, expected(['two']));
+});

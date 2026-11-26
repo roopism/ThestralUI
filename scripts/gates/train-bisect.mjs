@@ -3,7 +3,9 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { checkMember, checkPrefixSuite } from './train-checks.mjs';
+import { deviceSuites } from './device-verdict.mjs';
+import { requireFullDevices } from '../selection/proposal-devices.mjs';
+import { checkCheapMember, checkPrefixSuite } from './train-checks.mjs';
 
 const git = (root, ...args) => execFileSync('git', ['--no-replace-objects', ...args], { cwd: root, encoding:'utf8' }).trim();
 const digest = parts => createHash('sha256').update(JSON.stringify(parts)).digest('hex');
@@ -31,7 +33,7 @@ async function observe(folder, key, run) {
   return result;
 }
 
-export async function diagnosePrefixes({train, receipt, folder, check, testSuite}) {
+export async function diagnosePrefixes({train, receipt, folder, check, testSuite, fullDevices = false}) {
   assert.equal(receipt.status, 'failed');
   assert.equal(receipt.tree, train.finalTree);
   assert.equal(receipt.id, train.qualificationId);
@@ -55,11 +57,23 @@ export async function diagnosePrefixes({train, receipt, folder, check, testSuite
       return report;
     }
   }
+  const baseMember = {parent:train.base,commit:train.base,tree:train.baseTree};
+  const deviceResults = new Map();
+  if (fullDevices) {
+    for (const [index, member] of [baseMember, ...members.slice(0,-1)].entries()) {
+      for (const suite of deviceSuites) {
+        const key = [receipt.id, train.base, member.commit, member.tree, suite];
+        const row = await observe(folder, key, dir => testSuite(member,suite,dir));
+        deviceResults.set(index + ':' + suite,row);
+        journal.push({prefix:index,suite,...row});
+      }
+    }
+  }
   for (const suite of failed) {
     let lo=0, hi=members.length;
     // The actual failure is already evidence for the final tree. A group
     // failure on unchanged integration must be distinguished from the first PR.
-    const baseline=await testAt({parent:train.base,commit:train.base,tree:train.baseTree},0);
+    const baseline=await testAt(baseMember,0);
     if(baseline.status==='failed') {
       report.suspects.push({suite, reason:'The same suite failed on the unchanged base', tree:train.baseTree});
       continue;
@@ -71,6 +85,8 @@ export async function diagnosePrefixes({train, receipt, folder, check, testSuite
     }
     report.suspects.push({number:members[hi-1].number, suite, tree:members[hi-1].tree, passingPrefix:lo, failingPrefix:hi});
     async function testAt(member,index) {
+      const measured = deviceResults.get(index + ':' + suite);
+      if (measured) return measured;
       let row;
       if(member.tree===train.finalTree) row={status:'failed', sourceAttempt:receipt.id, reused:true};
       else row=await observe(folder,[train.base,member.tree,suite],evidenceDir => testSuite(member, suite, evidenceDir));
@@ -88,8 +104,8 @@ export async function diagnoseTrainFailure(train, receipt) {
   const baseTree=git(root,'rev-parse',train.base+'^{tree}');
   const directory=join(common,'uld-delivery','train-diagnostics');
   const run = {root,base:train.base};
-  const result=await diagnosePrefixes({train:{...train,baseTree},receipt,folder:directory,
-    check:member=>checkMember({...run,member}), testSuite:(member,suite,evidenceDir)=>checkPrefixSuite({...run,member,evidenceDir},suite)});
+  const result=await diagnosePrefixes({train:{...train,baseTree},receipt,folder:directory,fullDevices:requireFullDevices,
+    check:member=>checkCheapMember({...run,member}), testSuite:(member,suite,evidenceDir)=>checkPrefixSuite({...run,member,evidenceDir},suite)});
   const reportFile = join(directory, 'train-' + train.id + '-' + receipt.id + '.json');
   try { writeFileSync(reportFile, JSON.stringify(result, null, 2) + '\n', { flag: 'wx', mode: 0o600 }); }
   catch (error) {
