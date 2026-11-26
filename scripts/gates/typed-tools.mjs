@@ -1,3 +1,4 @@
+import { trainEntryAdoption } from '../../.github/gate-review.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { cpSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
@@ -71,6 +72,8 @@ function controls(root, ref) {
 }
 export function requireTypedControls(root, base, tree) {
   const previous = controls(root, base), current = controls(root, tree);
+  if (current.get('package.json')?.train !== previous.get('package.json')?.train && trainEntryAdoption(root, base, tree))
+    previous.set('package.json', { ...previous.get('package.json'), train: 'node scripts/train.mjs --publish' });
   for (const file of new Set([...previous.keys(), ...current.keys()])) {
     assert.ok(isDeepStrictEqual(previous.get(file), current.get(file)),
       'Typed or unit control requires explicit trusted adoption: ' + file);

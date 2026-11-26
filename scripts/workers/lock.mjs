@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { hostname } from 'node:os';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { hasWaiters, waitForLock } from './lock-queue.mjs';
 
 function lockDirectory(root, resource) {
@@ -28,7 +28,33 @@ export function lockOwner(root, resource) {
   catch (error) { if (error.code === 'ENOENT') return; throw error; }
 }
 
+const devicePlatforms = ['iphone', 'android'];
+const functionalGroup = Symbol('parallel functional devices');
+
+// A dead group owner does not release the legacy simulator lock while a driver
+// or its detached command group still holds one of the two platform slots.
+function requireFinishedDeviceSlots(directory) {
+  if (basename(directory) !== 'simulator') return;
+  for (const platform of devicePlatforms) {
+    const slot = join(dirname(directory), 'functional-' + platform);
+    let owner;
+    try { owner = readOwner(slot); }
+    catch (error) {
+      if (error.code === 'ENOENT' && !existsSync(slot)) continue;
+      throw error;
+    }
+    if (owner.host !== hostname() || !Number.isSafeInteger(owner.pid) || owner.pid < 1)
+      throw Error('Unknown functional device holder for ' + platform);
+    try {
+      process.kill(owner.pid, 0);
+      throw Error('A live functional device process is using ' + platform);
+    } catch (error) { if (error.code !== 'ESRCH') throw error; }
+    requireFinishedGroup(owner, false);
+  }
+}
+
 function requireFinishedSuite(directory, reservation) {
+  requireFinishedDeviceSlots(directory);
   const file = join(directory, 'suite-' + reservation + '.json');
   if (!existsSync(file)) return;
   const { pid } = JSON.parse(readFileSync(file, 'utf8'));
@@ -183,6 +209,12 @@ export function reserveLinuxGuest(root, holder) {
 
 export async function withLock(root, resource, holder, run, options) {
   if (!holder?.trim()) throw Error('A lock holder is required');
+  if (options?.ownedLease !== undefined) {
+    const owner = lockOwner(root, resource);
+    if (resource !== 'simulator' || owner?.id !== options.ownedLease || owner.pid !== process.pid || owner.host !== hostname())
+      throw Error('Nested device stage requires its own active simulator reservation');
+    return run(owner.id);
+  }
   const release = await reserveDirectory(lockDirectory(root, resource), resource, holder, options);
   try {
     return await run(release.id);
@@ -193,7 +225,7 @@ export async function withLock(root, resource, holder, run, options) {
 
 // An integration transaction runs Git hooks as child processes. They can enter
 // that exact reservation one at a time while MAIN retains it across the batch.
-export async function withIntegrationGate(root, holder, run, reservation = process.env.ULD_INTEGRATION_LEASE, resource = 'integration') {
+export async function withIntegrationGate(root, holder, run, reservation = process.env.ULD_INTEGRATION_LEASE, resource = 'integration', kind) {
   if (resource !== 'integration' && (resource !== 'simulator' || !reservation))
     throw Error('An explicit simulator reservation is required to borrow the device');
   if (!reservation) return withLock(root, 'integration', holder, run);
@@ -203,7 +235,7 @@ export async function withIntegrationGate(root, holder, run, reservation = proce
   process.kill(owner.pid, 0);
   const file = join(directory, 'suite-' + reservation + '.json');
   try {
-    writeFileSync(file, JSON.stringify({ pid: process.pid }), { flag: 'wx' });
+    writeFileSync(file, JSON.stringify({ pid: process.pid, ...(kind === functionalGroup ? { functional: true } : {}) }), { flag: 'wx' });
   } catch (error) {
     if (error.code === 'EEXIST') throw Error('Another suite is using the integration reservation');
     throw error;
@@ -214,4 +246,42 @@ export async function withIntegrationGate(root, holder, run, reservation = proce
   } finally {
     if (readOwner(directory).id === reservation) unlinkSync(file);
   }
+}
+
+export function withFunctionalGroupLock(root, holder, run, options) {
+  // Occupy the original exclusive borrowing slot too, so legacy callers cannot join the wave.
+  return withLock(root, 'simulator', holder, async id => {
+    try {
+      return await withIntegrationGate(root, holder, () => run(id), id, 'simulator', functionalGroup);
+    } finally {
+      // The borrowing marker has closed. A callback that throws must still drain
+      // live child drivers before another caller can obtain the legacy device lock.
+      for (const platform of devicePlatforms) {
+        const resource = 'functional-' + platform;
+        const release = await reserveDirectory(sharedDirectory(root, resource), resource, 'Drain ' + holder,
+          { timeoutMs: options?.timeoutMs });
+        release();
+      }
+    }
+  }, options);
+}
+
+export async function withFunctionalPlatformSlot(root, platform, holder, id, run, options) {
+  if (!devicePlatforms.includes(platform) || !/^[a-f0-9-]{36}$/.test(id))
+    throw Error('An explicit functional group and platform are required');
+  const directory = lockDirectory(root, 'simulator');
+  function checkGroup() {
+    const owner = readOwner(directory);
+    if (owner.id !== id || owner.host !== hostname()) throw Error('Functional device group changed');
+    const marker = JSON.parse(readFileSync(join(directory, 'suite-' + id + '.json'), 'utf8'));
+    if (marker.functional !== true || owner.pid !== marker.pid) throw Error('Not a functional device group');
+    process.kill(owner.pid, 0);
+  }
+  checkGroup();
+  const resource = 'functional-' + platform;
+  const release = await reserveDirectory(join(dirname(directory), resource), resource, holder, options);
+  try {
+    checkGroup();
+    return await run();
+  } finally { release(); }
 }

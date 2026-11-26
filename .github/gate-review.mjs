@@ -7,6 +7,18 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 
+// One-time adoption of the ordered train command. The two blobs differ by one
+// script. Subsequent changes remain subject to the normal script-map check.
+const before = '100644 blob 5f2454b6466a9a73c44b6a7ad4c6d4536e1770c6\tpackage.json';
+const after = '100644 blob f675cdc70b11bd84325d9545c382fea2559926a8\tpackage.json';
+export function trainEntryAdoption(root, base, tree, now = Date.now()) {
+  if (now >= Date.UTC(2026, 11, 31)) return false;
+  const git = (...args) => execFileSync('git', ['--no-replace-objects', ...args], { cwd: root, encoding: 'utf8' }).trimEnd();
+  return git('ls-tree', base, '--', 'package.json') === before &&
+    git('ls-tree', tree, '--', 'package.json') === after &&
+    git('diff', '--no-renames', '--name-only', '-z', base, tree) === 'package.json\0';
+}
+
 const depthRegistry = 'packages/policy/quality/api-depth/families.json';
 
 // CODEOWNERS is both the GitHub review map and the path check's source of truth.
@@ -54,7 +66,7 @@ function gateIdentity({ headBranch, headRepository, repository }) {
   return (headBranch === 'feat/gates' || /^gates\/[a-z0-9][a-z0-9-]*$/.test(headBranch)) && headRepository === repository;
 }
 
-export function checkProposal(files, owners, identity, revisions, validateDepth, budgetAdoption = false) {
+export function checkProposal(files, owners, identity, revisions, validateDepth, budgetAdoption = false, commandAdoption = false) {
   const { headBranch, headRepository, repository } = identity;
   if (!headBranch || !headRepository || !repository) throw Error('Missing GitHub branch identity.');
   const gateBranch = gateIdentity(identity);
@@ -62,7 +74,7 @@ export function checkProposal(files, owners, identity, revisions, validateDepth,
     file === path || (directory && file.startsWith(path + '/')))?.owned === true;
   const modern = /^(?:gates|docs|family)\//.test(headBranch);
   if (modern) {
-    const gateCode = file => /^(?:scripts|\.github|\.githooks|packages\/(?:policy|style-policy)|tests\/(?:android|simulator))(?:\/|$)/.test(file);
+    const gateCode = file => (commandAdoption && headBranch === 'gates/train-command' && files.length === 1 && file === 'package.json') || /^(?:scripts|\.github|\.githooks|packages\/(?:policy|style-policy)|tests\/(?:android|simulator))(?:\/|$)/.test(file);
     if (gateBranch && !files.every(gateCode)) throw Error('A gates/ topic accepts only gate code.');
     if (!gateBranch && files.some(file => file !== depthRegistry && gateCode(file)))
       throw Error('Propose these gate changes separately on a gates/ topic.');
@@ -188,7 +200,9 @@ export function checkRevision(root, base, head, identity) {
       budgetAdoption = verifyBudgetAdoption(states[0], states[1], sourceHash);
     }
   }
-  checkProposal(paths, owners, identity, revisions, validateDepth, budgetAdoption);
+  const commandAdoption = identity.headBranch === 'gates/train-command' && paths.length === 1 &&
+    paths[0] === 'package.json' && trainEntryAdoption(root, ancestor, head);
+  checkProposal(paths, owners, identity, revisions, validateDepth, budgetAdoption, commandAdoption);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

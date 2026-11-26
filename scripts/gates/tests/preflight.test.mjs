@@ -180,3 +180,47 @@ test('qualification refuses to start without a passing preflight receipt for the
   if (!git(['ls-tree', base, '--', 'scripts/verify-preflight.mjs']))
     assert.equal(requirePreflight(project, common, base, earlier, git(['rev-parse', earlier + '^{tree}'])), undefined);
 });
+
+test('a mixed train applies isolation and ownership to each PR against its tested predecessor', async () => {
+  const product = plant({ 'docs/train-control.md': 'Train control' });
+  const gate = plant({ 'scripts/gates/train-control.mjs': 'export {};' });
+  const combined = plant({ 'scripts/gates/train-control.mjs': 'export {};' }, { parent: product });
+  const tree = commit => git(['rev-parse', commit + '^{tree}']);
+  const entry = (branch, parent, solo, prefix) => ({ branch, parent, soloCommit: solo, soloTree: tree(solo),
+    commit: prefix, tree: tree(prefix) });
+  const train = { members: [entry('docs/product', base, product, product), entry('gates/control', product, gate, combined)] };
+  const ctx = { ...context(combined), train };
+  const isolation = phase('Gate isolation', 'branch paths');
+  const owners = phase('Banned words and owners', 'code owners');
+  assert.deepEqual(await isolation(ctx), []);
+  assert.deepEqual(await owners(ctx), []);
+  train.members[1].branch = 'family/control';
+  assert.ok((await isolation(ctx)).some(issue => issue.includes('gates/')));
+  assert.ok((await owners(ctx)).some(issue => issue.includes('gate changes')));
+});
+
+test('train command adoption binds the two manifest blobs, isolated gate PR and expiry', async t => {
+  const { checkRevision, trainEntryAdoption } = await import('../../../.github/gate-review.mjs');
+  const { requireTypedControls } = await import('../typed-tools.mjs');
+  t.mock.timers.enable({ apis: ['Date'], now: Date.UTC(2026, 10, 26) });
+  const file = 'package.json', branch = 'gates/train-command';
+  const content = git(['cat-file', 'blob', '5f2454b6466a9a73c44b6a7ad4c6d4536e1770c6']) + '\n';
+  const script = JSON.parse(content);
+  script.scripts = Object.fromEntries(Object.entries(script.scripts).flatMap(entry =>
+    entry[0] === 'land' ? [entry, ['train', 'node scripts/train.mjs --publish']] : [entry]));
+  const edited = JSON.stringify(script, null, 2) + '\n';
+  const parent = plant({ [file]: content });
+  const head = plant({ [file]: edited }, { parent });
+  const tree = git(['rev-parse', head + '^{tree}']);
+  const check = name => checkRevision(project, parent, head, { headBranch: name, headRepository: 'local', repository: 'local' });
+  assert.doesNotThrow(() => requireTypedControls(project, parent, tree));
+  assert.doesNotThrow(() => check(branch));
+  assert.throws(() => check('family/train-command'));
+  assert.throws(() => check('gates/unrelated'));
+  assert.deepEqual(await gateIsolation({ ...context(head, branch), tree, base: parent }), []);
+  for (const edits of [{ [file]: edited, 'docs/extra.md': 'extra' }, { [file]: edited.replace('tsc --noEmit', 'echo') }]) {
+    const candidate = plant(edits, { parent });
+    assert.throws(() => requireTypedControls(project, parent, git(['rev-parse', candidate + '^{tree}'])));
+  }
+  assert.equal(trainEntryAdoption(project, parent, head, Date.UTC(2026, 11, 31)), false);
+});

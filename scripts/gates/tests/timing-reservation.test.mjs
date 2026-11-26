@@ -6,15 +6,23 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import test from 'node:test';
+import { withFunctionalDeviceGroup } from '../../workers/resource-guard.mjs';
+import { withTimingReservation } from '../../workers/timing-reservation.mjs';
+import { withLock } from '../../workers/lock.mjs';
 
 const module = new URL('../../workers/timing-reservation.mjs', import.meta.url).href;
+const resourceGuard = new URL('../../workers/resource-guard.mjs', import.meta.url).href;
 const actor = `
+  import { usingFunctionalDevice } from ${JSON.stringify(resourceGuard)};
   import { spawn } from 'node:child_process';
   import { once } from 'node:events';
   import { withTimingReservation } from ${JSON.stringify(module)};
   try {
     const [mode, label, extra] = process.argv.slice(1);
-    await withTimingReservation(process.cwd(), mode, label, async env => {
+    const reserve = ['iphone','android'].includes(mode)
+      ? (run, options) => usingFunctionalDevice(mode, label, run, options)
+      : (run, options) => withTimingReservation(process.cwd(), mode, label, run, options);
+    await reserve(async env => {
       if (extra === 'helper') {
         const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 20000)'], { stdio: 'ignore' });
         await once(child, 'spawn');
@@ -56,8 +64,8 @@ function repository(t) {
     rmSync(root, { recursive: true, force: true });
   });
   function start(mode, label, extra = '', inherited) {
-    const env = { ...process.env };
-    if (inherited) env.ULD_TIMING_RESERVATION = inherited;
+    const env = { ...process.env, ...(typeof inherited === 'object' ? inherited : {}) };
+    if (inherited) env.ULD_TIMING_RESERVATION = typeof inherited === 'string' ? inherited : inherited.ULD_TIMING_RESERVATION;
     else delete env.ULD_TIMING_RESERVATION;
     const child = spawn(process.execPath, ['--input-type=module', '-e', actor, mode, label, extra], {
       cwd: root, detached: true, env, stdio: ['ignore', 'ignore', 'inherit', 'ipc'],
@@ -67,9 +75,9 @@ function repository(t) {
     children.push(record);
     return record;
   }
-  async function queued(label) {
+  async function queued(label, queue = 'timing-admissions') {
     await until(() => {
-      const directory = join(root, '.git/uld-locks/timing-admissions-queue');
+      const directory = join(root, '.git/uld-locks', queue + '-queue');
       try {
         return readdirSync(directory).filter(file => !file.startsWith('.'))
           .some(file => JSON.parse(readFileSync(join(directory, file))).holder === label);
@@ -177,4 +185,81 @@ test('a foreign or unknown reservation blocks admission for ordinary work', asyn
   writeFileSync(join(directory, 'unrecognized-owner'), '{}');
   const unknown = start('activity', 'local worker');
   assert.match(await until(() => unknown.state.failed), /Unknown/);
+});
+
+function freshEnvironment() {
+  const env = { ...process.env };
+  delete env.ULD_TIMING_RESERVATION;
+  delete env.ULD_FUNCTIONAL_DEVICE_GROUP;
+  return env;
+}
+
+test('functional iPhone Android and web overlap once per platform while timing waits for all activity', async t => {
+  const { root, start, queued } = repository(t);
+  const before = [process.env.ULD_TIMING_RESERVATION, process.env.ULD_FUNCTIONAL_DEVICE_GROUP];
+  const prep = start('activity', 'worker preparation'), browser = start('activity', 'browser tests');
+  await Promise.all([entered(prep), entered(browser)]);
+  let measurement;
+  await withFunctionalDeviceGroup(root, 'device wave', async env => {
+    const ownedLease = env.ULD_FUNCTIONAL_DEVICE_GROUP;
+    assert.equal(await withLock(root, 'simulator', 'nested stage', id => id, { ownedLease }), ownedLease);
+    await assert.rejects(withLock(root, 'simulator', 'wrong generation', () => {}, { ownedLease: 'stale' }),
+      /own active simulator reservation/);
+    const iphone = start('iphone', 'iPhone A', '', env), android = start('android', 'Android A', '', env);
+    const [iosId, androidId] = await Promise.all([entered(iphone), entered(android)]);
+    assert.notEqual(iosId, androidId);
+    assert.deepEqual([process.env.ULD_TIMING_RESERVATION, process.env.ULD_FUNCTIONAL_DEVICE_GROUP], before);
+    const next = start('iphone', 'iPhone B', '', env);
+    await queued('iPhone B', 'functional-iphone');
+    await assert.rejects(withLock(root, 'simulator', 'legacy exclusive', () => {}, { timeoutMs: 120 }), /Timed out/);
+    measurement = start('measurement', 'exclusive timing');
+    await queued('exclusive timing');
+    assert.ok(!next.state.entered && !measurement.state.entered);
+    await finish(iphone);
+    await entered(next);
+    await finish(android);
+    await finish(next);
+  }, { env: freshEnvironment() });
+  assert.ok(!measurement.state.entered);
+  await finish(prep);
+  assert.ok(!measurement.state.entered);
+  await finish(browser);
+  await entered(measurement);
+  await finish(measurement);
+});
+
+test('siblings cannot run two measurements under one inherited timed reservation', async t => {
+  const { root, start } = repository(t);
+  await withTimingReservation(root, 'measurement', 'timing driver', async env => {
+    const first = start('measurement', 'first measured child', '', env);
+    await entered(first);
+    const sibling = start('measurement', 'second measured child', '', env);
+    assert.equal((await sibling.exit)[0], 1);
+    assert.match(sibling.state.failed, /Timing reservation held by first measured child/);
+    await finish(first);
+    const next = start('measurement', 'next measured child', '', env);
+    await entered(next);
+    await finish(next);
+  }, { env: freshEnvironment() });
+});
+
+test('a failed functional group drains its active driver before releasing exclusive devices', async t => {
+  const { root, start, queued } = repository(t);
+  const started = Promise.withResolvers();
+  let driver, enteredExclusive = false;
+  const group = withFunctionalDeviceGroup(root, 'failed wave', async env => {
+    driver = start('android', 'finishing Android', '', env);
+    await entered(driver);
+    started.resolve();
+    throw Error('functional stage failed');
+  }, { env: freshEnvironment() });
+  const failed = assert.rejects(group, /functional stage failed/);
+  await Promise.race([started.promise, group]);
+  const exclusive = withLock(root, 'simulator', 'next exclusive stage', () => { enteredExclusive = true; });
+  await queued('next exclusive stage', 'simulator');
+  assert.equal(enteredExclusive, false);
+  await finish(driver);
+  await failed;
+  await exclusive;
+  assert.equal(enteredExclusive, true);
 });

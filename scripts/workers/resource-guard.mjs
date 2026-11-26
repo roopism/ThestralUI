@@ -1,7 +1,7 @@
 import { withTimingReservation } from './timing-reservation.mjs';
 import { execFileSync } from 'node:child_process';
 import { hostname } from 'node:os';
-import { withIntegrationGate, withLock, lockOwner } from './lock.mjs';
+import { withFunctionalGroupLock, withFunctionalPlatformSlot, withIntegrationGate, withLock, lockOwner } from './lock.mjs';
 
 const reservationRoot = () => process.env.ULD_ARTIFACT_COMMON || process.cwd();
 
@@ -25,12 +25,32 @@ export function withTiming(mode, holder, run) {
   });
 }
 
+export function withFunctionalDeviceGroup(root, holder, run, options) {
+  const common = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'],
+    { cwd: root, encoding: 'utf8' }).trim();
+  return withFunctionalGroupLock(root, holder, id => withTimingReservation(root, 'activity', holder,
+    env => run({ ...env, ULD_ARTIFACT_COMMON: common, ULD_FUNCTIONAL_DEVICE_GROUP: id }),
+    { ...options, activityOnly: true }), options);
+}
+
+export function usingFunctionalDevice(platform, holder, run, options) {
+  const env = options?.env ?? process.env;
+  const root = env.ULD_ARTIFACT_COMMON, id = env.ULD_FUNCTIONAL_DEVICE_GROUP;
+  if (!root || !id || !env.ULD_TIMING_RESERVATION) throw Error('Functional device group environment required');
+  const owner = lockOwner(root, 'simulator');
+  if (owner?.id !== id || owner.host !== hostname() || !ancestor(owner.pid))
+    throw Error('Functional device group must belong to a live ancestor');
+  return withFunctionalPlatformSlot(root, platform, holder, id,
+    () => withTimingReservation(root, 'activity', holder, run, { ...options, env, activityOnly: true }), options);
+}
+
 export function withHostCache(parent, platform, run, options) {
   if (!['ios', 'android'].includes(platform)) throw Error('Unknown device host platform');
   return withLock(parent, platform + '-host', 'Prepare ' + platform + ' host', run, options);
 }
 
-export function usingSimulator(name, run) {
+export function usingSimulator(name, run, functionalPlatform) {
+  if (functionalPlatform) return usingFunctionalDevice(functionalPlatform, name, run);
   const root = reservationRoot();
   const owner = lockOwner(root, 'simulator');
   const work = () => withTiming('measurement', name, run);

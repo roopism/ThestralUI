@@ -79,6 +79,9 @@ export function appFingerprint({root,tree,base,groupId,appManifests,deviceImage,
     else if (protectedInput(row.path) || /^(?:scripts\/|packages\/policy\/|manifests\/)/.test(row.path))
       driverFiles.push([row.path,row.mode,row.oid]);
   }
-  return canonicalFingerprint({contractVersion:guardrails.contractVersion,groupId,appManifests:content,scenarioFiles,
+  // A phone harness can read any tracked fixture independently of the installed
+  // app. Bind its functional verdict to the complete immutable input tree.
+  assert.match(tree, oid);
+  return canonicalFingerprint({contractVersion:guardrails.contractVersion,groupId,tree,appManifests:content,scenarioFiles,
     driverFiles,deviceImage,envFacts:{...envFacts,scope,trustedPipeline:inputs.basePipeline}});
 }

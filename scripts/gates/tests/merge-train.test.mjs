@@ -8,6 +8,8 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { requireProposalHistory } from '../../land.mjs';
 import { noWeakening } from '../no-weakening.mjs';
+import { archiveTrainObject, trainScope } from '../train-plan.mjs';
+import { landOrdered } from '../ordered-landing.mjs';
 import { requireTrainBranch } from '../../train.mjs';
 import { startAttempt, failUnfinishedAttempt } from '../qualification-attempt.mjs';
 import { createTrain, landTrain, pushAtomicTrain, readTrain } from '../merge-train.mjs';
@@ -329,4 +331,224 @@ test('inspection builds and judges the stack without member execution or a train
   assert.deepEqual(f.calls(), { checks: 0, full: 0 });
   assert.equal(existsSync(join(f.context.directory, 'trains')), false);
   assert.equal(f.tip(), f.base);
+});
+
+async function orderedFixture(t) {
+  const f = fixture(t, 3);
+  const ctx = f.context;
+  const results = new Map(), postings = [];
+  const qualify = ctx.qualify;
+  Object.assign(ctx, {
+    preparePlan: (plan, id) => archiveTrainObject(ctx.root, 'train-plans/' + id, plan),
+    seal: train => archiveTrainObject(ctx.root, 'train-receipts/' + train.id, train),
+    qualify(train) {
+      qualify(train);
+      ctx.previous().trainPlan = train.plan;
+    },
+    liveBase: f.tip,
+    proposal(member, parent) {
+      const current = ctx.member(member.number);
+      const tree = git(ctx.root, 'merge-tree', '--write-tree', parent, current.head);
+      const merge = git(ctx.root, 'commit-tree', tree, '-p', parent, '-p', current.head, '-m', 'Live proposal');
+      return { pr: { number: current.number, head: { ref: current.branch, sha: current.head }, base: { sha: f.tip() } }, merge, tree };
+    },
+    evidence: (member, _, receipt, train) => postings.push([member.number, receipt.id, train.finalTree, member.tree]),
+    merge(member) {
+      const parent = f.tip();
+      const head = git(f.server, 'rev-parse', 'refs/heads/' + member.branch);
+      assert.equal(head, member.head);
+      const tree = git(ctx.root, 'merge-tree', '--write-tree', parent, head);
+      const sha = git(ctx.root, 'commit-tree', tree, '-p', parent, '-m', 'Squash PR ' + member.number);
+      git(f.server, 'fetch', '--quiet', ctx.root, sha);
+      git(f.server, 'update-ref', integration, sha, parent);
+      results.set(member.number, sha);
+      return { merged: true, sha };
+    },
+    merged(member) {
+      const sha = results.get(member.number);
+      if (!sha) return;
+      git(f.server, 'merge-base', '--is-ancestor', sha, f.tip());
+      return { sha, parents: git(f.server, 'show', '-s', '--format=%P', sha).split(' '),
+        tree: git(f.server, 'rev-parse', sha + '^{tree}') };
+    },
+    cleanup() {},
+  });
+  const train = await createTrain(ctx, f.numbers);
+  return { ...f, ctx, train, postings, run: () => landOrdered(ctx, train.id),
+    journal: () => JSON.parse(readFileSync(join(ctx.directory, 'trains', train.id + '.landing.json'))) };
+}
+
+test('ordered trains publish and confirm each squash, resume a lost response and reject replay', async t => {
+  const { ctx, train, postings, run, journal, calls, tip } = await orderedFixture(t);
+  const merge = ctx.merge;
+  ctx.merge = m => {
+    const reply = merge(m);
+    if (m.number === 2) throw Error('Missing merge response');
+    return reply;
+  };
+  await assert.rejects(run(), /Missing merge response/);
+  assert.deepEqual(journal().landed.map(m => m.number), [1]);
+  assert.equal(journal().intent.number, 2);
+  assert.equal(journal().events[0].outcome, 'unconfirmed');
+  ctx.merge = merge;
+  ctx.cleanup = () => { throw Error('Branch cleanup interrupted'); };
+  await assert.rejects(run(), /Branch cleanup interrupted/);
+  assert.deepEqual(journal().landed.map(m => m.number), [1, 2]);
+  assert.equal(journal().cleanup, 2);
+  ctx.cleanup = () => {};
+  const result = await run();
+  assert.equal(result.landedCommit, tip());
+  assert.notEqual(result.landedCommit, train.finalCommit);
+  assert.deepEqual(journal().landed.map(m => m.tree), train.members.map(m => m.tree));
+  assert.deepEqual(postings, train.members.map(m => [m.number, train.qualificationId, train.finalTree, m.tree]));
+  assert.deepEqual(calls(), { checks: 3, full: 1 });
+  await assert.rejects(run(), /already landed/);
+});
+
+test('a changed head ejects only its PR and unexpected integration movement stops the train', async t => {
+  for (const movement of ['head', 'base', 'red']) {
+    const { ctx, train, server, run, journal, tip, postings } = await orderedFixture(t);
+    const second = train.members[1];
+    const evidence = ctx.evidence;
+    ctx.evidence = (member, ...args) => {
+      evidence(member, ...args);
+      if (member.number !== second.number) return;
+      if (movement === 'base') {
+        const parent = tip();
+        const next = git(ctx.root, 'commit-tree', member.tree, '-p', parent, '-m', 'Concurrent integration');
+        git(server, 'fetch', '--quiet', ctx.root, next);
+        git(server, 'update-ref', integration, next, parent);
+      } else if (movement === 'head') git(server, 'update-ref', 'refs/heads/' + member.branch, train.base, member.head);
+      else ctx.proposal = () => assert.fail('PR check failed');
+    };
+    await assert.rejects(run());
+    const state = journal();
+    assert.deepEqual(state.landed.map(m => m.number), [1]);
+    assert.equal(state.events.at(-1).number, second.number);
+    assert.equal(state.terminal, movement === 'base' ? 'stopped' : 'ejected');
+    assert.deepEqual(postings.map(row => row[0]), [1, 2]);
+    assert.equal(existsSync(join(ctx.directory, 'train-landing-blocked.json')), false);
+    if (movement !== 'base') assert.equal(tip(), state.landed[0].sha);
+  }
+});
+
+test('ordered landing quarantines a merged tree or parent mismatch and rejects a substituted receipt', async t => {
+  for (const mismatch of ['tree', 'parent', 'receipt']) {
+    const { ctx, train, run, journal, postings } = await orderedFixture(t);
+    const merged = ctx.merged;
+    ctx.merged = member => {
+      const actual = merged(member);
+      if (!actual) return;
+      return mismatch === 'tree' ? { ...actual, tree: train.finalTree } : { ...actual, parents: [train.finalCommit] };
+    };
+    if (mismatch === 'receipt') ctx.previous().id = randomUUID();
+    await assert.rejects(run());
+    if (mismatch === 'receipt') assert.equal(postings.length, 0);
+    else {
+      assert.equal(journal().terminal, 'ejected');
+      assert.equal(journal().events[0].number, 1);
+      assert.equal(existsSync(join(ctx.directory, 'landing-blocked.json')), true);
+      assert.deepEqual(postings.map(m => m[0]), [1]);
+    }
+  }
+});
+
+test('batch device scope includes solo and prefix inputs hidden by the final diff', () => {
+  const full = { iphone: true, families: null }, web = { iphone: false, families: [] };
+  const plan = { base: 'base', finalTree: 'web', members: [{ parent: 'prefix', soloTree: 'web', tree: 'web' }] };
+  assert.deepEqual(trainScope(plan, () => web), web);
+  assert.deepEqual(trainScope(plan, (p, _, all) => all || p === 'prefix' ? full : web), full);
+  assert.deepEqual(trainScope(plan, (p, _, all) => all ? full :
+    { iphone: true, families: p === 'prefix' ? ['button'] : ['dialog'] }), full);
+});
+
+test('ordered cleanup preserves a newer remote head, including an advance during lease removal', async () => {
+  const { cleanupArchivedBranch } = await import('../ordered-landing.mjs');
+  const head = '1'.repeat(40), newer = '2'.repeat(40);
+  let live = newer, removals = 0;
+  const read = () => live;
+  const remove = expected => { removals++; assert.equal(expected, head); live = newer; throw Error('lease rejected'); };
+  assert.deepEqual(await cleanupArchivedBranch(head, read, remove), { outcome: 'preserved', head: newer });
+  assert.equal(removals, 0);
+  live = head;
+  assert.deepEqual(await cleanupArchivedBranch(head, read, remove), { outcome: 'preserved', head: newer });
+  assert.equal(removals, 1);
+  live = head;
+  await assert.rejects(() => cleanupArchivedBranch(head, read, () => { throw Error('unavailable'); }), /unavailable/);
+  assert.deepEqual(await cleanupArchivedBranch(head, read, () => { live = undefined; }), { outcome: 'removed' });
+  assert.deepEqual(await cleanupArchivedBranch(head, read, remove), { outcome: 'absent' });
+});
+
+test('ordered publication admits the healthy tail afresh only after a definite ejection', async t => {
+  const { publishOrderedMembers } = await import('../ordered-landing.mjs');
+  const f = await orderedFixture(t);
+  const second = f.train.members[1];
+  const original = f.ctx.proposal;
+  f.ctx.proposal = (m, p) => { if (m.number === second.number) assert.fail('PR check failed'); return original(m, p); };
+  const requests = [];
+  await publishOrderedMembers(f.numbers, async (numbers, expected) => {
+    requests.push({ numbers, expected });
+    if (requests.length === 1) return f.run();
+    assert.equal(f.tip(), f.journal().landed[0].sha);
+    assert.deepEqual(expected, f.journal().remaining);
+    assert.deepEqual(expected, [{ number: 3, head: f.train.members[2].head, branch: f.train.members[2].branch }]);
+    const parent = f.tip(), target = expected[0];
+    const tree = git(f.ctx.root, 'merge-tree', '--write-tree', parent, target.head);
+    const soloCommit = git(f.ctx.root, 'commit-tree', tree, '-p', parent, '-p', target.head, '-m', 'New live prefix');
+    const previous = f.ctx.previous, lookup = f.ctx.member;
+    f.ctx.member = number => {
+      const current = lookup(number);
+      assert.deepEqual([current.number, current.branch, current.head], [target.number, target.branch, target.head]);
+      return { ...current, soloCommit };
+    };
+    f.ctx.previous = train => {
+      const receipt = previous();
+      return !train || receipt.tree === train.finalTree ? receipt : undefined;
+    };
+    const tail = await createTrain(f.ctx, numbers);
+    assert.equal(tail.base, parent);
+    assert.notEqual(tail.finalTree, f.train.finalTree);
+    assert.deepEqual(tail.cheapChecks.map(row => row.number), [3]);
+    assert.equal((await landOrdered(f.ctx, tail.id)).landedCommit, f.tip());
+    assert.equal(git(f.server, 'rev-parse', integration + '^{tree}'), tree);
+  });
+  assert.deepEqual(f.calls(), { checks: 4, full: 2 });
+  assert.deepEqual(requests.map(r => r.numbers), [[1, 2, 3], [3]]);
+  assert.equal(f.journal().terminal, 'ejected');
+  const uncertain = await orderedFixture(t);
+  let writes = 0;
+  uncertain.ctx.merge = () => { writes++; throw Error('Unknown network outcome'); };
+  let calls = 0;
+  await assert.rejects(() => publishOrderedMembers(uncertain.numbers, () => { calls++; return uncertain.run(); }), /Unknown network/);
+  assert.equal(calls, 1);
+  assert.ok(uncertain.journal().intent);
+  await assert.rejects(uncertain.run(), /Awaiting confirmation/);
+  assert.equal(writes, 1);
+});
+
+test('train device admission checks every solo and prefix with the scoped selector', async () => {
+  const { trainDeviceCoverage } = await import('../train-plan.mjs');
+  const plan = { base: 'base', finalTree: 'final', members: [
+    { number: 1, parent: 'base', soloTree: 'solo-1', tree: 'first' },
+    { number: 2, parent: 'first', soloTree: 'solo-2', tree: 'final' },
+  ] };
+  const inspect = (trigger, full = false) => {
+    const seen = [];
+    const result = trainDeviceCoverage('.', plan, full, (_root, p, t, force) => {
+      seen.push([p, t, force]);
+      return { full: Boolean(force), run: Boolean(force || trigger === p + '/' + t), reason: 'fixture', paths: [] };
+    });
+    assert.deepEqual(result.checks.map(row => [row.base, row.tree]), [
+      ['base','final'], ['base','solo-1'], ['base','first'], ['base','solo-2'], ['base','final'], ['first','final'],
+    ]);
+    assert.ok(seen.some(([parent, tree]) => parent === 'first' && tree === 'final'));
+    return result;
+  };
+  assert.deepEqual(inspect(undefined).scope, { iphone: false, families: [] });
+  for (const trigger of ['base/solo-1','base/solo-2','base/first','first/final','base/final'])
+    assert.deepEqual(inspect(trigger).scope, { iphone: true, families: null });
+  assert.equal(inspect(undefined, true).devicePlan.full, true);
+  const held = trainDeviceCoverage('.', plan, undefined, (_root, _base, _tree, force) => ({ full: force, run: force }));
+  assert.deepEqual(held.scope, { iphone: true, families: null });
+  assert.equal(held.devicePlan.full, true);
 });

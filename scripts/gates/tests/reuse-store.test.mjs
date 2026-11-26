@@ -79,6 +79,27 @@ test('app fingerprints bind content, device, scenarios and selected scope',t=>{
   assert.throws(()=>appFingerprint({...args,deviceImage:null}));
 });
 
+test('device functional fingerprints bind shared harness fixture contents on both platforms', t => {
+  const f = gitFixture(t);
+  f.write('tests/driver/read-fixture.mjs', "export const input = new URL('../browser/labels.json', import.meta.url);");
+  f.write('tests/browser/labels.json', '{"title":"Welcome"}');
+  f.write('docs/sample.txt', 'A fixture read by the phone harness');
+  const original = f.update();
+  const keys = tree => ['iPhone Simulator', 'Android standard and low-end'].map(groupId => appFingerprint({
+    root: f.root, base: f.commit, tree, groupId, scope: { iphone: true, families: null },
+    appManifests: { phone: { manifestSha256: sha256('app'), fileSha256: sha256('signature') } },
+    deviceImage: { os: 'fixture' }, envFacts: { driver: 'v1' },
+  }));
+  const before = keys(original);
+  for (const [file, contents] of [['tests/browser/labels.json', '{"title":"Settings"}'], ['docs/sample.txt', 'Example']]) {
+    f.git('read-tree', '--reset', '-u', original);
+    f.write(file, contents);
+    const changed = keys(f.update());
+    assert.ok(changed.every((key, index) => key !== before[index]), file);
+  }
+  assert.deepEqual(keys(original), before);
+});
+
 const group='Catalog build', now=1800000000000;
 const decisionArgs={mode:'qualification',groupId:group,reusable:true,now,
   record:{groupId:group,result:'passed',retries:0,createdAt:new Date(now).toISOString()}, freshHistory:['passed']};

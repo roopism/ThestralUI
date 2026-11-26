@@ -55,18 +55,21 @@ export function preflightCommand(commit, branch) {
 
 // Qualification starts only from a passing preflight of this exact commit, tree,
 // integration base and judging script. Older integration histories predate it.
-export function requirePreflight(root, common, base, commit, tree) {
+export function requirePreflight(root, common, base, commit, tree, attemptId) {
   for (const id of [base, commit, tree]) assert.match(id, oid, 'Expected a full Git object ID');
   const runner = preflightRunner(root, base, commit);
   if (!runner) return;
-  const path = join(preflightDirectory(common), tree + '.json');
+  if (attemptId !== undefined) assert.match(attemptId, /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/);
+  const file = attemptId === undefined ? tree + '.json' : 'attempts/' + attemptId + '.json';
+  const path = join(preflightDirectory(common), file);
   const refuse = reason => {
     throw Error('Qualification refused: ' + reason + '. Run the cheap checks first: ' + preflightCommand(commit) +
       ' (receipt ' + path + ')');
   };
   if (!existsSync(path)) refuse('no passing preflight receipt exists for tree ' + tree);
-  const bytes = readBytes(preflightDirectory(common), tree + '.json');
+  const bytes = readBytes(preflightDirectory(common), file);
   const receipt = JSON.parse(bytes);
+  if (attemptId !== undefined) assert.equal(receipt.id, attemptId);
   if (receipt.schema !== 1 || receipt.kind !== 'preflight' || receipt.tree !== tree) refuse('the preflight receipt is malformed');
   if (receipt.status !== 'passed') refuse('the preflight receipt did not pass');
   if (receipt.base !== base) refuse('integration moved from ' + receipt.base + ' to ' + base + ' after preflight');

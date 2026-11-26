@@ -162,6 +162,7 @@ export async function createTrain(context, prs) {
     const ref = 'refs/uld-archive/trains/' + train.id + '/' + commit;
     trainGit(context.root, 'update-ref', ref, commit, '0'.repeat(40));
   }
+  if (context.preparePlan) train.plan = await context.preparePlan(stack, train.id);
   let receipt = await context.previous(train);
   let failure;
   if (!receipt) {
@@ -173,6 +174,7 @@ export async function createTrain(context, prs) {
   verifyQualification(train, receipt);
   train.qualificationId = receipt.id;
   train.status = receipt.status === 'passed' && !failure ? 'passed' : 'failed';
+  if (context.seal) await context.seal(train);
   persist(context.directory, train);
   if (train.status !== 'passed') {
     if (receipt.status === 'failed') await context.onFailure(train, receipt);
