@@ -1,3 +1,6 @@
+import { collectObservation, registerObservation } from '../selection/device-observations.mjs';
+import { deviceInputs } from '../selection/device-inputs.mjs';
+import { checkDeviceCompleteness } from './device-completeness.mjs';
 import { gateGroup, reuseRows } from './reuse/preflight.mjs';
 import { gitInputs } from './reuse/fingerprint.mjs';
 import { decideRow, executeChoice, rowIdentity, readVisualCoverage, saveFreshEvidence, sealReceipt, useRecord } from './reuse/runner.mjs';
@@ -20,7 +23,8 @@ import { fileURLToPath } from 'node:url';
 import { qualificationStatus, runWithIntegrationReservation } from './qualification-policy.mjs';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { releaseLocksOnSignal, withLock } from '../workers/lock.mjs';
-import { deviceScope } from '../selection/local-device.mjs';
+import { proposalDevices, proposalScope } from '../selection/proposal-devices.mjs';
+import { deviceSuites } from './device-verdict.mjs';
 import { browserMatrix, scenarioMatrix } from '../../packages/policy/quality/browser-matrix.mjs';
 import { verifyCandidatePassed } from '../../packages/policy/quality/api-depth/evidence.mjs';
 import { packedDepth, checkNewBudgets } from '../../packages/policy/quality/check-staged.mjs';
@@ -48,13 +52,14 @@ const snapshot = process.cwd();
 const context = {root, snapshot, trusted:fileURLToPath(new URL('../../',import.meta.url)), directory, base, commit, tree, mode, noReuse, attemptId:id};
 if (noReuse) process.env.ULD_FRESH_ANDROID_TIMING = '1';
 else delete process.env.ULD_FRESH_ANDROID_TIMING;
-const scope = deviceScope(root, base, tree, mode === 'release' || process.argv.includes('--no-reuse'));
+const devicePlan = proposalDevices(root, base, tree, noReuse);
+const scope = proposalScope(root, base, tree, devicePlan);
 writeFileSync('.git/gate-selection.json', JSON.stringify({ budgetComparisonBase: base }));
 context.scope = scope;
 // Pin the admitted attempt across concurrent preflights for the same tree.
 const preflightArg = process.argv.indexOf('--preflight-id');
 if (mode === 'qualification') context.preflightId = preflightArg < 0 ? null : process.argv[preflightArg + 1] ?? null;
-const receipt = { ...initial, schema: 1, androidHostActivityPolicy:1, tree, base, commit, id, mode, scope,
+const receipt = { ...initial, schema: 1, androidHostActivityPolicy:1, tree, base, commit, id, mode, scope, devicePlan,
   reuseSchema: 1, noReuse, auditSeed: noReuse ? null : randomBytes(32).toString('hex'), retries: null,
   status: 'running', vm: null, devices: {}, suites: [] };
 const steps = new Map();
@@ -75,8 +80,21 @@ function save(final = false) {
   renameSync(tmp, attempt);
   if (final) publishFirstReceipt(directory, tree, id);
 }
+const collectInputs = mode === 'qualification' && noReuse && base === commit;
 function runDevice(script, reports, platform) {
-  try { node(script); } finally {
+  try {
+    if (collectInputs) {
+      const output = join(snapshot, 'test-results', reports);
+      mkdirSync(output, { recursive: true });
+      const reads = join(output, id + '.reads.jsonl');
+      const preload = fileURLToPath(new URL('./device-reads.cjs', import.meta.url));
+      execFileSync(process.execPath, [script], { stdio: 'inherit', env: { ...process.env,
+        NODE_OPTIONS: '--require ' + JSON.stringify(preload), ULD_DEVICE_READS: reads,
+        ULD_DEVICE_ROOTS: JSON.stringify([snapshot, context.trusted]) } });
+      receipt.deviceInputs ??= { platforms: {} };
+      receipt.deviceInputs.platforms[platform] = collectObservation(platform, output, reads, snapshot);
+    } else node(script);
+  } finally {
     const root = join('test-results', reports);
     const versions = globSync(['device.json', '*/device.json'], { cwd: root }).map(file => read(join(root, file)));
     receipt.devices[platform] = platform === 'iphone' ? versions[0] ?? null : versions;
@@ -96,7 +114,7 @@ function runDevice(script, reports, platform) {
 const eligible = new Map();
 let inputs;
 const alwaysFresh = ['No weakening','Fast','Mac browser performance'];
-const deviceNames = ['iPhone Simulator','Android standard and low-end'];
+const deviceNames = deviceSuites;
 const visualCoveragePath = join(snapshot, '.git', 'visual-coverage-' + id + '.json');
 const browserGroups = ['Portable web scenarios','Mac browser behavior','Mac visual comparisons'];
 
@@ -154,6 +172,11 @@ async function runGroup(name, entry, operation, audit) {
   }
   const device = deviceNames.includes(name);
   if (name==='iPhone Simulator' && !scope.iphone) return operation(entry);
+  if (name === 'Android standard and low-end' && !devicePlan.run) {
+    entry.result = 'web-only';
+    entry.reason = devicePlan.reason;
+    return;
+  }
   const details = {...context,groupId:name};
   let app, identity;
   try {
@@ -212,7 +235,11 @@ async function execute(name,audit) {
     if (entry.result === 'pending') entry.result = 'passed';
   }
   catch (error) { entry.result = 'failed'; entry.reason = String(error.message).slice(0, 2000); console.error(name, entry.reason); }
-  finally { entry.durationMs += Math.round(performance.now() - start); save(); }
+  finally {
+    if (entry.result === 'web-only' && !devicePlan.run) entry.reason = devicePlan.reason;
+    entry.durationMs += Math.round(performance.now() - start);
+    save();
+  }
 }
 
 async function finishAndroidTiming() {
@@ -336,7 +363,7 @@ if (mode!=='hook') {
     const firstPath=join(directory,tree+'.json');
     const prior=relatedHistory(directory,tree,existsSync(firstPath)?read(firstPath):undefined,root,receipt);
     receipt.retries = new Set(prior.filter(old=>old.id!==id && (old.status!=='passed' ||
-      qualificationStatus(reuseRows(projectStoredPasses(directory,old)),old.error)!=='passed')).map(old=>old.id)).size;
+      qualificationStatus(reuseRows(projectStoredPasses(directory,old)),old.error,old)!=='passed')).map(old=>old.id)).size;
   } catch { receipt.retries=null; }
 }
 save();
@@ -354,11 +381,19 @@ try {
 } catch (error) { receipt.error = String(error.message); }
 finally {
   for (const row of reuseRows(receipt)) if (row.result === 'pending') { row.result = 'blocked'; row.reason = receipt.error ?? 'Preflight failed'; }
-  try { receipt.status = qualificationStatus(reuseRows(projectStoredPasses(directory,receipt)), receipt.error); }
+  try { receipt.status = qualificationStatus(reuseRows(projectStoredPasses(directory,receipt)), receipt.error, receipt); }
   catch (error) { receipt.status='failed'; receipt.error=error.message; }
   receipt.finished = new Date().toISOString();
   if (mode!=='hook' && receipt.status==='passed') {
-    try { sealReceipt(root,receipt); }
+    try {
+      if (collectInputs) {
+        const map = deviceInputs(root, tree);
+        checkDeviceCompleteness(map, receipt.deviceInputs.platforms);
+        receipt.deviceInputs.key = map.key;
+      }
+      sealReceipt(root,receipt);
+      if (collectInputs) registerObservation(root, receipt);
+    }
     catch (error) { receipt.status='failed'; receipt.error='Unable to preserve the final verdict: '+error.message; }
   }
   save(true);

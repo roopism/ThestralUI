@@ -65,7 +65,7 @@ function packageEntries(files) {
   return { entries, external, shared };
 }
 
-function references(ast) {
+export function references(ast, { workspace = false } = {}) {
   const imports = [], visits = [], constants = new Map();
   let dynamic = false, storyTitle;
   function walk(node) {
@@ -78,7 +78,13 @@ function references(ast) {
       else dynamic = true;
     }
     // Bundler macros and computed paths cannot be resolved against a single input.
-    if (ts.isPropertyAccessExpression(node) && ts.isMetaProperty(node.expression)) dynamic = true;
+    if (ts.isPropertyAccessExpression(node) && ts.isMetaProperty(node.expression) &&
+        !(workspace && ['url', 'main'].includes(node.name.text))) dynamic = true;
+    if (workspace && ts.isIdentifier(node) && node.text === 'require' &&
+        !(ts.isCallExpression(node.parent) && node.parent.expression === node)) dynamic = true;
+    if (workspace && ts.isPropertyAccessExpression(node) && node.name.text === 'require') dynamic = true;
+    if (workspace && ts.isElementAccessExpression(node) &&
+        (ts.isMetaProperty(node.expression) || node.argumentExpression?.text === 'require')) dynamic = true;
     if (ts.isCallExpression(node)) {
       if (node.expression.kind === ts.SyntaxKind.ImportKeyword
         || (ts.isIdentifier(node.expression) && node.expression.text === 'require')) {

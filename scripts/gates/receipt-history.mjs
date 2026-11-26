@@ -1,3 +1,4 @@
+import { scopedSkip } from './device-verdict.mjs';
 import assert from 'node:assert/strict';
 import { reuseRows } from './reuse/preflight.mjs';
 import { projectStoredPasses } from './reuse/store.mjs';
@@ -47,7 +48,7 @@ function incomplete(attempt, directory) {
   }
   return attempt.status !== 'passed' || !Array.isArray(attempt.suites) || !attempt.suites.length ||
     reuseRows(attempt).some(row => row?.result !== 'passed' &&
-      !(row?.name === 'iPhone Simulator' && row.result === 'web-only' && attempt.scope?.iphone === false));
+      !scopedSkip(attempt, row) && !(!attempt.devicePlan && row?.name === 'iPhone Simulator' && row.result === 'web-only' && attempt.scope?.iphone === false));
 }
 
 export function relatedHistory(directory, tree, first, root, target) {

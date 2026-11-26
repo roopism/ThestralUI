@@ -1,3 +1,4 @@
+import { verifiedDevicePlan, requireScopedEvidence } from './gates/device-verdict.mjs';
 import { timingForIdenticalApk } from './gates/android-timing-reuse.mjs';
 import { requireObservedSource } from './gates/android-host-activity.mjs';
 import { requireOriginalReceipt, verifyLandingReuse } from './gates/reuse/runner.mjs';
@@ -114,37 +115,47 @@ export function passing(tree, base, directory = join(common, 'uld-receipts'), pr
   assert.ok(r.mode === 'qualification' || r.mode === 'release');
   if (r.status !== 'passed') return;
   assert.deepEqual(r.suites.map(row => row.name), required);
-  assert.ok(r.vm?.browsers && r.vm?.sourceImageSha256 && r.devices.android.length === 2);
-  assert.deepEqual(r.devices.android.map(device => device.id).sort(), ['low-end', 'standard']);
-  assert.ok(r.scope.iphone ? r.devices.iphone?.passed : !r.devices.iphone);
-  assert.ok(r.suites.every(row => Number.isFinite(row.durationMs) && (row.result === 'passed' ||
-    row.name === 'iPhone Simulator' && !r.scope.iphone && row.result === 'web-only')));
-  if (r.androidHostActivityPolicy===1 || spawnSync('git',['--no-replace-objects','cat-file','-e',base+':scripts/gates/android-host-activity.mjs'],
-      {cwd:proposal.root??root,stdio:'ignore'}).status===0) {
-    assert.equal(r.androidHostActivityPolicy,1);
-    const timing=r.androidTiming;
-    if (timing?.result==='timing measured') {
-      requireObservedSource(timing,r);
-      const low=join(directory,'attempts',r.id+'-evidence','android','low-end');
-      assert.deepEqual(JSON.parse(readFileSync(join(low,'timing-admission.json'))),timing.admission);
-      assert.deepEqual(JSON.parse(readFileSync(join(low,'frame-measurements.json'))),timing.frameBudget);
-    } else {
-      assert.equal(timing?.result,'timing reused: identical app');
-      const gitAt=(...args)=>execFileSync('git',['--no-replace-objects',...args],{cwd:proposal.root??root,encoding:'utf8'}).trim();
-      const baseTree=gitAt('rev-parse',base+'^{tree}');
-      assert.equal(timing.baseTree,baseTree);
-      assert.equal(timing.sourceReceipt,'uld-receipts/'+baseTree+'.json');
-      assert.match(timing.measuredReceipt,/^uld-receipts\/[a-f0-9]{40}\.json$/);
-      const source=JSON.parse(readFileSync(join(directory,baseTree+'.json')));
-      assert.equal(timing.baseApkSha256,source.androidTiming?.apkSha256);
-      assert.deepEqual(timing.admission??null,source.androidTiming?.admission??null);
-      if(timing.admission) requireObservedSource(timing,r);
-      if(source.androidTiming?.entryManifestSha256) assert.equal(timing.baseEntryManifestSha256,source.androidTiming.entryManifestSha256);
-      const limits=JSON.parse(gitAt('show',tree+':tests/android/low-end-budget.json')).limits;
-      assert.ok(timing.frameBudget);
-      assert.deepEqual(timingForIdenticalApk(source,baseTree,timing.apkSha256,limits,timing.entryManifestSha256,
-        timing.baseEntryManifestSha256),timing.frameBudget);
+  // Both evidence protocols use the same history, seal, reuse verification and exact suite roster.
+  switch (verifiedDevicePlan(proposal.root ?? root, r.base, tree, r)) {
+    case 'scoped':
+      requireScopedEvidence(r);
+      break;
+    case 'measured': {
+      assert.ok(r.vm?.browsers && r.vm?.sourceImageSha256 && r.devices.android.length === 2);
+      assert.deepEqual(r.devices.android.map(device => device.id).sort(), ['low-end', 'standard']);
+      assert.ok(r.scope.iphone ? r.devices.iphone?.passed : !r.devices.iphone);
+      assert.ok(r.suites.every(row => Number.isFinite(row.durationMs) && (row.result === 'passed' ||
+        row.name === 'iPhone Simulator' && !r.scope.iphone && row.result === 'web-only')));
+      if (r.androidHostActivityPolicy===1 || spawnSync('git',['--no-replace-objects','cat-file','-e',base+':scripts/gates/android-host-activity.mjs'],
+          {cwd:proposal.root??root,stdio:'ignore'}).status===0) {
+        assert.equal(r.androidHostActivityPolicy,1);
+        const timing=r.androidTiming;
+        if (timing?.result==='timing measured') {
+          requireObservedSource(timing,r);
+          const low=join(directory,'attempts',r.id+'-evidence','android','low-end');
+          assert.deepEqual(JSON.parse(readFileSync(join(low,'timing-admission.json'))),timing.admission);
+          assert.deepEqual(JSON.parse(readFileSync(join(low,'frame-measurements.json'))),timing.frameBudget);
+        } else {
+          assert.equal(timing?.result,'timing reused: identical app');
+          const gitAt=(...args)=>execFileSync('git',['--no-replace-objects',...args],{cwd:proposal.root??root,encoding:'utf8'}).trim();
+          const baseTree=gitAt('rev-parse',base+'^{tree}');
+          assert.equal(timing.baseTree,baseTree);
+          assert.equal(timing.sourceReceipt,'uld-receipts/'+baseTree+'.json');
+          assert.match(timing.measuredReceipt,/^uld-receipts\/[a-f0-9]{40}\.json$/);
+          const source=JSON.parse(readFileSync(join(directory,baseTree+'.json')));
+          assert.equal(timing.baseApkSha256,source.androidTiming?.apkSha256);
+          assert.deepEqual(timing.admission??null,source.androidTiming?.admission??null);
+          if(timing.admission) requireObservedSource(timing,r);
+          if(source.androidTiming?.entryManifestSha256) assert.equal(timing.baseEntryManifestSha256,source.androidTiming.entryManifestSha256);
+          const limits=JSON.parse(gitAt('show',tree+':tests/android/low-end-budget.json')).limits;
+          assert.ok(timing.frameBudget);
+          assert.deepEqual(timingForIdenticalApk(source,baseTree,timing.apkSha256,limits,timing.entryManifestSha256,
+            timing.baseEntryManifestSha256),timing.frameBudget);
+        }
+      }
+      break;
     }
+    default: throw Error('Unrecognized device evidence protocol');
   }
   if (r.base !== base) return;
   return selected?.evidence ? { ...selected.verdict, landingEvidence: selected.evidence } : raw;

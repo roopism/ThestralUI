@@ -11,7 +11,7 @@ import { browserMatrix } from '../../packages/policy/quality/browser-matrix.mjs'
 import { verifyCandidatePassed } from '../../packages/policy/quality/api-depth/evidence.mjs';
 import { runMacPerformance } from './mac-performance.mjs';
 import { linuxBrowsers, stopVm } from './linux-vm.mjs';
-import { deviceScope } from '../selection/local-device.mjs';
+import { proposalDevices, proposalScope } from '../selection/proposal-devices.mjs';
 import { withLock } from '../workers/lock.mjs';
 import { withTiming, usingSimulator, shutdownSimulators } from '../workers/resource-guard.mjs';
 
@@ -21,7 +21,8 @@ const node = (...args) => execFileSync(process.execPath, args, { stdio: 'inherit
 const read = file => JSON.parse(readFileSync(file));
 const tree = execFileSync('git', ['rev-parse', commit + '^{tree}'], { cwd: root, encoding: 'utf8' }).trim();
 assert.equal(execFileSync('git', ['rev-parse','HEAD^{tree}'], { encoding:'utf8' }).trim(), tree);
-const scope = deviceScope(root, base, tree, false);
+const devicePlan = proposalDevices(root, base, tree);
+const scope = proposalScope(root, base, tree, devicePlan);
 writeFileSync('.git/local-device-scope.json', JSON.stringify(scope));
 const buildCatalog = () => runShard({suite:'Catalog build'}, base, commit);
 const buildPackages = () => {
@@ -55,7 +56,7 @@ async function executeSuite() {
   } else if (['Android standard and low-end','iPhone Simulator'].includes(suite)) {
     const iphone = suite === 'iPhone Simulator';
     if (iphone && !scope.iphone) {
-      console.log('iPhone Simulator web-only: the verified scope excludes this prefix');
+      console.log(suite, devicePlan.reason);
     } else {
       await withTiming('activity', 'Prepare device packages', buildPackages);
       await stopVm();
@@ -72,5 +73,6 @@ async function executeSuite() {
 }
 
 const usesDevice = ['Linux browser behavior', 'Mac browser performance', 'Android standard and low-end', 'iPhone Simulator'].includes(suite);
-if (usesDevice) await withLock(root, 'integration', 'Train diagnostic ' + suite, executeSuite);
+if (suite === 'Android standard and low-end' && !devicePlan.run) console.log(suite, devicePlan.reason);
+else if (usesDevice) await withLock(root, 'integration', 'Train diagnostic ' + suite, executeSuite);
 else await executeSuite();
