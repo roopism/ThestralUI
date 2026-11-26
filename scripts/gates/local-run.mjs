@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { qualificationStatus, runWithIntegrationReservation } from './qualification-policy.mjs';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { releaseLocksOnSignal, withLock } from '../workers/lock.mjs';
-import { proposalDevices, proposalScope } from '../selection/proposal-devices.mjs';
+import { proposalDevices, proposalScope, requireFullDevices } from '../selection/proposal-devices.mjs';
 import { deviceSuites } from './device-verdict.mjs';
 import { browserMatrix, scenarioMatrix } from '../../packages/policy/quality/browser-matrix.mjs';
 import { verifyCandidatePassed } from '../../packages/policy/quality/api-depth/evidence.mjs';
@@ -50,9 +50,9 @@ const noReuse = mode !== 'qualification' || process.argv.includes('--no-reuse');
 const single = process.argv.indexOf('--reuse-operation');
 const snapshot = process.cwd();
 const context = {root, snapshot, trusted:fileURLToPath(new URL('../../',import.meta.url)), directory, base, commit, tree, mode, noReuse, attemptId:id};
-if (noReuse) process.env.ULD_FRESH_ANDROID_TIMING = '1';
+if (noReuse || requireFullDevices) process.env.ULD_FRESH_ANDROID_TIMING = '1';
 else delete process.env.ULD_FRESH_ANDROID_TIMING;
-const devicePlan = proposalDevices(root, base, tree, noReuse);
+const devicePlan = proposalDevices(root, base, tree, noReuse || requireFullDevices);
 const scope = proposalScope(root, base, tree, devicePlan);
 writeFileSync('.git/gate-selection.json', JSON.stringify({ budgetComparisonBase: base }));
 context.scope = scope;
@@ -166,7 +166,7 @@ async function runChild(name, exclusions, extraEnv, audit) {
 }
 
 async function runGroup(name, entry, operation, audit) {
-  if (mode==='hook' || alwaysFresh.includes(name)) {
+  if (mode==='hook' || alwaysFresh.includes(name) || (requireFullDevices && deviceNames.includes(name))) {
     entry.reuseReason = 'always fresh';
     return operation(entry);
   }

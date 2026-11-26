@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { closeSync, cpSync, existsSync, globSync, lstatSync, mkdirSync, openSync, writeFileSync } from 'node:fs';
+import { closeSync, cpSync, existsSync, globSync, lstatSync, mkdirSync, mkdtempSync, openSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withTiming } from '../workers/resource-guard.mjs';
 import { withRevisionSnapshot } from '../../packages/policy/quality/staged-tree.mjs';
 import { installSnapshotDependencies } from '../../packages/policy/quality/snapshot-dependencies.mjs';
+
+import { deviceSuites } from './device-verdict.mjs';
+import { requireFullDevices } from '../selection/proposal-devices.mjs';
 
 const trusted = fileURLToPath(new URL('../../', import.meta.url));
 const git = (root, ...args) => execFileSync('git', ['--no-replace-objects', ...args], {
@@ -46,7 +49,7 @@ export function runMemberChecks(paths, gateTests, operations) {
   return { fast: 'passed', typedAndUnit: 'passed', changedGateTests, changedCanaries, macBehavior: mac ? 'passed' : 'no-web-inputs' };
 }
 
-export function checkMember(request) {
+export function checkCheapMember(request) {
   const { root, member } = request;
   const paths = git(root, 'diff', '--no-renames', '--name-only', '-z', member.parent, member.tree).split('\0').filter(Boolean);
   return withTrainSnapshot(request, ({ snapshot, node, env }) => withTiming('activity', 'Train member checks', () => {
@@ -61,6 +64,28 @@ export function checkMember(request) {
     });
     return { tree: member.tree, ...checks };
   }));
+}
+
+export async function runMemberDevices(base, member, run) {
+  const solo = {parent:base, commit:member.soloCommit, tree:member.soloTree};
+  const targets = solo.tree === member.tree ? [member] : [solo, member];
+  for (const target of targets) {
+    for (const suite of deviceSuites) await run(target, suite);
+  }
+}
+
+export async function checkMember(request) {
+  const result = await checkCheapMember(request);
+  if (requireFullDevices) {
+    const { root, base, member } = request;
+    const common = git(root, 'rev-parse', '--path-format=absolute', '--git-common-dir');
+    const dir = join(common, 'uld-delivery', 'train-member-devices');
+    mkdirSync(dir, {recursive:true});
+    await runMemberDevices(base, member, (target, suite) => checkPrefixSuite({
+      root, base, member:target, evidenceDir:mkdtempSync(join(dir,target.tree + '-')),
+    }, suite));
+  }
+  return result;
 }
 
 export function checkPrefixSuite(request, suite) {

@@ -11,7 +11,8 @@ import { browserMatrix } from '../../packages/policy/quality/browser-matrix.mjs'
 import { verifyCandidatePassed } from '../../packages/policy/quality/api-depth/evidence.mjs';
 import { runMacPerformance } from './mac-performance.mjs';
 import { linuxBrowsers, stopVm } from './linux-vm.mjs';
-import { proposalDevices, proposalScope } from '../selection/proposal-devices.mjs';
+import { deviceSuites } from './device-verdict.mjs';
+import { proposalDevices, proposalScope, requireFullDevices } from '../selection/proposal-devices.mjs';
 import { withLock } from '../workers/lock.mjs';
 import { withTiming, usingSimulator, shutdownSimulators } from '../workers/resource-guard.mjs';
 
@@ -21,8 +22,14 @@ const node = (...args) => execFileSync(process.execPath, args, { stdio: 'inherit
 const read = file => JSON.parse(readFileSync(file));
 const tree = execFileSync('git', ['rev-parse', commit + '^{tree}'], { cwd: root, encoding: 'utf8' }).trim();
 assert.equal(execFileSync('git', ['rev-parse','HEAD^{tree}'], { encoding:'utf8' }).trim(), tree);
-const devicePlan = proposalDevices(root, base, tree);
+const full = requireFullDevices && deviceSuites.includes(suite);
+const devicePlan = proposalDevices(root, base, tree, full);
 const scope = proposalScope(root, base, tree, devicePlan);
+if (full) {
+  assert.deepEqual(scope, {iphone:true, families:null});
+  process.env.ULD_FRESH_ANDROID_TIMING = '1';
+  delete process.env.ULD_ANDROID_TIMING_ATTEMPT;
+}
 writeFileSync('.git/local-device-scope.json', JSON.stringify(scope));
 const buildCatalog = () => runShard({suite:'Catalog build'}, base, commit);
 const buildPackages = () => {

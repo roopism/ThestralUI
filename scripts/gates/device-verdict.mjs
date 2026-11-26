@@ -22,7 +22,7 @@ export function verifiedDevicePlan(root, base, tree, receipt) {
   }
   assert.equal(receipt.reuseSchema, 1);
   assert.equal(typeof receipt.noReuse, 'boolean');
-  const plan = proposalDevices(root, base, tree, receipt.mode !== 'qualification' || receipt.noReuse);
+  const plan = proposalDevices(root, base, tree, receipt.mode !== 'qualification' || receipt.noReuse || receipt.devicePlan?.full === true);
   assert.deepEqual(receipt.devicePlan, plan, 'Device decision differs from the integration-to-proposal diff');
   assert.deepEqual(receipt.scope, proposalScope(root, base, tree, plan));
   return plan.run ? 'measured' : 'scoped';
