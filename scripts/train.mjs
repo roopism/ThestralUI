@@ -1,3 +1,5 @@
+import { withPreflightActivity } from './workers/resource-guard.mjs';
+import { requireBatchId } from './gates/train-preflight.mjs';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -243,6 +245,10 @@ async function withTrainContext(operation, inspectOnly = false, ordered = false,
         const { checkMember } = await import(join(trusted, 'scripts/gates/train-checks.mjs'));
         return checkMember(request);
       },
+      async preflight(member, batch) {
+        const { prepareTrainMember } = await import(join(trusted, 'scripts/gates/train-checks.mjs'));
+        return prepareTrainMember({ root, base, member, batch });
+      },
       previous: train => exactTrainQualification(root, directory, train, passing),
       qualify: train => run('scripts/qualify.mjs', [train.finalCommit], root),
       async onFailure(train, qualification) {
@@ -332,7 +338,7 @@ function soloArchivedHead(root, member) {
   return head;
 }
 
-function orderedCommand(prs, expected, selector) {
+function orderedCommand(prs, expected, selector, batch) {
   return withTrainContext(context => withLock(context.root, 'landing', 'ordered PR train', async () => {
     requireResolvedMerge(context.directory, (commit, tree) => {
       assert.equal(trainGit(context.root, 'rev-parse', commit + '^{tree}'), tree);
@@ -345,7 +351,7 @@ function orderedCommand(prs, expected, selector) {
       const heads = new Map(expected.map(member => [member.number, member]));
       context.member = (number, parent) => lookup(number, parent, heads.get(number));
     }
-    const id = selector ?? (await createTrain(context, prs)).id;
+    const id = selector ?? (await createTrain({ ...context, batch }, prs)).id;
     console.log('Ordered train receipt', id);
     const result = await landOrdered(context, id);
     console.log('Landed train', id, 'at', result.landedCommit, 'with tree', result.finalTree);
@@ -388,14 +394,19 @@ export function reportEjections(result) {
 
 if (import.meta.main) {
   const args = process.argv.slice(2);
+  const prepare = args[0] === '--preflight';
+  const batch = prepare || args[0] === '--batch' ? requireBatchId(args.splice(0, 2)[1]) : undefined;
   if (args[0] === '--publish') {
     args.shift();
+    assert.ok(!prepare, 'Member preparation takes only PR numbers');
     if (args[0] === '--resume') {
+      assert.ok(!batch, 'Resume uses the sealed train receipt');
       assert.equal(args.length, 2, 'Expected --resume <train receipt>');
       reportEjections(await publishOrderedMembers(null, orderedCommand, args[1]));
     } else {
       assert.ok(args.length && args.every(arg => /^[1-9]\d*$/.test(arg) && Number.isSafeInteger(Number(arg))));
       assert.equal(new Set(args).size, args.length, 'Duplicate PR');
+      const submit = (prs, expected, selector) => orderedCommand(prs, expected, selector, batch);
       const pending = args.map(Number);
       while (pending.length) {
         const batch = [];
@@ -405,20 +416,29 @@ if (import.meta.main) {
           // A later PR needs the new integration judge after a gate change.
           if (pending.length && api('pulls/' + number).head.ref.startsWith('gates/')) break;
         }
-        reportEjections(await publishOrderedMembers(batch, orderedCommand));
+        reportEjections(await publishOrderedMembers(batch, submit));
       }
     }
     process.exit(0);
   }
   const inspectOnly = args[0] === '--inspect';
-  if (inspectOnly) args.shift();
-  assert.ok(args.length > 0 && args.length <= 5 && args.every(a => /^[1-9]\d*$/.test(a)), 'Usage: node scripts/train.mjs <PR> [<PR> ...]');
   if (inspectOnly) {
+    assert.ok(!batch, 'Inspection takes only PR numbers');
+    args.shift();
+  }
+  assert.ok(args.length > 0 && args.length <= 5 && args.every(a => /^[1-9]\d*$/.test(a)), 'Usage: node scripts/train.mjs <PR> [<PR> ...]');
+  if (prepare) {
+    await withPreflightActivity('Prepare train members', () => withTrainContext(async context => {
+      const stack = await inspectTrain(context, args.map(Number));
+      for (const member of stack.members) await context.preflight(member, batch);
+      console.log('Prepared batch', batch, 'on', stack.base);
+    }, true));
+  } else if (inspectOnly) {
     const stack = await withTrainContext(context => inspectTrain(context, args.map(Number)), true);
     console.log('Inspected train on', stack.base, 'with final tree', stack.finalTree);
   } else {
     const receipt = await withTrainContext(context => withLock(context.root, 'landing', 'prepare merge train',
-      () => createTrain(context, args.map(Number))));
+      () => createTrain({ ...context, batch }, args.map(Number))));
     console.log('Train receipt', receipt.id, 'qualified tree', receipt.finalTree);
   }
 }

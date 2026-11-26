@@ -44,7 +44,9 @@ releaseLocksOnSignal();
 const read = file => JSON.parse(readFileSync(file, 'utf8'));
 const run = (bin, ...args) => execFileSync(bin, args, { stdio: 'inherit' });
 const node = (...args) => run(process.execPath, ...args);
-const root = process.argv[2], base = process.argv[3], commit = process.argv[4], mode = process.argv[5];
+const root = process.argv[2], base = process.argv[3], commit = process.argv[4];
+const memberControls = process.argv[5] === 'member-controls';
+const mode = memberControls ? 'hook' : process.argv[5];
 const tree = execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim();
 const common = process.env.ULD_ARTIFACT_COMMON;
 const directory = join(common, 'uld-receipts');
@@ -490,6 +492,14 @@ async function runParallelQualification() {
   if (failures.length) throw Error(failures.map(([name, row]) => name + ': ' + row.reason).join(' / '));
 }
 
+// The train restores Typed from the sealed preflight after these controls pass.
+// Changed tests and Mac behavior still run before the member can advance.
+if (memberControls) {
+  await execute('No weakening');
+  await execute('Fast');
+  assert.ok(receipt.suites.slice(0, 2).every(row => row.result === 'passed'), 'Member controls failed');
+  process.exit(0);
+}
 if (single !== -1) {
   const name = process.argv[single+1];
   assert.ok(steps.has(name) && !alwaysFresh.includes(name) && !deviceNames.includes(name) && name!=='Linux browser behavior');

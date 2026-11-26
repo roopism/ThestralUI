@@ -16,7 +16,7 @@ isolateFixtureProcess();
 const module = new URL('../../workers/timing-reservation.mjs', import.meta.url).href;
 const resourceGuard = new URL('../../workers/resource-guard.mjs', import.meta.url).href;
 const actor = `
-  import { usingFunctionalDevice } from ${JSON.stringify(resourceGuard)};
+  import { usingFunctionalDevice, withPreflightActivity } from ${JSON.stringify(resourceGuard)};
   import { spawn } from 'node:child_process';
   import { once } from 'node:events';
   import { withTimingReservation } from ${JSON.stringify(module)};
@@ -25,7 +25,8 @@ const actor = `
     const reserve = ['iphone','android'].includes(mode)
       ? (run, options) => usingFunctionalDevice(mode, label, run, options)
       : (run, options) => withTimingReservation(process.cwd(), mode, label, run, options);
-    await reserve(async env => {
+    const admit = mode === 'preflight' ? run => withPreflightActivity(label, () => run(process.env)) : reserve;
+    await admit(async env => {
       if (extra === 'helper') {
         const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 20000)'], { stdio: 'ignore' });
         await once(child, 'spawn');
@@ -265,4 +266,29 @@ test('a failed functional group drains its active driver before releasing exclus
   await failed;
   await exclusive;
   assert.equal(enteredExclusive, true);
+});
+
+test('batch preflight overlaps functional device work and releases the host before timing', async t => {
+  const { start, queued, root } = repository(t);
+  const fixtureEnv = { ULD_ARTIFACT_COMMON: join(root, '.git') };
+  let preflight, timing;
+  await withFunctionalDeviceGroup(root, 'device wave', async env => {
+    const device = start('iphone', 'iPhone journeys', '', env);
+    await entered(device);
+    preflight = start('preflight', 'next batch', '', fixtureEnv);
+    await entered(preflight);
+    timing = start('measurement', 'Android trials');
+    await queued('Android trials');
+    await finish(device);
+  }, { env: freshEnvironment() });
+  assert.ok(!timing.state.entered);
+  assert.deepEqual(readdirSync(join(root, '.git/uld-locks')).filter(name => ['landing', 'simulator', 'integration'].includes(name)), []);
+  await finish(preflight);
+  await entered(timing);
+  const later = start('preflight', 'third batch', '', fixtureEnv);
+  await queued('third batch');
+  assert.ok(!later.state.entered);
+  await finish(timing);
+  await entered(later);
+  await finish(later);
 });

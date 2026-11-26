@@ -1,3 +1,4 @@
+import { prepareMemberPreflight } from '../train-preflight.mjs';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -60,7 +61,8 @@ async function fixture(t) {
 test('matching preflight fingerprints reuse both stage verdicts and restore Typed outputs', async t => {
   const { ctx, choose } = await fixture(t);
   assert.equal(requirePreflight(ctx.root, ctx.common, ctx.base, ctx.commit, ctx.tree).id, ctx.preflightId);
-  const snapshot = join(ctx.common, 'consumer');
+  const snapshot = mkdtempSync(join(tmpdir(), 'uld-preflight-consumer-'));
+  t.after(() => rmSync(snapshot, { recursive: true, force: true }));
   mkdirSync(join(snapshot, '.git'), { recursive: true });
   const rows = [];
   for (const name of [gateGroup, typedGroup]) {
@@ -160,4 +162,42 @@ test('batch admission retains its exact sealed preflight when a parallel preflig
   assert.throws(() => requireTrainPreflight(ctx.root, ctx.common, ctx.base, ctx.commit, ctx.tree, randomUUID()));
   writeFileSync(join(ctx.common, 'uld-receipts', 'preflight', 'attempts', exact.id + '.json'), JSON.stringify(competing));
   assert.throws(admit);
+});
+
+test('stacked member preflight binds the predecessor and restores sealed Typed outputs', async t => {
+  const { ctx, git, receipt } = await fixture(t);
+  const parent = git('commit-tree', ctx.tree, '-p', ctx.base, '-m', 'Predecessor');
+  const commit = git('commit-tree', ctx.tree, '-p', parent, '-m', 'Member');
+  const member = { number: 2, head: commit, branch: 'gates/member', commit, parent, tree: ctx.tree };
+  const request = { ...ctx, commit, member, batch: randomUUID() };
+  const clearOutputs = () => {
+    for (const path of ['packages/tokens/dist', 'packages/web/dist', 'packages/native/dist', 'release/evidence'])
+      rmSync(join(ctx.root, path), { recursive: true, force: true });
+  };
+  const calls = [];
+  const check = (candidate, controls = () => calls.push('controls')) =>
+    prepareMemberPreflight(candidate, () => calls.push('hook'), controls);
+  const { preflightId } = check(request);
+  assert.deepEqual(calls.splice(0), ['hook']);
+  clearOutputs();
+  check({ ...request, batch: randomUUID() });
+  check({ ...request, member: { ...member, parent: ctx.base } });
+  assert.deepEqual(calls.splice(0), ['hook', 'hook']);
+  assert.deepEqual(check(request), { reusedPreflight: preflightId });
+  assert.deepEqual(calls.splice(0), ['controls']);
+  const admitted = requirePreflight(ctx.root, ctx.common, ctx.base, ctx.commit, ctx.tree);
+  assert.equal(admitted.id, receipt.id);
+  assert.notEqual(preflightId, admitted.id);
+  const qualification = { ...ctx, preflightId: admitted.id };
+  for (const name of [typedGroup, gateGroup]) {
+    const decision = decideRow(qualification, name, rowIdentity(qualification, name));
+    assert.ok(decision.reuse);
+    assert.equal(decision.record.sourceAttempt, receipt.id);
+  }
+  assert.equal(readFileSync(join(ctx.root, 'packages/web/dist/output'), 'utf8'), 'packages/web/dist');
+  clearOutputs();
+  assert.throws(() => check(request, () => { throw Error('planted failure'); }), /planted failure/);
+  clearOutputs();
+  check(request);
+  assert.deepEqual(calls, ['hook']);
 });
