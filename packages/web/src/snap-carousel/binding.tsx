@@ -52,6 +52,14 @@ export function Carousel({
     if (viewport.current && shown.current !== index) align(viewport.current, index);
     shown.current = index;
     if (selectedId === undefined && internal !== current) setSelected(current);
+    const element = viewport.current;
+    if (!element || selectedId === undefined) return;
+    const settle = () => {
+      shown.current = index;
+      align(element, index);
+    };
+    element.addEventListener('scrollend', settle);
+    return () => element.removeEventListener('scrollend', settle);
   }, [current, index, internal, selectedId]);
 
   function choose(next: number) {
@@ -99,6 +107,7 @@ export function Carousel({
       items.length - 1,
       Math.round(Math.abs(element.scrollLeft) / element.clientWidth),
     );
+    if (visible === shown.current) return;
     shown.current = visible;
     if (items[visible] && visible !== index) choose(visible);
   }

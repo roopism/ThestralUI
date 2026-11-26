@@ -18,7 +18,7 @@ export function FormField({ label, hint, error, accessibilityHint, style, ref, .
     <View style={{ gap: tokens.size.gap }}>
       <Text nativeID={titleId} style={{ color: theme.text }}>{label}</Text>
       <NativeFieldControl {...input} ref={ref} accessibilityLabel={label} accessibilityLabelledBy={titleId}
-        accessibilityHint={description || undefined} placeholderTextColor={theme.muted}
+        accessibilityHint={description || undefined} placeholderTextColor={input.placeholderTextColor ?? theme.muted}
         style={[{ color: theme.text, backgroundColor: theme.surface, minHeight,
           borderColor: error ? theme.danger : theme.border, borderWidth: 1, borderRadius: tokens.size.radius,
           paddingHorizontal: tokens.size.gap }, style]} />

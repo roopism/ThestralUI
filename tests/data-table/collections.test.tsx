@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 
 import { afterEach, expect, test, vi } from 'vitest';
 
@@ -79,11 +79,14 @@ test('cancels or asynchronously saves edits and retains a draft on failure', asy
   fireEvent.click(edit());
   input = screen.getByRole('textbox', { name: 'Edit Name, Gamma' });
   fireEvent.change(input, { target: { value: 'Approved' } });
+  screen.getByRole('button', { name: 'Save' }).focus();
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   expect(await screen.findByRole('alert')).toBeTruthy();
+  expect(document.activeElement).toBe(input);
   expect((input as HTMLInputElement).value).toBe('Approved');
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   expect(await screen.findByRole('button', { name: 'Edit Name, Gamma' })).toBeTruthy();
+  expect(document.activeElement).toBe(edit());
   expect(save).toHaveBeenLastCalledWith(rows[0], 'Approved');
 });
 
@@ -119,4 +122,48 @@ test('reports sort, page, search and selection changes and honors an initial sor
   fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'al' } });
   expect(search).toHaveBeenLastCalledWith('al');
   expect(page).toHaveBeenLastCalledWith(0);
+});
+
+test('paging preserves an in-flight save for only its row and column', async () => {
+  let finish!: () => void;
+  const edit = vi.fn().mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
+  const editScore = vi.fn();
+  render(<DataTable {...props} pageSize={1} columns={[{ ...columns[0], onEdit: edit }, { ...columns[1], onEdit: editScore }]} />);
+  const click = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
+  click('Edit Name, Gamma');
+  click('Save');
+  click('Next page');
+  click('Edit Name, Beta');
+  click('Cancel');
+  click('Previous page');
+  click('Edit Score, Gamma');
+  await act(async () => { click('Save'); });
+  expect(editScore).toHaveBeenCalledTimes(1);
+  click('Edit Name, Gamma');
+  const duplicate = screen.queryByRole('button', { name: 'Save' });
+  if (duplicate) fireEvent.click(duplicate);
+  expect(edit).toHaveBeenCalledTimes(1);
+  await act(async () => finish());
+  click('Edit Name, Gamma');
+  await act(async () => { click('Save'); });
+  expect(edit).toHaveBeenCalledTimes(2);
+});
+
+test.each(['resolves', 'rejects'])('a save that %s leaves focus in the search field', async outcome => {
+  let settle!: () => void;
+  const onEdit = () => new Promise<void>((resolve, reject) => {
+    settle = outcome === 'resolves' ? resolve : () => reject(Error('offline'));
+  });
+  render(<DataTable {...props} columns={[{ ...columns[0], onEdit }]} />);
+  const name = 'Edit Name, Gamma';
+  fireEvent.click(screen.getByRole('button', { name }));
+  const field = screen.getByRole('textbox', { name });
+  expect(document.activeElement).toBe(field);
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  const search = screen.getByRole('searchbox');
+  search.focus();
+  await act(async () => settle());
+  expect(document.activeElement).toBe(search);
+  if (outcome === 'resolves') expect(screen.getByRole('button', { name })).toBeTruthy();
+  else expect(screen.getByRole('alert')).toBeTruthy();
 });

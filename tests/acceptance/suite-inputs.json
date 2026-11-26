@@ -67,7 +67,8 @@
         "node",
         "lockfile",
         "macos-build",
-        "hardware-model"
+        "hardware-model",
+        "playwright-browsers"
       ]
     },
     "Packed consumers min": {

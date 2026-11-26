@@ -228,7 +228,10 @@
       "tests/data-table/ownership.test.tsx | the initial HTML contains labeled search, column headers, records and real paging controls",
       "tests/data-table/ownership.test.tsx | a rejected bulk operation retains selection and the application can retry once",
       "tests/data-table/ownership.test.tsx | the web public hook obeys the shared paging, batched selection and controlled veto contract",
-      "tests/data-table/collections.test.tsx | reports sort, page, search and selection changes and honors an initial sort"
+      "tests/data-table/collections.test.tsx | reports sort, page, search and selection changes and honors an initial sort",
+      "tests/data-table/collections.test.tsx | paging preserves an in-flight save for only its row and column",
+      "tests/data-table/collections.test.tsx | a save that resolves leaves focus in the search field",
+      "tests/data-table/collections.test.tsx | a save that rejects leaves focus in the search field"
     ],
     "browser": [
       "data-table/data-table.spec.ts | server paging, edits and cross-page bulk actions complete the same desktop and phone workflow",
@@ -258,7 +261,8 @@
       "tests/data-table/native.test.cjs | the native public hook obeys the shared paging, batched selection and controlled veto contract",
       "tests/data-table/native.test.cjs | every gallery scroll view containing the active editor forwards the first keyboard-open action",
       "tests/native/catalog-presentation.test.cjs | the native work queue announces one archived record and retains plural results",
-      "tests/data-table/native.test.cjs | removing the focused native cell returns focus to the stable table viewport"
+      "tests/data-table/native.test.cjs | removing the focused native cell returns focus to the stable table viewport",
+      "tests/data-table/native.test.cjs | paging keeps a native cell locked until its previous save settles"
     ],
     "visual": [
       "data-table/data-table.visual.ts | data table audit queue light phone",

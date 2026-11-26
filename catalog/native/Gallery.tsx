@@ -35,7 +35,6 @@ export default function Gallery() {
     return () => subscription.remove();
   }, []);
   const input = useRef<ComponentRef<typeof TextInput>>(null);
-  const colors = dark ? tokens.dark : tokens.light;
   function review() {
     if (!name.trim()) {
       setError('Enter a workspace name');
@@ -66,11 +65,11 @@ export default function Gallery() {
       testID="workspace-screen"
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
-      style={{ backgroundColor: colors.canvas }}
+      style={{ backgroundColor: dark ? tokens.dark.canvas : tokens.light.canvas }}
       contentContainerStyle={{ padding: 24, gap: 16 }}
     >
       <Button testID="open-scenarios" label="Component scenarios" onPress={() => setShowScenarios(true)} />
-      <Text accessibilityRole="header" style={{ color: colors.text, fontSize: 28 }}>
+      <Text accessibilityRole="header" style={{ ...statusStyle, fontSize: tokens.type.headingSize }}>
         Workspace settings
       </Text>
       <FormField
@@ -92,7 +91,7 @@ export default function Gallery() {
         <Text
           testID="workspace-saved"
           accessibilityLiveRegion="polite"
-          style={{ color: colors.text }}
+          style={statusStyle}
         >
           Saved {saved}
         </Text>
@@ -125,7 +124,7 @@ export default function Gallery() {
             if (!inFlight.current) setConfirming(false);
           }}
         >
-          <Text testID="workspace-draft" style={{ color: colors.text }}>
+          <Text testID="workspace-draft" style={statusStyle}>
             {name}
           </Text>
           <View style={{ gap: tokens.size.gap }}>
