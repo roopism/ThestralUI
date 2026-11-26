@@ -28,7 +28,7 @@ async function reserved(name, reserve, operation) {
 // ready checks the individual stage's real prerequisites. Operations return an
 // explicit verdict after their children exit. record synchronously saves the receipt.
 export async function runQualificationLanes({ functional, timed, ready, reserveTiming, record,
-  reserveFunctional = run => run(), audit }) {
+  reserveFunctional = run => run(), audit, timingSkip }) {
   for (const stage of functionalStages) assert.equal(typeof functional?.[stage], 'function', stage);
   for (const stage of timedStages) assert.equal(typeof timed?.[stage], 'function', stage);
   for (const fn of [ready, reserveFunctional, reserveTiming, record]) assert.equal(typeof fn, 'function');
@@ -85,6 +85,9 @@ export async function runQualificationLanes({ functional, timed, ready, reserveT
     for (const stage of [...functionalStages, ...(audit ? ['audit'] : [])])
       if (!results[stage]) finish(stage, 'blocked', reservationError);
   }
-  for (const stage of timedStages) await run(stage, timed[stage], undefined, true);
+  for (const stage of timedStages) {
+    if (timingSkip) save(stage, timingSkip);
+    else await run(stage, timed[stage], undefined, true);
+  }
   return results;
 }
