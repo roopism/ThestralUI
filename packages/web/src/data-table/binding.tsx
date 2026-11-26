@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { ButtonTarget, useButton } from '../button/binding.js';
 import { SelectionCheckbox, TableField } from './controls.js';
 import { useDataTable, type DataColumn, type UseDataTableOptions } from './state.js';
@@ -38,45 +38,63 @@ export interface DataTableProps<R extends { id: string }> extends UseDataTableOp
   readOnly?: boolean;
   disabled?: boolean;
 }
-function TableAction(props: ComponentPropsWithRef<'button'>) {
-  return <ButtonTarget {...props} behavior={useButton(props)} />;
+function TableAction({ busy, ...props }: ComponentPropsWithRef<'button'> & { busy?: boolean }) {
+  return <ButtonTarget {...props} behavior={useButton({ ...props, busy })} />;
 }
 
-export function EditableCell<R>({
+function useCellSaves() {
+  const [pending, setPending] = useState(() => new Set<string>());
+  const latest = useRef(pending);
+  function mark(key: string, saving: boolean) {
+    if (latest.current.has(key) === saving) return false;
+    const next = new Set(latest.current);
+    if (saving) next.add(key);
+    else next.delete(key);
+    latest.current = next;
+    setPending(next);
+    return true;
+  }
+  return { pending, mark, isSaving: (key: string) => latest.current.has(key) };
+}
+
+export function EditableCell<R extends { id: string }>({
   row,
   column,
   name,
-  labels, disabled, busy, unstyled,
+  labels, disabled, busy, unstyled, saves,
 }: {
   row: R;
   column: DataColumn<R>;
   name: string;
   labels: DataTableLabels;
+  saves: ReturnType<typeof useCellSaves>;
   disabled?: boolean;
   busy?: boolean;
   unstyled?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const key = JSON.stringify([row.id, column.id]);
+  const pending = saves.pending.has(key);
   const [failed, setFailed] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const restoreFocus = useRef(false);
-  const inFlight = useRef(false);
+  const ownsFocus = () => input.current?.form?.contains(input.current.ownerDocument.activeElement) === true;
   useLayoutEffect(() => () => {
     const control = trigger.current ?? input.current?.form;
     if (control?.contains(control.ownerDocument.activeElement)) {
       control.closest<HTMLElement>('[data-part="viewport"]')?.focus({ preventScroll: true });
     }
   }, []);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (draft === null && restoreFocus.current) {
-      trigger.current?.focus({ preventScroll: true });
+      const button = trigger.current;
+      if (button && button.ownerDocument.activeElement === button.ownerDocument.body) button.focus({ preventScroll: true });
       restoreFocus.current = false;
     }
   }, [draft]);
   const finish = () => {
-    restoreFocus.current = true;
+    restoreFocus.current = ownsFocus();
     setDraft(null);
   };
   const accessibleName = labels.edit(column.label, name);
@@ -87,11 +105,10 @@ export function EditableCell<R>({
         type="button"
         aria-label={accessibleName}
         disabled={disabled}
-        aria-disabled={busy || undefined}
+        busy={busy || pending}
         data-part="edit"
         className={unstyled ? undefined : "uld-cell-edit"}
         onClick={() => {
-          if (busy) return;
           setFailed(false);
           setDraft(String(column.value(row)));
         }}
@@ -103,23 +120,20 @@ export function EditableCell<R>({
     <form data-part="editor"
       onSubmit={async (event) => {
         event.preventDefault();
-        if (inFlight.current || disabled || busy) return;
-        inFlight.current = true;
-        setPending(true);
+        if (disabled || busy || !saves.mark(key, true)) return;
         setFailed(false);
         try {
           await column.onEdit!(row, draft);
           finish();
         } catch {
           setFailed(true);
-          input.current?.focus({ preventScroll: true });
+          if (ownsFocus()) input.current?.focus({ preventScroll: true });
         } finally {
-          inFlight.current = false;
-          setPending(false);
+          saves.mark(key, false);
         }
       }}
       onKeyDown={(event) => {
-        if (event.key === 'Escape' && !inFlight.current) {
+        if (event.key === 'Escape' && !saves.isSaving(key)) {
           event.preventDefault();
           event.stopPropagation();
           finish();
@@ -128,7 +142,7 @@ export function EditableCell<R>({
     >
       <TableField ref={input} mode="edit" label={accessibleName} value={draft}
         readOnly={pending || disabled || busy} onValueChange={setDraft} />
-      <TableAction type="submit" disabled={pending || disabled || busy} aria-busy={pending || undefined}>
+      <TableAction type="submit" disabled={disabled || busy} busy={pending}>
         {labels.save}
       </TableAction>
       <TableAction type="button" disabled={pending || disabled || busy} onClick={finish}>
@@ -150,6 +164,7 @@ export function DataTable<R extends { id: string }>({
   const labels = { ...english, ...overrides };
   const id = useId();
   const applying = useRef(false);
+  const saves = useCellSaves();
   const [pending, setPending] = useState(false);
   const [bulkFailed, setBulkFailed] = useState(false);
   const locked = disabled || loading || pending;
@@ -203,7 +218,7 @@ export function DataTable<R extends { id: string }>({
             checked={selected.has(row.id)} disabled={locked} onChange={checked => model.select([row.id], checked)} /></td>}
           {columns.map(column => <td role="cell" data-part="cell" key={column.id}>
             {layout === 'adaptive' && !unstyled && <span aria-hidden="true" className="uld-data-cell-label">{column.label}</span>}
-            {column.onEdit && !readOnly ? <EditableCell row={row} column={column} labels={labels} name={getRowLabel(row)} disabled={disabled} busy={loading || pending} unstyled={unstyled} />
+            {column.onEdit && !readOnly ? <EditableCell row={row} column={column} labels={labels} name={getRowLabel(row)} disabled={disabled} busy={loading || pending} unstyled={unstyled} saves={saves} />
               : column.render ? column.render(row) : column.value(row)}
           </td>)}
         </tr>)}

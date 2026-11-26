@@ -84,8 +84,24 @@ function TableAction({ name, children, testID, checked, busy, expanded, hint, di
   </NativePressTarget>;
 }
 
+function useCellSaves() {
+  const [pending, setPending] = useState(() => new Set<string>());
+  const latest = useRef(pending);
+  function mark(key: string, saving: boolean) {
+    if (latest.current.has(key) === saving) return false;
+    const next = new Set(latest.current);
+    if (saving) next.add(key);
+    else next.delete(key);
+    latest.current = next;
+    setPending(next);
+    return true;
+  }
+  return { pending, mark, isSaving: (key: string) => latest.current.has(key) };
+}
+
 interface CellProps<R> {
   row: R;
+  saves: ReturnType<typeof useCellSaves>;
   column: DataColumn<R>;
   name: string;
   labels: DataTableLabels;
@@ -100,12 +116,12 @@ interface CellProps<R> {
   inputStyle: StyleProp<TextStyle>;
   textStyle: StyleProp<TextStyle>;
 }
-function CellEditor<R>({ row, column, name, labels, focusViewport, cellID, editorID, saveID, cancelID, failureID,
+function CellEditor<R extends { id: string }>({ row, column, saves, name, labels, focusViewport, cellID, editorID, saveID, cancelID, failureID,
   actionStyle, inputStyle, textStyle, disabled }: CellProps<R>) {
   const [draft, setDraft] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const key = JSON.stringify([row.id, column.id]);
+  const pending = saves.pending.has(key);
   const [failed, setFailed] = useState(false);
-  const busy = useRef(false);
   const restoreFocus = useRef(false);
   const ownsFocus = useRef(false);
   const onFocus = () => { ownsFocus.current = true; };
@@ -128,27 +144,25 @@ function CellEditor<R>({ row, column, name, labels, focusViewport, cellID, edito
     setDraft(null);
   }
   async function save() {
-    if (busy.current || disabled || draft === null || !column.onEdit) return;
-    busy.current = true;
-    setPending(true);
+    if (disabled || draft === null || !column.onEdit || !saves.mark(key, true)) return;
     setFailed(false);
     try { await column.onEdit(row, draft); finish(); }
     catch { setFailed(true); }
-    finally { busy.current = false; setPending(false); }
+    finally { saves.mark(key, false); }
   }
   if (draft === null) {
     const content = column.render ? column.render(row) : column.value(row);
-    return <TableAction name={name} disabled={disabled} targetRef={trigger} testID={cellID} onFocus={onFocus} onBlur={onBlur}
+    return <TableAction name={name} disabled={disabled || pending} busy={pending} targetRef={trigger} testID={cellID} onFocus={onFocus} onBlur={onBlur}
       onPress={() => { setFailed(false); setDraft(String(column.value(row))); }} style={actionStyle} textStyle={textStyle}>
       {typeof content === 'number' || typeof content === 'string' ? <Text style={textStyle}>{content}</Text> : content}
     </TableAction>;
   }
   return <View>
     <NativeFieldControl testID={editorID} autoFocus submitBehavior="submit" onFocus={onFocus} onBlur={onBlur} accessibilityLabel={name} value={draft} editable={!pending && !disabled}
-      accessibilityState={{ busy: pending }} onChangeText={value => { if (!busy.current) setDraft(value); }}
+      accessibilityState={{ busy: pending }} onChangeText={value => { if (!saves.isSaving(key)) setDraft(value); }}
       onSubmitEditing={() => { void save(); }} returnKeyType="done" style={inputStyle} />
     <TableAction testID={saveID} name={labels.save} busy={pending} disabled={pending || disabled} onPress={() => { void save(); }} style={actionStyle} textStyle={textStyle} />
-    <TableAction testID={cancelID} name={labels.cancel} disabled={pending || disabled} onPress={() => { if (!busy.current) finish(); }}
+    <TableAction testID={cancelID} name={labels.cancel} disabled={pending || disabled} onPress={() => { if (!saves.isSaving(key)) finish(); }}
       style={actionStyle} textStyle={textStyle} />
     {failed && <Text testID={failureID} accessibilityRole="alert" accessibilityLiveRegion="assertive" style={textStyle}>{labels.saveFailed}</Text>}
   </View>;
@@ -160,6 +174,7 @@ function hasContent(content: ReactNode): boolean {
 }
 
 export function DataTable<R extends { id: string }>(props: DataTableProps<R>) {
+  const saves = useCellSaves();
   const viewport = useRef<ComponentRef<typeof View>>(null);
   const [restoreViewport, setRestoreViewport] = useState(false);
   const focusViewport = useCallback(() => setRestoreViewport(true), []);
@@ -258,7 +273,7 @@ export function DataTable<R extends { id: string }>(props: DataTableProps<R>) {
               {(showAll ? columns : columns.slice(0, 1)).map((column, index) => {
                 const context = { ...rowContext, columnId: column.id };
                 const value = column.value(row);
-                const cell = column.onEdit && !props.readOnly ? <CellEditor focusViewport={focusViewport} disabled={locked} row={row} column={column} name={labels.edit(column.label, name)} labels={labels}
+                const cell = column.onEdit && !props.readOnly ? <CellEditor saves={saves} focusViewport={focusViewport} disabled={locked} row={row} column={column} name={labels.edit(column.label, name)} labels={labels}
                   cellID={id('cell', { ...context, action: 'edit', name: labels.edit(column.label, name) })} editorID={id('editor', context)}
                   saveID={id('editor', { ...context, action: 'save', name: labels.save })} cancelID={id('editor', { ...context, action: 'cancel', name: labels.cancel })}
                   failureID={id('status', { ...context, action: 'failure', name: labels.saveFailed })} actionStyle={control}

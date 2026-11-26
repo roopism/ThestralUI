@@ -87,3 +87,27 @@ test('a controlled carousel shows the owner slide and reports requests without m
   expect(screen.getByText('Save C').closest('[inert]')).toBeNull();
   expect(screen.getByText('Save A').closest('[inert]')).toBeTruthy();
 });
+
+test('a settled swipe aligns the viewport with the controlled selection', () => {
+  const change = vi.fn();
+  const slides = (id: string) => <Carousel label="Routes" labels={labels} items={items} selectedId={id} onSelectionChange={change} />;
+  const view = render(slides('A'));
+  const viewport = screen.getByRole('group', { name: 'Routes' });
+  Object.defineProperty(viewport, 'clientWidth', { value: 320 });
+  viewport.scrollLeft = 310;
+  fireEvent.scroll(viewport);
+  viewport.scrollLeft = 320;
+  fireEvent.scroll(viewport);
+  expect(change.mock.calls).toEqual([['B']]);
+  fireEvent(viewport, new Event('scrollend'));
+  expect(viewport.scrollLeft).toBe(0);
+  expect(screen.getByRole('button', { name: 'Save A' })).toBeTruthy();
+  expect(screen.getByRole('status').textContent).toBe('1 of 3');
+  viewport.scrollLeft = 320;
+  fireEvent.scroll(viewport);
+  view.rerender(slides('B'));
+  fireEvent(viewport, new Event('scrollend'));
+  expect(viewport.scrollLeft).toBe(320);
+  expect(screen.getByRole('button', { name: 'Save B' })).toBeTruthy();
+  expect(screen.getByRole('status').textContent).toBe('2 of 3');
+});

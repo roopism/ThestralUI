@@ -126,6 +126,32 @@ test('the native public hook obeys the shared paging, batched selection and cont
   await assertDataTableContract(useDataTable, renderHook, act);
 });
 
+test('paging keeps a native cell locked until its previous save settles', async () => {
+  let reject;
+  const onEdit = jest.fn().mockImplementationOnce(() => new Promise((_, fail) => { reject = fail; }));
+  const editScore = jest.fn();
+  const s = await render(h(DataTable, { ...options, layout: 'table', pageSize: 1,
+    columns: [{ ...columns[0], onEdit }, { ...columns[1], onEdit: editScore }] }));
+  const click = name => press(s, 'button', name);
+  await click('Edit Name, Gamma');
+  await click('Save');
+  await click('Next page');
+  await click('Edit Name, Beta');
+  await click('Cancel');
+  await click('Previous page');
+  await click('Edit Score, Gamma');
+  await click('Save');
+  expect(editScore).toHaveBeenCalledTimes(1);
+  await click('Edit Name, Gamma');
+  const duplicate = s.queryByRole('button', { name: 'Save' });
+  if (duplicate) await fireEvent.press(duplicate);
+  expect(onEdit).toHaveBeenCalledTimes(1);
+  await act(async () => reject(Error('offline')));
+  await click('Edit Name, Gamma');
+  await click('Save');
+  expect(onEdit).toHaveBeenCalledTimes(2);
+});
+
 test('bulk rejection keeps the selection, prevents duplicate submissions and reports the caller’s retry error', async () => {
   let reject;
   const onApply = jest.fn().mockImplementationOnce(() => new Promise((_, r) => { reject = r; })).mockResolvedValueOnce();

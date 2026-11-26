@@ -17,4 +17,7 @@ test('a controlled field preserves its name, help, validation and caller input p
   expect(screen.getByRole('alert')).toHaveTextContent('入力が必要です');
   await fireEvent.changeText(input, '山田');
   expect(change).toHaveBeenCalledWith('山田');
+  expect(input.props.placeholderTextColor).toBe(tokens.light.muted);
+  await screen.rerender(React.createElement(FormField, { label: '識別名', placeholderTextColor: '#eee' }));
+  expect(screen.getByLabelText('識別名').props.placeholderTextColor).toBe('#eee');
 });

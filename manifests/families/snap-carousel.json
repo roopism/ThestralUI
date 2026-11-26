@@ -66,7 +66,8 @@
       "tests/snap-carousel/motion-media.test.tsx | carousel keeps selection by id and exposes only the selected slide to keyboard users",
       "tests/snap-carousel/motion-media.test.tsx | the carousel and each slide carry their role descriptions and only the current slide is exposed",
       "tests/snap-carousel/motion-media.test.tsx | arrow keys follow the reading direction, Home and End reach the ends and the ends disable their control",
-      "tests/snap-carousel/motion-media.test.tsx | a controlled carousel shows the owner slide and reports requests without moving on its own"
+      "tests/snap-carousel/motion-media.test.tsx | a controlled carousel shows the owner slide and reports requests without moving on its own",
+      "tests/snap-carousel/motion-media.test.tsx | a settled swipe aligns the viewport with the controlled selection"
     ],
     "browser": [
       "browser/motion.spec.ts | native scroll, RTL keys and reduced-motion disclosures work without horizontal page overflow",
