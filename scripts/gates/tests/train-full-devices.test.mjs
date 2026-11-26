@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -9,6 +8,9 @@ import * as checks from '../train-checks.mjs';
 import { diagnosePrefixes } from '../train-bisect.mjs';
 import { sealPhysical } from '../reuse/runner.mjs';
 import { deviceSuites } from '../device-verdict.mjs';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 test('train members require fresh iPhone and both Android profiles on solo and cumulative trees', async () => {
   const member = { number: 2, parent: 'first', commit: 'combined', tree: 'both', soloTree: 'second', soloCommit: 'alone' };
@@ -54,7 +56,7 @@ test('train diagnosis runs both device drivers on each proper prefix and attribu
 test('train device evidence binds retained driver files and refuses skipped or substituted reports', t => {
   const root = mkdtempSync(join(tmpdir(),'uld-train-evidence-'));
   t.after(()=>rmSync(root,{recursive:true,force:true}));
-  execFileSync('git',['init','--quiet','--template='],{cwd:root});
+  fixtureGit(root, ['init', '--quiet', '--template=']);
   const base = 'a'.repeat(40), target = {commit:'b'.repeat(40),tree:'c'.repeat(40)};
   const suite = deviceSuites[0], directory = 'uld-delivery/train-member-devices/fixture';
   const dir = join(root,'.git',directory);
@@ -83,7 +85,7 @@ test('train device evidence binds retained driver files and refuses skipped or s
 function scopedTrainFixture(t, suite) {
   const root = mkdtempSync(join(tmpdir(), 'uld-requested-prefix-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  execFileSync('git', ['init', '--quiet', '--template='], {cwd:root});
+  fixtureGit(root, ['init', '--quiet', '--template=']);
   const folder = join(root, '.git/uld-delivery/train-diagnostics');
   const members = ['one','two'].map((tree,i) => ({number:i+1, commit:tree, tree, parent:i?'one':'base'}));
   const train = {id:'train', qualificationId:'attempt', base:'base', baseTree:'start', finalTree:'two', members,
@@ -155,7 +157,7 @@ test('an inconclusive physical diagnostic cannot attribute a member or hide anot
 
 test('a requested iPhone or Android train suite selects the complete roster when solo scoping is enabled', t => {
   const {root} = scopedTrainFixture(t,deviceSuites[0]);
-  const git = (...args) => execFileSync('git', args, {cwd:root,encoding:'utf8'}).trim();
+  const git = (...args) => fixtureGit(root, args);
   const base = git('write-tree');
   writeFileSync(join(root,'README.md'),'Docs only.');
   git('add','README.md');

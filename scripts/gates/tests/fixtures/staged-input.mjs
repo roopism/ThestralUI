@@ -1,10 +1,13 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fixtureGit, fixtureGitEnv } from './hermetic-git.mjs';
 
 // Run the real CLI on a tiny offline repo. The probe reports the hook input
 // and stops before any suite can produce a qualification result.
-export function stagedHookProbe(cwd, git, env, cli, args, input) {
+export function stagedHookProbe(cwd, _git, inherited, cli, args, input) {
+  const env = fixtureGitEnv(cwd, inherited);
+  const git = (...args) => fixtureGit(cwd, args);
   mkdirSync(join(cwd, 'scripts/gates'), { recursive: true });
   mkdirSync(join(cwd, 'dep'), { recursive: true });
   writeFileSync(join(cwd, 'dep/package.json'), '{"name":"fixture-dep","version":"1.0.0"}');

@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { sealReceipt } from '../reuse/runner.mjs';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -13,13 +12,16 @@ import {
   codeOwners, commitHooks, commitMessages, gateIsolation, integrationNoWeakening, phases, policyReview, prepareSnapshot, rosterFiles,
 } from '../../verify-preflight.mjs';
 import { preflightChecks, preflightRunner, requirePreflight, writePreflightReceipt } from '../preflight-receipt.mjs';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
 
-const project = fileURLToPath(new URL('../../../', import.meta.url));
+isolateFixtureProcess();
+
+const source = fileURLToPath(new URL('../../../', import.meta.url));
 const scratch = mkdtempSync(join(tmpdir(), 'uld-preflight-controls-'));
 process.on('exit', () => rmSync(scratch, { recursive: true, force: true }));
-const env = { ...process.env, GIT_INDEX_FILE: join(scratch, 'index'), GIT_AUTHOR_NAME: 'Fixture',
-  GIT_AUTHOR_EMAIL: 'fixture@example.invalid', GIT_COMMITTER_NAME: 'Fixture', GIT_COMMITTER_EMAIL: 'fixture@example.invalid' };
-const git = (args, input) => execFileSync('git', args, { cwd: project, env, input, encoding: 'utf8' }).trim();
+const project = join(scratch, 'repo');
+fixtureGit(scratch, ['clone', '--quiet', '--shared', '--no-checkout', '--', source, project]);
+const git = (args, input) => fixtureGit(project, args, input);
 const base = git(['rev-parse', 'HEAD^{commit}']);
 const show = (path, revision = base) => git(['show', revision + ':' + path]);
 
@@ -33,18 +35,18 @@ function plant(edits, { parent = base, message = 'test(gates): planted preflight
   return git(['commit-tree', git(['write-tree']), '-p', parent, '-m', message]);
 }
 const context = (commit, branch = 'gates/preflight-control') =>
-  ({ root: project, base, commit, tree: git(['rev-parse', commit + '^{tree}']), branch, trusted: project, env: process.env });
+  ({ root: project, base, commit, tree: git(['rev-parse', commit + '^{tree}']), branch, trusted: source, env: process.env });
 const phase = (check, name) => phases.find(entry => entry.check === check && entry.name === name).operation;
 
 // Run snapshot stages exactly as the command does. One installed snapshot checks out each planted tree in turn.
 async function inSnapshot(commits, operation) {
-  const common = process.env.ULD_ARTIFACT_COMMON ?? git(['rev-parse', '--path-format=absolute', '--git-common-dir']);
+  const common = process.env.ULD_ARTIFACT_COMMON ?? git(['-C', source, 'rev-parse', '--path-format=absolute', '--git-common-dir']);
   return withRevisionSnapshot(project, base, async (snapshot, _tree, childEnv) => {
     installSnapshotDependencies(snapshot, join(common, 'uld-dependencies'), childEnv);
     prepareSnapshot(snapshot, base);
     const results = [];
     for (const commit of commits) {
-      execFileSync('git', ['read-tree', '--reset', '-u', commit + '^{tree}'], { cwd: snapshot, env: childEnv });
+      fixtureGit(snapshot, ['read-tree', '--reset', '-u', commit + '^{tree}']);
       const ctx = { ...context(commit), snapshot, env: { ...childEnv, ULD_ARTIFACT_COMMON: common } };
       try { await operation(ctx); results.push('passed'); } catch (error) { results.push(error.message); }
     }
@@ -155,7 +157,7 @@ test('preflight message and owner checks reject the banned word, a free-form sub
 
 test('qualification refuses to start without a passing preflight receipt for the exact commit, tree and base', () => {
   const common = mkdtempSync(join(scratch, 'common-'));
-  const commit = plant({ 'scripts/verify-preflight.mjs': readFileSync(join(project, 'scripts/verify-preflight.mjs'), 'utf8') });
+  const commit = plant({ 'scripts/verify-preflight.mjs': readFileSync(join(source, 'scripts/verify-preflight.mjs'), 'utf8') });
   const tree = git(['rev-parse', commit + '^{tree}']);
   // The integration copy judges once it exists. Before adoption the candidate's own copy does.
   const runner = preflightRunner(project, base, commit);

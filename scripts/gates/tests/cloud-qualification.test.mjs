@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { qualificationShards, preserveLaneCoverage } from '../cloud/lanes.mjs';
 import { repositoryId, sha256, verifyCloudResults } from '../cloud/results.mjs';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 const roster = { schema: 1, suites: {
   'Mac browser behavior': { lane: 'github-macos', shards: 3, splitBy: 'engine' },
@@ -73,15 +76,13 @@ test('landing requires the trusted workflow, exact merge and every successful sh
 });
 
 test('the hosted matrix reads committed rosters and preserves every existing lane', async t => {
-  const { execFileSync } = await import('node:child_process');
   const { mkdtempSync, mkdirSync, rmSync, writeFileSync } = await import('node:fs');
   const { tmpdir } = await import('node:os');
   const { join } = await import('node:path');
   const { planAt } = await import('../cloud/plan.mjs');
   const root = mkdtempSync(join(tmpdir(), 'thestral-cloud-plan-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const run = (...args) => execFileSync('git', ['-c', 'user.name=ThestralUI Test', '-c',
-    'user.email=thestral-ui@users.noreply.github.com', ...args], { cwd: root, encoding: 'utf8' }).trim();
+  const run = (...args) => fixtureGit(root, args);
   run('init', '--quiet', '--template=');
   const folder = join(root, 'tests', 'acceptance');
   mkdirSync(folder, { recursive: true });

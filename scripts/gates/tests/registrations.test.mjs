@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -10,19 +9,22 @@ import { renderDepthRegistry } from '../../manifests/depth-registry.mjs';
 import { requireGateIsolation } from '../landing-policy.mjs';
 import { depthRegistry, derivedRegistrations } from '../registrations.mjs';
 import { gateIsolation } from '../../verify-preflight.mjs';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
 
-const root = fileURLToPath(new URL('../../../', import.meta.url));
+isolateFixtureProcess();
+
+const project = fileURLToPath(new URL('../../../', import.meta.url));
 const breadcrumb = 'manifests/families/breadcrumb.json';
 
-// Candidate trees share the project's object store through a private index.
+// Borrow the project objects read-only. Each fixture owns its synthetic trees and index.
 function trees(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'uld-registrations-'));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
-  const env = { ...process.env, GIT_INDEX_FILE: join(dir, 'index') };
-  const git = args => execFileSync('git', args, { cwd: root, env, encoding: 'utf8', maxBuffer: 128 << 20 }).trim();
+  const root = mkdtempSync(join(tmpdir(), 'uld-registrations-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const git = args => fixtureGit(root, args);
+  git(['clone', '--quiet', '--shared', '--no-checkout', '--', project, '.']);
   const base = git(['rev-parse', '--verify', 'HEAD^{tree}']);
   const hashAlgorithm = git(['rev-parse', '--show-object-format']);
-  const blobInput = join(dir, 'blob-input');
+  const blobInput = join(root, 'blob-input');
   const read = path => git(['show', base + ':' + path]);
   const names = git(['ls-tree', '--name-only', base + ':manifests/families']).split('\n');
   const originals = new Map(names.map(name => ['manifests/families/' + name, read('manifests/families/' + name)]));
@@ -54,7 +56,7 @@ function trees(t) {
     const paths = git(['diff-tree', '-r', '--name-only', '--no-renames', base, tree]).split('\n').filter(Boolean);
     return { tree, paths };
   }
-  return { base, candidate };
+  return { root, base, candidate };
 }
 
 const addBreadcrumbBindings = families => {
@@ -69,12 +71,12 @@ const addBreadcrumbBindings = families => {
 };
 
 test('a family registers its own API-depth row in one product pull request', async (t) => {
-  const { base, candidate } = trees(t);
+  const { root, base, candidate } = trees(t);
   const { tree, paths } = candidate(addBreadcrumbBindings);
   assert.deepEqual(paths.sort(), [breadcrumb, depthRegistry].sort());
   const derived = derivedRegistrations(root, base, tree, 'family/breadcrumb');
   assert.deepEqual([...derived], [depthRegistry]);
-  const ctx = { root, trusted: root, base, tree, branch: 'family/breadcrumb' };
+  const ctx = { root, trusted: project, base, tree, branch: 'family/breadcrumb' };
   assert.deepEqual(await gateIsolation(ctx), []);
   const wrongOwner = await gateIsolation({ ...ctx, branch: 'family/avatar' });
   assert.ok(wrongOwner.some(issue => issue.includes('is owned by family/breadcrumb')));
@@ -91,7 +93,7 @@ test('a family registers its own API-depth row in one product pull request', asy
 });
 
 test('a family cannot change, remove or weaken another registration', (t) => {
-  const { base, candidate } = trees(t);
+  const { root, base, candidate } = trees(t);
   const other = candidate(addBreadcrumbBindings);
   assert.throws(() => derivedRegistrations(root, base, other.tree, 'family/badge'), /Breadcrumb is owned by family\/breadcrumb, not family\/badge/);
   const removed = candidate(families => { delete families.get('Breadcrumb').depth; });
@@ -105,12 +107,12 @@ test('a family cannot change, remove or weaken another registration', (t) => {
 });
 
 test('malformed or hand-edited registrations are rejected', (t) => {
-  const { base, candidate } = trees(t);
+  const { root, base, candidate } = trees(t);
   const unknown = candidate(families => { families.get('Breadcrumb').depth.waiver = true; });
   assert.throws(() => derivedRegistrations(root, base, unknown.tree, 'family/breadcrumb'), /product-registration: manifests\/families\/breadcrumb\.json/);
   const outside = candidate(families => {
     families.get('Breadcrumb').depth.representative = 'navigation:Missing';
-    const registry = JSON.parse(execFileSync('git', ['show', 'HEAD:' + depthRegistry], { cwd: root, encoding: 'utf8' }));
+    const registry = JSON.parse(fixtureGit(root, ['show', 'HEAD:' + depthRegistry]));
     registry.families.find(row => row.id === 'Breadcrumb').representative = 'navigation:Missing';
     return { [depthRegistry]: JSON.stringify(registry, null, 2) + '\n' };
   });

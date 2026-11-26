@@ -29,6 +29,7 @@
   "scripts/gates/tests/hardening.test.mjs | signals release owned reservations and a live suite protects a dead holder",
   "scripts/gates/tests/hardening.test.mjs | the live hook has tests and the unused revision and shared dispatchers are retired",
   "scripts/gates/tests/hardening.test.mjs | the staged checker uses the base runner on the staged candidate data",
+  "scripts/gates/tests/hermetic-git.test.mjs | fixture commits ignore inherited Git identity, repository, index and configuration",
   "scripts/gates/tests/hosted-controls.test.mjs | hosted Linux places its sandbox fixture outside system grants and macOS can collect canonical coverage",
   "scripts/gates/tests/hosted-controls.test.mjs | hosted No weakening compares the proposal lifetime with the trusted reuse policy",
   "scripts/gates/tests/hosted-controls.test.mjs | hosted reservations resolve inside the isolated candidate repository",

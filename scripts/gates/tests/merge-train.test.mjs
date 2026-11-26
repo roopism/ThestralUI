@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -13,8 +13,11 @@ import { landOrdered } from '../ordered-landing.mjs';
 import { requireTrainBranch } from '../../train.mjs';
 import { startAttempt, failUnfinishedAttempt } from '../qualification-attempt.mjs';
 import { createTrain, landTrain, pushAtomicTrain, readTrain } from '../merge-train.mjs';
+import { fixtureGit, fixtureGitEnv, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
 
-const git = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+isolateFixtureProcess();
+
+const git = (cwd, ...args) => fixtureGit(cwd, args);
 const integration = 'refs/heads/feat/enterprise-ui';
 
 function fixture(t, count = 2, weaker = false) {
@@ -23,8 +26,6 @@ function fixture(t, count = 2, weaker = false) {
   const root = join(dir, 'work'), server = join(dir, 'server');
   git(dir, 'init', '--quiet', '--bare', '--template=', server);
   git(dir, 'init', '--quiet', '--template=', root);
-  git(root, 'config', 'user.name', 'Train fixture');
-  git(root, 'config', 'user.email', 'fixture@example.invalid');
   const file = (name, contents) => {
     writeFileSync(join(root, name), contents);
     git(root, 'add', '--', name);
@@ -55,7 +56,7 @@ function fixture(t, count = 2, weaker = false) {
       const commands = ['start', ...request.members.map(([ref, head]) => 'verify ' + ref + ' ' + head),
         'update ' + request.target + ' ' + request.after + ' ' + request.before, 'prepare', 'commit'];
       const result = spawnSync('git', ['update-ref', '--stdin'], {
-        cwd: server, input: commands.join('\n') + '\n', encoding: 'utf8',
+        cwd: server, env: fixtureGitEnv(server), input: commands.join('\n') + '\n', encoding: 'utf8',
       });
       if (result.status === 0) return 'committed';
       if (result.stdout.trim() === 'start: ok' && /prepare: cannot lock ref/.test(result.stderr)) {

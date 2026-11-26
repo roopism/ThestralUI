@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { sealReceipt, sealPhysical } from '../reuse/runner.mjs';
 import { mkdirSync, realpathSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -7,6 +6,9 @@ import { registerHooks } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 // Load the real coordinator with inert external boundaries. Neither gh nor a physical
 // runner is ever invoked. The production control flow, disk receipt and assertions run.
@@ -53,7 +55,7 @@ function receipt() {
 
 function harness(t) {
   const directory = mkdtempSync(join(tmpdir(), 'hosted-timing-barrier-'));
-  execFileSync('git', ['init', '--quiet', '--template=', directory]);
+  fixtureGit(directory, ['init', '--quiet', '--template=']);
   const events = [];
   const runs = [];
   const completed = { id: 17, run_attempt: 1, head_sha: proposal.merge, status: 'completed', conclusion: 'success' };
@@ -253,7 +255,7 @@ test('all three local visual engines finish before timing and a failed visual ru
     process.chdir(originalCwd); rmSync(scratch,{recursive:true,force:true});
   });
   process.chdir(scratch);
-  execFileSync('git',['init','--quiet','--template=','.']);
+  fixtureGit(scratch, ['init', '--quiet', '--template=']);
   mkdirSync('release/evidence',{recursive:true});
   writeFileSync('release/evidence/android-emulator.json',JSON.stringify({passed:true,profiles:[{id:'low-end'},{id:'standard'}]}));
   for (const fail of [true,false]) {

@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -10,15 +9,15 @@ import { reuseDecision } from '../reuse/policy.mjs';
 import { evidencePath, freshHistory, projectStoredPasses, publishRecord, readRecord, receiptGroups, sha256 } from '../reuse/store.mjs';
 import { captureOutputs, restoreOutputs } from '../reuse/outputs.mjs';
 import { executeChoice, externalInputDigests, requireLandingIdentity, requireOriginalReceipt, sealReceipt } from '../reuse/runner.mjs';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 function gitFixture(t) {
   const root = mkdtempSync(join(tmpdir(),'uld-reuse-proof-'));
   t.after(()=>rmSync(root,{recursive:true,force:true}));
-  const env = {...process.env};
-  for(const key of execFileSync('git',['rev-parse','--local-env-vars'],{encoding:'utf8'}).trim().split('\n')) delete env[key];
-  const git = (...args)=>execFileSync('git',args,{cwd:root,env,encoding:'utf8'}).trim();
+  const git = (...args) => fixtureGit(root, args);
   git('init','--quiet','--template=');
-  git('config','user.name','Qualification Fixture');git('config','user.email','fixture@example.invalid');
   function write(path,text) { mkdirSync(dirname(join(root,path)),{recursive:true});writeFileSync(join(root,path),text); }
   const update=()=>{git('add','--all');return git('write-tree');};
   write('docs/readme.md','description');write('README.md','root docs');write('scripts/gates/check.mjs','check');

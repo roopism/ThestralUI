@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -7,6 +6,9 @@ import test from 'node:test';
 import { checkProposal, gatePaths } from '../../../.github/gate-review.mjs';
 import { requireGatePathResult } from '../gate-path-result.mjs';
 import { trustedRoot } from '../typed-tools.mjs';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+const home = isolateFixtureProcess();
 
 function fixture(t) {
   const path = mkdtempSync(join(tmpdir(), 'thestral-controls-'));
@@ -59,7 +61,7 @@ test('gate path verification requires a successful exact-base job from the trust
 test('the typed gate flags changed control blobs while accepting unrelated manifest fields', async t => {
   const { requireTypedControls } = await import('../typed-tools.mjs');
   const root = fixture(t);
-  const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+  const git = (...args) => fixtureGit(root, args);
   git('init', '--quiet', '--template=');
   file(root, 'tsconfig.json', '{"compilerOptions":{"strict":true}}');
   file(root, 'package.json', JSON.stringify({ name: 'fixture', scripts: { typecheck: 'tsc' } }));
@@ -80,9 +82,9 @@ test('a gate topic must pass the base content check as well as the path check', 
   const workflow = readFileSync(join(trustedRoot, '.github/workflows/gate-paths.yml'), 'utf8');
   assert.ok(workflow.includes('node trusted-gate/scripts/gates/no-weakening.mjs "$BASE" "$HEAD" "$PWD"'));
   const input = 'tests/android/low-end-budget.json';
-  const base = execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { cwd: trustedRoot, encoding: 'utf8' }).trim();
+  const base = fixtureGit(home, ['-C', trustedRoot, 'rev-parse', 'HEAD^{tree}']);
   withRevisionSnapshot(trustedRoot, base, root => {
-    const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+    const git = (...args) => fixtureGit(root, args);
     const current = git('rev-parse', 'HEAD');
     assert.deepEqual(noWeakening(root, current, current), []);
     const data = JSON.parse(readFileSync(join(root, input)));

@@ -17,16 +17,15 @@ import { deviceInputs } from '../../selection/device-inputs.mjs';
 import { observation, recordScopeFailure, registerObservation, requireDailyObservation, retainedObservations } from '../../selection/device-observations.mjs';
 import { classifyDevicePath } from '../../selection/proposal-devices.mjs';
 import { deviceSuites, verifiedDevicePlan } from '../device-verdict.mjs';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 function repository(t) {
   const root = createObservationTestDirectory(t, 'uld-proposal-devices-');
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const env = { ...process.env };
-  for (const key of execFileSync('git', ['rev-parse', '--local-env-vars'], { encoding: 'utf8' }).trim().split('\n')) delete env[key];
-  const git = (args, input) => execFileSync('git', args, { cwd: root, env, encoding: 'utf8', input }).trim();
+  const git = (args, input) => fixtureGit(root, args, input);
   git(['init', '--quiet', '--template=']);
-  git(['config', 'user.name', 'Device fixture']);
-  git(['config', 'user.email', 'fixture@example.invalid']);
   function edit(parent, files) {
     git(parent ? ['read-tree', parent] : ['read-tree', '--empty']);
     for (const [path, content] of Object.entries(files)) {
@@ -184,8 +183,8 @@ test('a corrupt unrelated checkpoint cannot interrupt attribution of a failed da
   const a = change(base, 'docs/first.md'), b = change(a.commit, 'docs/second.md');
   const wrongKey = '0'.repeat(64);
   assert.notEqual(wrongKey, last.deviceInputs.key);
-  execFileSync('git', ['update-ref', 'refs/uld-archive/device-maps/' + wrongKey + '/' + last.id,
-    'refs/uld-archive/reuse-receipts/' + last.id], {cwd:root});
+  fixtureGit(root, ['update-ref', 'refs/uld-archive/device-maps/' + wrongKey + '/' + last.id,
+    'refs/uld-archive/reuse-receipts/' + last.id]);
   const daily = {id:randomUUID(), commit:b.commit, tree:b.tree, status:'failed', started:'2026-11-26T12:00:00Z'};
   recordScopeFailure(root, daily, [a,b]);
   const plan = proposalDevices(root, b.commit, edit(b.commit, {'docs/first.md':'again'}));

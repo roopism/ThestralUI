@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -9,6 +9,9 @@ import test from 'node:test';
 import { withFunctionalDeviceGroup } from '../../workers/resource-guard.mjs';
 import { withTimingReservation } from '../../workers/timing-reservation.mjs';
 import { withLock } from '../../workers/lock.mjs';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 const module = new URL('../../workers/timing-reservation.mjs', import.meta.url).href;
 const resourceGuard = new URL('../../workers/resource-guard.mjs', import.meta.url).href;
@@ -51,7 +54,7 @@ const actor = `
 
 function repository(t) {
   const root = mkdtempSync(join(tmpdir(), 'uld-reservation-test-'));
-  execFileSync('git', ['init', '--quiet', '--template=', root]);
+  fixtureGit(root, ['init', '--quiet', '--template=']);
   const children = [];
   t.after(async () => {
     for (const { child, state } of children) {

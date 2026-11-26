@@ -15,6 +15,9 @@ import { deviceSuites } from '../device-verdict.mjs';
 import { createObservationTestDirectory, dailyObservationFixture, dailyObservationFixtureFiles } from './fixtures/daily-observation.mjs';
 import { observation, registerObservation } from '../../selection/device-observations.mjs';
 import { proposalDevices, proposalScope } from '../../selection/proposal-devices.mjs';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 const android = 'Android standard and low-end', mac = 'Mac browser performance';
 const timing = 'android/frame-budget';
@@ -27,15 +30,13 @@ function fixture(t, stage = 'Fast', features = [], scoped = false) {
   t.after(() => rmSync(temp, { recursive: true, force: true }));
   const root = join(temp, 'repo'), key = join(temp, 'key');
   mkdirSync(root);
-  const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+  const git = (...args) => fixtureGit(root, args);
   const ssh = (...args) => execFileSync('/usr/bin/ssh-keygen', args, { stdio: 'pipe' });
   ssh('-q', '-t', 'ed25519', '-N', '', '-f', key);
   const signers = join(root, 'scripts/gates/landing-evidence.allowed-signers');
   mkdirSync(dirname(signers), { recursive: true });
   writeFileSync(signers, 'uld-qualification ' + readFileSync(key + '.pub', 'utf8'));
   git('init', '--quiet', '--template=');
-  git('config', 'user.name', 'Fixture');
-  git('config', 'user.email', 'fixture@example.invalid');
   for (const file of ['tests/android/low-end-budget.json', 'tests/browser/quality-perf-baseline.json',
     'tests/browser/quality-perf.mjs', 'tests/browser/quality-perf-policy.mjs']) {
     mkdirSync(dirname(join(root, file)), { recursive: true });

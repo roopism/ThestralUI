@@ -6,22 +6,18 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { acquireLock, withLock } from '../../workers/lock.mjs';
+import { fixtureGit, fixtureGitEnv, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 const project = fileURLToPath(new URL('../../../', import.meta.url));
 const source = (file) => readFileSync(join(project, file), 'utf8');
 function repo(t) {
   const root = mkdtempSync(join(tmpdir(), 'uld-local-check-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const env = { ...process.env };
-  for (const key of execFileSync('git', ['rev-parse', '--local-env-vars'], { encoding: 'utf8' })
-    .trim()
-    .split('\n'))
-    delete env[key];
-  const git = (...args) => execFileSync('git', args, { cwd: root, env, encoding: 'utf8' }).trim();
+  const git = (...args) => fixtureGit(root, args);
   git('init', '--quiet', '--template=');
-  git('config', 'user.name', 'Fixture');
-  git('config', 'user.email', 'fixture@example.invalid');
-  return { root, git, env };
+  return { root, git, env: fixtureGitEnv(root) };
 }
 
 test('the staged checker uses the base runner on the staged candidate data', (t) => {

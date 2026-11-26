@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { registerHooks } from 'node:module';
 import { tmpdir } from 'node:os';
@@ -14,6 +13,9 @@ import { readVisualCoverage, requireOriginalReceipt, sealReceipt } from '../reus
 import { combineEvidence } from '../cloud/coordinator.mjs';
 import { repositoryId } from '../cloud/results.mjs';
 import { lockOwner } from '../../workers/lock.mjs';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 const project = fileURLToPath(new URL('../../../',import.meta.url));
 function scratch(t) {
@@ -39,9 +41,9 @@ async function load(t, path, stubs, methods) {
 
 test('landing Linux identity and guest shutdown use the shared reservations', async t => {
   const root = scratch(t);
-  execFileSync('git',['init','--quiet','--template=',root]);
+  fixtureGit(root, ['init', '--quiet', '--template=']);
   const common = join(root,'.git'), snapshot = join(root,'snapshot');
-  execFileSync('git',['init','--quiet','--template=',snapshot]);
+  fixtureGit(root, ['init', '--quiet', '--template=', snapshot]);
   const {rowIdentity} = await load(t,'../reuse/runner.mjs',{'node:child_process':['execFileSync','spawnSync']},{
     execFileSync(tool,args,options) {
       if(tool==='git') return JSON.stringify({contractVersion:1,groups:{'Linux browser behavior':{
@@ -166,8 +168,7 @@ test('packed specifications and depth include the first candidate Pagination exp
 
 test('cloud proposal fetches a current merge with an ancestral opening base', async t => {
   const root=scratch(t), upstream=join(root,'upstream'), local=join(root,'local');
-  const git=(cwd,...args)=>execFileSync('git',['-c','user.name=Fixture','-c','user.email=test@example.invalid',...args],
-    {cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+  const git = (cwd, ...args) => fixtureGit(cwd, args);
   for(const dir of [upstream,local]) git(root,'init','--quiet','--template=',dir);
   const path=join(upstream,'.github/workflows/qualify.yml');
   mkdirSync(dirname(path),{recursive:true});writeFileSync(path,'fixture');
@@ -206,7 +207,7 @@ test('the ordinary visual matrix returns identities from every verified executio
   }));
 
   const root=scratch(t), id=randomUUID(), name='Mac visual comparisons';
-  const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8'}).trim();
+  const git = (...args) => fixtureGit(root, args);
   git('init','--quiet','--template=');
   mkdirSync(join(root,'tests/acceptance'),{recursive:true});
   writeFileSync(join(root,'tests/acceptance/visual-matrix.json'),JSON.stringify(roster));

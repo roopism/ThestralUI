@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -7,17 +6,16 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { passing, required } from '../../land.mjs';
 import { requireReviewedFailures } from '../receipt-history.mjs';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'uld-receipt-history-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const directory = join(root, '.git', 'uld-receipts');
-  const env = { ...process.env };
-  for (const key of execFileSync('git', ['rev-parse', '--local-env-vars'], { encoding: 'utf8' }).trim().split('\n')) delete env[key];
-  const git = (args, input) => execFileSync('git', args, { cwd: root, env, input, encoding: 'utf8' }).trim();
+  const git = (args, input) => fixtureGit(root, args, input);
   git(['init', '--quiet', '--template=']);
-  git(['config', 'user.name', 'Receipt Fixture']);
-  git(['config', 'user.email', 'fixture@example.invalid']);
   mkdirSync(join(directory, 'attempts'), { recursive: true });
   function revision(files, parents, title) {
     const records = Object.entries(files).map(([name, value]) => {

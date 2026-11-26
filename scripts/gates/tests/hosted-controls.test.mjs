@@ -5,12 +5,15 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import test from 'node:test';
 import { Script } from 'node:vm';
+import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+
+isolateFixtureProcess();
 
 const shard = new URL('../cloud/shard.mjs', import.meta.url);
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'thestral-hosted-control-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+  const git = (...args) => fixtureGit(root, args);
   git('init', '--quiet', '--template=');
   function add(path, bytes) {
     mkdirSync(join(root, dirname(path)), { recursive: true });
@@ -101,11 +104,10 @@ test('hosted reservations resolve inside the isolated candidate repository', t =
   const home = join(root,'home'), candidate = join(root,'candidate'), trusted = join(root,'base');
   mkdirSync(join(home,'cache'), {recursive:true});
   mkdirSync(trusted);
-  execFileSync('git',['init','--quiet','--template=',candidate]);
+  fixtureGit(root, ['init', '--quiet', '--template=', candidate]);
   const runner = readFileSync(new URL('../cloud/hosted-runner.mjs', import.meta.url),'utf8');
   const expression = runner.match(/^const env = (\{[\s\S]*?\});$/m)[1];
   const env = new Script('(' + expression + ')').runInNewContext({home,candidate,trusted,join,realpathSync,process});
-  const common = execFileSync('git',['rev-parse','--path-format=absolute','--git-common-dir'],
-    {cwd:env.ULD_ARTIFACT_COMMON, encoding:'utf8'}).trim();
+  const common = fixtureGit(env.ULD_ARTIFACT_COMMON, ['rev-parse', '--path-format=absolute', '--git-common-dir']);
   assert.equal(common,join(realpathSync(candidate),'.git'));
 });
