@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { requireObservedSource } from './android-host-activity.mjs';
 import { enforceBudget, summarizeTrials } from '../../tests/android/frame-budget.mjs';
+import { evaluatePairs } from './timing/paired-ab.mjs';
 
 const hash = /^[a-f0-9]{64}$/;
 export const apkDigest = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -36,6 +37,16 @@ export function timingForIdenticalApk(receipt, baseTree, apkSha256, limits, entr
   const identicalFile = apkSha256 === source.apkSha256;
   const identicalEntries = hash.test(entryManifestSha256) && entryManifestSha256 === baseEntryManifestSha256;
   if (!identicalFile && !identicalEntries) return;
+  if (source.strategyReport) {
+    const report = source.strategyReport;
+    if (report.verdict !== 'pass' || !['absolute', 'paired-ab'].includes(report.strategy)) return;
+    if (report.strategy === 'paired-ab') {
+      const replay = evaluatePairs({ trials: report.trials, journeys: ['press', 'scroll'], limits, config: report.config });
+      // Reuse requires every candidate trial to pass its absolute limits, including
+      // trials from pairs for which the base was also slow.
+      if (replay.verdict !== 'pass' || replay.evidence.contaminatedPairs.length) return;
+    }
+  }
   try {
     if (receipt.androidHostActivityPolicy===1 && !['timing measured','timing reused: identical app'].includes(source.result)) return;
     if (source.admission || receipt.androidHostActivityPolicy===1 && source.result==='timing measured')
@@ -55,7 +66,7 @@ export function timingForIdenticalApk(receipt, baseTree, apkSha256, limits, entr
   return source.frameBudget;
 }
 
-export async function androidTiming({ apk, common, root, limits, measure }) {
+export async function androidTiming({ apk, common, root, limits, measure, strategy, fresh = false }) {
   const identity = apkIdentity(apk);
   let comparison = { ...identity, baseApkSha256: null, baseEntryManifestSha256: null };
   let budgetComparisonBase;
@@ -75,8 +86,8 @@ export async function androidTiming({ apk, common, root, limits, measure }) {
     comparison = { ...identity, baseTree, baseApkSha256: source?.androidTiming?.apkSha256 ?? null, baseEntryManifestSha256 };
     const frameBudget = timingForIdenticalApk(source, baseTree, identity.apkSha256, limits,
       identity.entryManifestSha256, baseEntryManifestSha256);
-    if (frameBudget) return { result: 'timing reused: identical app', ...comparison, sourceReceipt,
-      measuredReceipt: source.androidTiming.measuredReceipt ?? sourceReceipt, admission:source.androidTiming.admission ?? null, frameBudget };
+    if (!fresh && frameBudget && (!strategy || (source.androidTiming.strategyReport?.strategy ?? 'absolute') === strategy)) return { result: 'timing reused: identical app', ...comparison, sourceReceipt,
+      measuredReceipt: source.androidTiming.measuredReceipt ?? sourceReceipt, admission:source.androidTiming.admission ?? null, strategyReport: source.androidTiming.strategyReport, frameBudget };
   }
   return { result: 'timing measured', ...comparison, frameBudget: await measure(identity) };
 }

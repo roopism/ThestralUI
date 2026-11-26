@@ -8,6 +8,7 @@ import { withRevisionSnapshot } from '../packages/policy/quality/staged-tree.mjs
 import { installSnapshotDependencies } from '../packages/policy/quality/snapshot-dependencies.mjs';
 import { relatedHistory, requireReviewedFailures, treeHistory } from './gates/receipt-history.mjs';
 import { reviewPolicy } from './gates/review/qualification-policy.mjs';
+import { assertTimingConfigChange } from './gates/timing/config-policy.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, appendFileSync, mkdirSync } from 'node:fs';
@@ -67,6 +68,7 @@ export function proposal(number = process.argv[2]) {
   requireGateIsolation(pr.head.ref, paths, undefined, derivedRegistrations(root, pr.base.sha, tree, pr.head.ref));
   assert.deepEqual(reviewPolicy(root, pr.base.sha, tree), []);
   assert.deepEqual(reusePolicyIssues(root, pr.base.sha, tree), []);
+  assertTimingConfigChange(root, pr.base.sha, tree);
   return { pr, merge, tree };
 }
 function ownerDecisions(base) {

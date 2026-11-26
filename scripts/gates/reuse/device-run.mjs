@@ -10,8 +10,8 @@ import { shutdownSimulators, usingSimulator, withTiming } from '../../workers/re
 import { stopVm } from '../linux-vm.mjs';
 import { candidateArchives, findCocoaPods, pickPhone, preparePackedIosApp } from '../../verify-ios-simulator.mjs';
 import { androidTools, withEmulator } from '../../../tests/android/emulator.mjs';
-import { enforceBudget, measureFrameBudget, summarizeTrials } from '../../../tests/android/frame-budget.mjs';
-import { androidTree } from '../../../tests/android/interaction.mjs';
+import { enforceBudget, summarizeTrials } from '../../../tests/android/frame-budget.mjs';
+import { measureTimingStrategy, prepareTimingStrategy } from '../timing/android.mjs';
 import { preparePackedApk } from '../../../tests/android/host.mjs';
 import { environmentFacts } from './environment.mjs';
 import { appIdentity } from './app-identity.mjs';
@@ -73,6 +73,7 @@ export async function prepareDeviceReuse(context) {
       built = app;
     } else {
       const { apk } = await preparePackedApk(snapshot, evidence, androidTools(), out);
+      await prepareTimingStrategy({ root: snapshot, common: dirname(directory), tools: androidTools(), reports: out });
       built = apk;
     }
     mkdirSync(dirname(folder), { recursive: true });
@@ -113,11 +114,15 @@ export function verifyTimingTrials(frameBudget, limits) {
 }
 
 export async function reuseAndroidTiming({ snapshot, directory, base }, prepared) {
-  const limits = read(join(snapshot, 'tests/android/low-end-budget.json')).limits;
+  const budgets = read(join(snapshot, 'tests/android/low-end-budget.json'));
+  const { limits } = budgets;
   assert.equal(read(join(snapshot, '.git/gate-selection.json')).budgetComparisonBase, base);
   const reports = join(snapshot, 'test-results/android-emulator/low-end');
   mkdirSync(reports, { recursive: true });
+  const strategy = await prepareTimingStrategy({ root: snapshot, common: dirname(directory), tools: androidTools(), reports }, true);
+  let strategyReport;
   const timing = await androidTiming({ root: snapshot, apk: prepared.path, common: dirname(directory), limits,
+    strategy: strategy.config.active['android-low-end'],
     measure: identity => usingSimulator('Android low-end timing', async () => {
       await stopVm();
       shutdownSimulators();
@@ -129,11 +134,19 @@ export async function reuseAndroidTiming({ snapshot, directory, base }, prepared
         const { interaction } = await prepareAndroidProfile({ profile, apk: prepared.path, dir: reports, serial, name, device, tools });
         assert.ok(interaction.heldPixels >= 20, 'Missing Android ripple observation');
         const common=dirname(directory);
-        return measureAdmitted({reports,identity:observedIdentity(snapshot,common,identity),common,limits,
-          measure:folder=>measureFrameBudget({device,tree:()=>androidTree(device).nodes,reports:folder})});
+        const observed = observedIdentity(snapshot, common, identity);
+        return measureAdmitted({ reports, identity: observed, common, limits, measure: async folder => {
+          const result = await measureTimingStrategy({ common, profile, device, budgets, strategy,
+            apk: prepared.path, reports: folder, identity: observed });
+          if (folder === reports) strategyReport = result.report;
+          return result.frames;
+        } });
       });
     }) });
-  if(timing.result==='timing measured') timing.admission=read(join(reports,'timing-admission.json'));
+  if (timing.result === 'timing measured') {
+    timing.admission = read(join(reports, 'timing-admission.json'));
+    timing.strategyReport = strategyReport;
+  }
   writeFileSync(join(reports, 'timing-source.json'), JSON.stringify(timing, null, 2) + '\n');
   verifyTimingTrials(timing.frameBudget, limits);
   return timing;

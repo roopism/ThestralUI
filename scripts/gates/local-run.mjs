@@ -21,6 +21,7 @@ import { admission, observedIdentity, observationIssues, quiet, sampleHost, wait
 import { publishFirstReceipt, relatedHistory } from './receipt-history.mjs';
 import { readAttempt } from './qualification-attempt.mjs';
 import { reviewPolicy } from './review/qualification-policy.mjs';
+import { assertTimingConfigChange } from './timing/config-policy.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
 import { createWriteStream, copyFileSync, existsSync, globSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
@@ -138,7 +139,7 @@ async function runDevice(script, reports, platform, phase, env = process.env) {
     receipt.devices[platform] = platform === 'iphone' ? versions[0] ?? null : versions;
     const patterns = ['final-budget-failure.json', 'device.json', '*/device.json', 'maestro-session-*/ready.json', '*/maestro-session-*/ready.json',
       '{maestro-session-*,*/maestro-session-*}/*/{request.json,reply.json,suite.json,junit.xml,nodes.xml}',
-      '*/timing-source.json', '*/timing-admission.json', '*/timing-diagnostic/**/*.txt',
+      '*/timing-source.json', '*/timing/**/*.{json,txt}', '*/timing-admission.json', '*/timing-diagnostic/**/*.txt', '*/timing-diagnostic/**/*.json',
       '*/timing-diagnostic/*.json', '*/timing-diagnostic-error.txt', '*/frame-trial-*/*.txt', '*/frame-measurements.json', '*/motion-target.json', '*/ripple.json'];
     for (const file of globSync(patterns, { cwd: root })) {
       const target = join(directory, 'attempts', id + '-evidence', platform, file);
@@ -147,6 +148,8 @@ async function runDevice(script, reports, platform, phase, env = process.env) {
     }
     const timing = join(root, 'low-end/timing-source.json');
     if (platform === 'android' && existsSync(timing)) receipt.androidTiming = read(timing);
+    if (platform === 'android' && receipt.androidTiming?.strategyReport)
+      receipt.androidTiming.evidenceDirectory = 'uld-receipts/attempts/' + id + '-evidence/android/low-end/timing';
   }
 }
 const eligible = new Map();
@@ -296,7 +299,7 @@ async function finishAndroidTiming() {
   } finally {
     const folder = join(snapshot,'test-results/android-emulator');
     for (const path of globSync(['low-end/device.json','low-end/timing-source.json','low-end/timing-admission.json',
-        'low-end/timing-diagnostic/**/*.txt','low-end/timing-diagnostic/*.json','low-end/timing-diagnostic-error.txt','low-end/frame-trial-*/*.txt','low-end/frame-measurements.json'],
+        'low-end/timing/**/*.{json,txt}','low-end/timing-diagnostic/**/*.{json,txt}','low-end/timing-diagnostic/*.json','low-end/timing-diagnostic-error.txt','low-end/frame-trial-*/*.txt','low-end/frame-measurements.json'],
         {cwd:folder})) {
       const dest=join(directory,'attempts',id+'-evidence','android',path);
       mkdirSync(dirname(dest),{recursive:true});
@@ -324,6 +327,7 @@ step('No weakening', async () => {
   requireTypedControls(root, base, tree);
   assert.deepEqual(reviewPolicy(root, base, tree), []);
   assert.deepEqual(reusePolicyIssues(root,base,tree),[]);
+  assertTimingConfigChange(root, base, tree);
   node(trustedGate('no-weakening.mjs'), base, tree, root);
   node(trustedGate('canaries.mjs'), tree);
   node(trustedGate('device-scope-canaries.mjs'), tree);

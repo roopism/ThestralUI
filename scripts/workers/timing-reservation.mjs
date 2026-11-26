@@ -66,6 +66,18 @@ function parentLease(directory, id, local) {
   throw Error('The timing reservation does not belong to a live ancestor');
 }
 
+export function currentMeasurement(root) {
+  const local = scope.getStore();
+  const id = local?.id ?? process.env.ULD_TIMING_RESERVATION;
+  if (!id) throw Error('Android timing needs an active measurement reservation');
+  const common = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], {
+    cwd: root, encoding: 'utf8',
+  }).trim();
+  const owner = parentLease(join(common, 'uld-locks/timing-activities'), id, !!local);
+  if (owner.mode !== 'measurement') throw Error('Android timing needs the exclusive measurement reservation');
+  return owner.id;
+}
+
 // Pass env to work that starts subprocesses. A detached cooperating child registers its own
 // group before it does work. An ordinary tool subprocess must stay in its owner's group.
 export async function withTimingReservation(root, mode, holder, run, options) {
