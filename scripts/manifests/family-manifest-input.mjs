@@ -24,9 +24,13 @@ const target = fields({ types: text, default: text });
 const assertions = (value) =>
   record(value) && Object.entries(value).every(([key, item]) => key.includes(' | ') && text(item));
 
+// The size bands of goal section 9. A band names its frozen-goal limit; it never carries one.
+const band = (value) => ['primitives', 'simple', 'inputs', 'overlays', 'heavy', 'datetime'].includes(value);
+
 const manifest = fields({
   id: text,
   order,
+  band,
   behaviorAnchor: text,
   inventory: fields({
     layer: text,
