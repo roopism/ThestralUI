@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import test from 'node:test';
@@ -17,6 +18,8 @@ for (const [group, path] of [
 }
 
 test('the English palette entry excludes every other command catalog from its initial imports', async () => {
+  // The qualification snapshot already built these packages before the unit roster.
+  if (process.env.UI_GATE_SNAPSHOT !== '1') execFileSync('npm', ['run', 'build:packages'], { stdio: 'inherit' });
   const result = await build({
     stdin: { contents: "export { CommandPalette } from '@ui-lazy-dev/ui-web/workflows'", resolveDir: process.cwd() },
     bundle: true, splitting: true, format: 'esm', platform: 'browser', charset: 'utf8',
