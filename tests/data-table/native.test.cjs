@@ -210,3 +210,18 @@ test('removing the focused native cell returns focus to the stable table viewpor
     }
   }
 });
+
+test('Assigned work shows only matching tickets before switching to unassigned work', async () => {
+  const { EmptyQueue } = require('../../catalog/native/scenarios/DataTable.tsx');
+  const screen = await render(h(EmptyQueue));
+  for (const title of ['Atlas audit', 'Birch audit', 'Cedar audit']) {
+    expect(screen.getByText(title)).toBeVisible();
+  }
+  await fireEvent.changeText(screen.getByLabelText('Search records'), 'Cedar');
+  expect(screen.getByText('Cedar audit')).toBeVisible();
+  expect(screen.queryByText('Atlas audit')).toBeNull();
+  expect(screen.queryByText('Birch audit')).toBeNull();
+  await press(screen, 'button', 'Show unassigned');
+  expect(screen.getByText('No matching records')).toBeVisible();
+  expect(screen.queryByText('Cedar audit')).toBeNull();
+});
