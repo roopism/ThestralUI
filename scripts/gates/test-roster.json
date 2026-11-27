@@ -101,6 +101,7 @@
   "scripts/gates/tests/merge-train.test.mjs | a red middle member or missing member checks stops a train before qualification",
   "scripts/gates/tests/merge-train.test.mjs | an earlier failed solo qualification bars a train member before the final run",
   "scripts/gates/tests/merge-train.test.mjs | batch device scope includes solo and prefix inputs hidden by the final diff",
+  "scripts/gates/tests/merge-train.test.mjs | batch preflight CLI seals the first member under the launcher activity",
   "scripts/gates/tests/merge-train.test.mjs | changing a member after the last read aborts the complete server ref transaction",
   "scripts/gates/tests/merge-train.test.mjs | inspection builds and judges the stack without member execution or a train receipt",
   "scripts/gates/tests/merge-train.test.mjs | ordered cleanup preserves a newer remote head, including an advance during lease removal",

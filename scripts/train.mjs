@@ -245,9 +245,9 @@ async function withTrainContext(operation, inspectOnly = false, ordered = false,
         const { checkMember } = await import(join(trusted, 'scripts/gates/train-checks.mjs'));
         return checkMember(request);
       },
-      async preflight(member, batch) {
-        const { prepareTrainMember } = await import(join(trusted, 'scripts/gates/train-checks.mjs'));
-        return prepareTrainMember({ root, base, member, batch });
+      preflight(member, batch) {
+        // The snapshot's reservation code must see the launcher as a live ancestor.
+        run('scripts/gates/prepare-train-member.mjs', [JSON.stringify({ root, base, member, batch })], root);
       },
       previous: train => exactTrainQualification(root, directory, train, passing),
       qualify: train => run('scripts/qualify.mjs', [train.finalCommit], root),
