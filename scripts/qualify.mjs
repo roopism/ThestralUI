@@ -55,6 +55,9 @@ const directory = join(common, 'uld-receipts');
 // pinned after adoption so each newer runner must continue its preflight ID.
 const initial = mode !== 'hook' && git('ls-tree', base, '--', 'scripts/gates/qualification-attempt.mjs')
   ? startAttempt(root, directory, base, commit, git('rev-parse', commit + '^{tree}'), mode) : undefined;
+// The packed bundle stage of the trusted runner measures new size rows. Earlier judges take no flags.
+const deferredMeasurement = (trusted, judge) =>
+  readFileSync(join(trusted, judge), 'utf8').includes("'--defer-measurement'") ? ['--defer-measurement'] : [];
 function verify(snapshot, tree, env) {
   const judge = 'scripts/gates/no-weakening.mjs';
   const incumbent = git('ls-tree', base, '--', judge);
@@ -79,7 +82,7 @@ function verify(snapshot, tree, env) {
   assert.ok(existsSync(join(snapshot, runner)), 'The committed candidate must contain the local qualification pipeline');
   return withRevisionSnapshot(root, base, (trusted, _baseTree, trustedEnv) => {
     installSnapshotDependencies(trusted, join(common, 'uld-dependencies'), trustedEnv);
-    execFileSync(process.execPath, [judge, base, tree, root], { cwd: trusted, env: trustedEnv, stdio: 'inherit' });
+    execFileSync(process.execPath, [judge, base, tree, root, ...deferredMeasurement(trusted, judge)], { cwd: trusted, env: trustedEnv, stdio: 'inherit' });
     const extraJudge = 'scripts/gates/review/qualification-policy.mjs';
     if (git('ls-tree', base, '--', extraJudge))
       execFileSync(process.execPath, [join(trusted, extraJudge), root, base, tree], { cwd: trusted, env: trustedEnv, stdio: 'inherit' });

@@ -228,6 +228,8 @@ async function runGroup(name, entry, operation, audit) {
   entry.reuseReason ??= decision.reason;
   await executeChoice(entry,decision,audit,async () => {
       const source = useRecord(context,entry,decision.record);
+      // The packed verdict may be reused against another parent. Bind new rows to this comparison.
+      if (name === 'Packed bundle limits') verifyMeasuredAdmission();
       if (name==='Linux browser behavior') receipt.vm = source.vm;
       if (name==='iPhone Simulator') receipt.devices.iphone = source.devices.iphone;
       if (name==='Android standard and low-end') {
@@ -317,12 +319,15 @@ async function auditReuse() {
 }
 
 const trustedGate = file => fileURLToPath(new URL(file, import.meta.url));
+function verifyMeasuredAdmission() {
+  node(trustedGate('no-weakening.mjs'), base, tree, root, '--measurements', 'release/evidence/bundles.json');
+}
 const tests = globSync('*.test.mjs', { cwd: trustedGate('tests/') }).sort();
 step('No weakening', async () => {
   requireTypedControls(root, base, tree);
   assert.deepEqual(reviewPolicy(root, base, tree), []);
   assert.deepEqual(reusePolicyIssues(root,base,tree),[]);
-  node(trustedGate('no-weakening.mjs'), base, tree, root);
+  node(trustedGate('no-weakening.mjs'), base, tree, root, '--defer-measurement');
   node(trustedGate('canaries.mjs'), tree);
   node(trustedGate('device-scope-canaries.mjs'), tree);
   node(trustedGate('maestro-canary.mjs'), '--offline');
@@ -347,6 +352,8 @@ if (mode !== 'hook') {
     node(trustedVerdict('verify-consumers.mjs'), 'release/evidence', range), preflight);
   step('Packed bundle limits', async () => {
     await checkNewBudgets(root, base, read('release/evidence/bundles.json'));
+    // New size rows passed the first judge pending this measurement. The same judge now binds them to it.
+    verifyMeasuredAdmission();
     verifyPackedCeiling(process.cwd());
   }, ['Packed consumers max']);
   step('Portable web scenarios', () => scenarioMatrix(), ['Catalog build']);

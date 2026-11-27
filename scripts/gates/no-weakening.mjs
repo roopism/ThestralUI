@@ -104,9 +104,103 @@ function retainedWorkflowAction(old, next, pins) {
   return isDeepStrictEqual(expected, next);
 }
 
-function checkData(file, before, after, issues, pins) {
+// Package-size rows are the only baseline that may gain entries, and only for a family that enters
+// the change. These rules and limits live here, in the trusted judge. The candidate provides data only.
+const sizeBaseline = 'tests/packaging/bundle-baseline.json';
+// Frozen goal section 9 size bands.
+const bandLimits = Object.freeze({
+  primitives: 1024, simple: 2560, inputs: 5120, overlays: 7168, heavy: 15360, datetime: 81920,
+});
+const publicLabel = /^(@[^/]+\/[^/#]+)(\/[^#]+)?(?:#([A-Za-z_$][\w$]*))?$/;
+
+function treeJson(root, tree, path) {
+  if (!git(root, ['ls-tree', tree, '--', path])) return undefined;
+  return JSON.parse(git(root, ['show', tree + ':' + path]));
+}
+
+function packageNames(root, tree) {
+  const names = new Map(), exports = new Map();
+  for (const line of git(root, ['ls-tree', tree, 'packages/']).split('\n').filter(Boolean)) {
+    const dir = line.split('\t')[1];
+    const pkg = treeJson(root, tree, dir + '/package.json');
+    if (!plain(pkg) || typeof pkg.name !== 'string') continue;
+    names.set(dir.slice('packages/'.length), pkg.name);
+    exports.set(pkg.name, plain(pkg.exports) ? Object.keys(pkg.exports) : typeof pkg.exports === 'string' ? ['.'] : []);
+  }
+  return { names, exports };
+}
+
+function familyManifests(root, tree) {
+  const rows = new Map();
+  for (const path of git(root, ['ls-tree', '--name-only', tree, 'manifests/families/']).split('\n').filter(Boolean))
+    if (path.endsWith('.json')) rows.set(path, treeJson(root, tree, path));
+  return rows;
+}
+
+const entryOf = label => {
+  const match = publicLabel.exec(label);
+  return match && { pkg: match[1], entry: match[2] ? '.' + match[2] : '.', symbol: match[3] };
+};
+const declaredEntries = (row, names) => (Array.isArray(row?.entries) ? row.entries : [])
+  .map(item => plain(item) && names.get(item.pkg) && typeof item.path === 'string' ? names.get(item.pkg) + ' ' + item.path : undefined)
+  .filter(Boolean);
+const budgetRows = row => (Array.isArray(row?.budgets) ? row.budgets : []).filter(item => plain(item) && typeof item.name === 'string');
+
+// All existing rows are retained. A new entry needs its own family, a band and packed evidence.
+function baselineAdmission(root, parent, next, before, after, options) {
+  if (!plain(before) || !plain(after)) return [sizeBaseline + ' requires a size map'];
+  const added = Object.keys(after).filter(name => !Object.hasOwn(before, name));
+  const issues = [];
+  const problem = (name, message) => issues.push(sizeBaseline + ' ' + name + ' ' + message);
+  for (const [name, old] of Object.entries(before)) {
+    if (!Object.hasOwn(after, name)) problem(name, 'baseline removed an existing entry');
+    else if (!Number.isSafeInteger(after[name]) || after[name] <= 0 || after[name] > old)
+      problem(name, 'baseline gained or enlarged an existing entry');
+  }
+  if (!added.length) return issues;
+  const candidatePackages = packageNames(root, next), parentPackages = packageNames(root, parent);
+  const previous = familyManifests(root, parent), current = familyManifests(root, next);
+  const shared = [treeJson(root, parent, 'manifests/shared.json'), treeJson(root, next, 'manifests/shared.json')];
+  const parentEntries = new Set([...previous.values(), shared[0]].flatMap(row => declaredEntries(row, parentPackages.names)));
+  const parentBudgets = new Set([...previous.values(), shared[0]].flatMap(row => budgetRows(row).map(item => item.name)));
+  const sharedBudgets = new Set(budgetRows(shared[1]).map(item => item.name));
+  const measured = options.measurements;
+  for (const name of added) {
+    const value = after[name], entry = entryOf(name);
+    if (!Number.isInteger(value) || value <= 0 || !entry) { problem(name, 'new baseline row is not a positive public entry size'); continue; }
+    const owners = [...current].filter(([, row]) => budgetRows(row).some(item => item.name === name));
+    if (owners.length !== 1 || sharedBudgets.has(name) || parentBudgets.has(name)) {
+      problem(name, 'new baseline row has no single new family budget');
+      continue;
+    }
+    const [[path, row]] = owners;
+    if (!row.id || previous.has(path) || [...previous.values()].some(existing => existing.id === row.id)) {
+      problem(name, 'new baseline row requires a newly added family');
+      continue;
+    }
+    const owned = entry.pkg + ' ' + entry.entry;
+    if (!declaredEntries(row, candidatePackages.names).includes(owned) || parentEntries.has(owned) ||
+        !(candidatePackages.exports.get(entry.pkg) ?? []).includes(entry.entry)) {
+      problem(name, 'new baseline row is not a new public entry of ' + path);
+      continue;
+    }
+    if (budgetRows(row).find(item => item.name === name).bytes !== value)
+      problem(name, 'new baseline row differs from the family budget');
+    if (!Object.hasOwn(bandLimits, row.band)) problem(name, 'new baseline row requires a known size band');
+    else if (value > bandLimits[row.band]) problem(name, 'new baseline row exceeds its family band');
+    if (measured) {
+      const matching = measured.filter(item => item?.entry === name);
+      if (matching.length !== 1 || matching[0].gzip !== value) problem(name, 'new baseline row differs from the packed measurement');
+    } else if (options.deferMeasurement) options.pending?.push(name);
+    else problem(name, 'new baseline row requires the trusted packed measurement');
+  }
+  return issues;
+}
+
+function checkData(file, before, after, issues, pins, admitted) {
   const problem = (path, message) => issues.push(file + ' ' + path + ' ' + message);
-  const isBaseline = baseline.test(file);
+  // An admitted size map was compared row by row in baselineAdmission.
+  const isBaseline = baseline.test(file) && !admitted;
   if (isBaseline && after !== undefined && !subset(after, before ?? (Array.isArray(after) ? [] : {})))
     problem('', 'baseline gained or enlarged an entry');
   function visit(old, next, path, limit, rules, exceptions) {
@@ -159,11 +253,35 @@ function checkData(file, before, after, issues, pins) {
 }
 
 // Structural tokens avoid treating formatting, quotes and comments as changed assertions.
-function shape(node) {
-  if (ts.isParenthesizedExpression(node)) return shape(node.expression);
+function shape(node, omit) {
+  if (ts.isParenthesizedExpression(node)) return shape(node.expression, omit);
   const children = [];
-  ts.forEachChild(node, child => { children.push(shape(child)); });
+  ts.forEachChild(node, child => { if (!omit?.(child)) children.push(shape(child, omit)); });
   return children.length ? [node.kind, ...children] : [node.kind, node.text ?? ''];
+}
+
+// Only a standard cause on the thrown error can be added without changing its rejection.
+function caughtCauseOptions(statement) {
+  let error = statement.expression;
+  while (ts.isParenthesizedExpression(error)) error = error.expression;
+  if (ts.isCallExpression(error) && ts.isPropertyAccessExpression(error.expression) &&
+      ts.isIdentifier(error.expression.expression) && error.expression.expression.text === 'Object' &&
+      error.expression.name.text === 'assign' && error.arguments.length)
+    error = error.arguments[0];
+  while (ts.isParenthesizedExpression(error)) error = error.expression;
+  if (!(ts.isNewExpression(error) || ts.isCallExpression(error)) || !ts.isIdentifier(error.expression) ||
+      !/^(?:Aggregate|Eval|Range|Reference|Syntax|Type|URI)?Error$/.test(error.expression.text)) return;
+  const args = error.arguments;
+  if (args?.length !== (error.expression.text === 'AggregateError' ? 3 : 2)) return;
+  const options = args.at(-1);
+  if (!ts.isObjectLiteralExpression(options) || options.properties.length !== 1) return;
+  const property = options.properties[0];
+  const value = ts.isShorthandPropertyAssignment(property) ? property.name :
+    ts.isPropertyAssignment(property) ? property.initializer : undefined;
+  if (!value || !ts.isIdentifier(value) || property.name.text !== 'cause') return;
+  const scope = ts.findAncestor(statement, node => ts.isCatchClause(node) || ts.isFunctionLike(node));
+  const binding = scope && ts.isCatchClause(scope) && scope.variableDeclaration?.name;
+  if (binding && ts.isIdentifier(binding) && value.text === binding.text) return options;
 }
 
 function hasEarlyExit(statement) {
@@ -184,12 +302,13 @@ function hasEarlyExit(statement) {
   }
   return leaves(statement);
 }
-const signature = node => createHash('sha256').update(JSON.stringify(shape(node))).digest('hex');
+const signature = (node, omit) => createHash('sha256').update(JSON.stringify(shape(node, omit))).digest('hex');
 
 function facts(path, body) {
   const file = ts.createSourceFile(path, body, ts.ScriptTarget.Latest, true);
   if (file.parseDiagnostics.length) throw Error('Cannot parse protected source ' + path);
   const obligations = [], forbidden = [], limits = new Map();
+  const causeOptions = new WeakSet();
   if (body && path === fixtureRegistry)
     registeredNativeSlugs(body, (_slug, _descriptor, id) => obligations.push('native fixture ' + id));
   const testFile = /\.(?:test|spec)\.|\/test\//.test(path);
@@ -229,7 +348,13 @@ function facts(path, body) {
     }
     if (measuredStories.has(path) && ts.isJsxAttribute(node) && node.name.getText(file) === 'animate')
       obligations.push('measured animation ' + context + ' ' + JSON.stringify(shape(node)));
-    if (ts.isThrowStatement(node) && !testFile) obligations.push('reject ' + context + ' ' + JSON.stringify(shape(node)));
+    if (ts.isThrowStatement(node) && !testFile) {
+      const options = caughtCauseOptions(node);
+      if (options) causeOptions.add(options);
+      const id = context + ' ' + JSON.stringify(shape(node, child => child === options));
+      obligations.push('reject ' + id);
+      if (options) obligations.push('reject cause ' + JSON.stringify(shape(options)) + ' ' + id);
+    }
     if (ts.isPropertyAssignment(node) || ts.isVariableDeclaration(node)) {
       const name = node.name.getText(file);
       if (inRules && node.initializer) {
@@ -251,7 +376,7 @@ function facts(path, body) {
       let scope = context;
       for (const statement of node.statements) {
         descend(statement, scope);
-        if (hasEarlyExit(statement)) scope += '/after ' + signature(statement);
+        if (hasEarlyExit(statement)) scope += '/after ' + signature(statement, child => causeOptions.has(child));
       }
     } else if (ts.isIfStatement(node) || ts.isConditionalExpression(node)) {
       const condition = ts.isIfStatement(node) ? node.expression : node.condition;
@@ -342,7 +467,9 @@ function initialInventory(source, parent, next, data) {
     typeof entry[1] === 'string' && entry[1].length > 0 && typeof entry[2] === 'string' &&
     !entry[2].startsWith('/') && !entry[2].split('/').includes('..') && /^[0-9a-f]{64}$/.test(entry[3]));
 }
-export function noWeakening(root, base, candidate, source) {
+// options.measurements: the packed bundle measurement rows ({ entry, gzip }) of the candidate.
+// options.deferMeasurement: collect unmeasured new size rows in options.pending for a later measured run.
+export function noWeakening(root, base, candidate, source, options = {}) {
   const tree = revision => git(root, ['rev-parse', '--verify', '--end-of-options', revision + '^{tree}']).trim();
   const parent = tree(base), next = tree(candidate);
   const incumbentOwners = protectedPaths(root, parent), proposedOwners = protectedPaths(root, next);
@@ -391,7 +518,10 @@ export function noWeakening(root, base, candidate, source) {
       const data = parse(after);
       if (path === inventoryBaseline && before === undefined && initialInventory(source, parent, next, data)) continue;
       const pins = path === checksWorkflow ? trustedV4Pins(root, parent) : undefined;
-      checkData(path, before === undefined ? undefined : parse(before), data, issues, pins);
+      const admission = path === sizeBaseline && before !== undefined
+        ? baselineAdmission(root, parent, next, parse(before), data, options) : undefined;
+      if (admission) issues.push(...admission);
+      checkData(path, before === undefined ? undefined : parse(before), data, issues, pins, Boolean(admission));
     } else if (sourceCode.test(path) || /\.(?:java|kt|kts)$/.test(path)) {
       const inspect = body => sourceCode.test(path) ? facts(path, body) : jvmFacts(body);
       const old = inspect(before ?? ''), current = inspect(after);
@@ -411,10 +541,20 @@ export function noWeakening(root, base, candidate, source) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  const [base, tree, source] = process.argv.slice(2);
+  const args = process.argv.slice(2), options = { pending: [] };
+  const flag = args.indexOf('--measurements');
+  if (flag >= 0) options.measurements = JSON.parse(readFileSync(args.splice(flag, 2)[1], 'utf8'));
+  const defer = args.indexOf('--defer-measurement');
+  if (defer >= 0) { args.splice(defer, 1); options.deferMeasurement = true; }
+  if (args.length > 3 || (options.measurements && options.deferMeasurement))
+    throw Error('Pass either --measurements <bundles.json> or --defer-measurement once');
+  const [base, tree, source] = args;
   if (!base || !tree) throw Error('Usage: no-weakening.mjs <base> <candidate tree>');
-  const issues = noWeakening(process.cwd(), base, tree, source);
+  const issues = noWeakening(process.cwd(), base, tree, source, options);
   for (const issue of issues) console.error(issue);
   if (issues.length) process.exitCode = 1;
-  else console.log('Protected inputs passed.');
+  else {
+    console.log('Protected inputs passed.');
+    if (options.pending.length) console.log('New size rows await the packed measurement: ' + options.pending.join(', '));
+  }
 }
