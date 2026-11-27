@@ -1,67 +1,29 @@
 // Generated from packages/messages by renderer.mjs.
+import { loadCatalog } from '#command-palette-catalog';
+
 export function commandLabels(locale: string) {
   const [language, variant] = locale.split('-');
   switch (language) {
     case 'ar':
-      return {
-        "search": "البحث في الأوامر",
-        "empty": "لا توجد أوامر مطابقة",
-        "close": "إغلاق"
-      };
+      return loadCatalog('ar');
     case 'de':
-      return {
-        "search": "Befehle suchen",
-        "empty": "Keine passenden Befehle",
-        "close": "Schließen"
-      };
+      return loadCatalog('de');
     case 'en':
-      return {
-        "search": "Search commands",
-        "empty": "No matching commands",
-        "close": "Close"
-      };
+      return {"search":"Search commands","empty":"No matching commands","close":"Close"};
     case 'es':
-      return {
-        "search": "Buscar comandos",
-        "empty": "No hay comandos coincidentes",
-        "close": "Cerrar"
-      };
+      return loadCatalog('es');
     case 'fr':
-      return {
-        "search": "Rechercher des commandes",
-        "empty": "Aucune commande correspondante",
-        "close": "Fermer"
-      };
+      return loadCatalog('fr');
     case 'he':
-      return {
-        "search": "חיפוש פקודות",
-        "empty": "לא נמצאו פקודות תואמות",
-        "close": "סגירה"
-      };
+      return loadCatalog('he');
     case 'hi':
-      return {
-        "search": "कमांड खोजें",
-        "empty": "कोई मेल खाता कमांड नहीं मिला",
-        "close": "बंद करें"
-      };
+      return loadCatalog('hi');
     case 'ja':
-      return {
-        "search": "コマンドを検索",
-        "empty": "一致するコマンドはありません",
-        "close": "閉じる"
-      };
+      return loadCatalog('ja');
     case 'pt':
-      return {
-        "search": "Pesquisar comandos",
-        "empty": "Nenhum comando correspondente",
-        "close": "Fechar"
-      };
+      return loadCatalog('pt-BR');
     case 'zh':
       if (['Hant', 'HK', 'MO', 'TW'].includes(variant)) break;
-      return {
-        "search": "搜索命令",
-        "empty": "没有匹配的命令",
-        "close": "关闭"
-      };
+      return loadCatalog('zh-Hans');
   }
 }

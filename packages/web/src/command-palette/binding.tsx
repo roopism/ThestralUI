@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useId, useMemo } from "react";
+import { use, useEffect, useState, useId, useMemo } from "react";
 import { canonicalLocale } from '../_shared/messages/locale.js';
 import { commandLabels } from './messages.js';
 import { Dialog } from "../modal-dialog/binding.js";
@@ -30,7 +30,8 @@ export function CommandPalette({
   labels: overrides,
 }: CommandPaletteProps) {
   const locale = canonicalLocale(localeTag);
-  const messages = commandLabels(locale);
+  const catalog = commandLabels(locale);
+  const messages = catalog instanceof Promise ? use(catalog) : catalog;
   const labels = {
     search: overrides?.search ?? messages?.search,
     empty: overrides?.empty ?? messages?.empty,

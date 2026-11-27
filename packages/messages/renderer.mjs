@@ -28,13 +28,28 @@ function labels(locale) {
     .map(([key, text]) => [key.slice(prefix.length), text]));
 }
 const keys = Object.keys(labels('en')).sort();
-const lines = ['export function commandLabels(locale: string) {', "  const [language, variant] = locale.split('-');", '  switch (language) {'];
+const directory = 'web/src/command-palette/catalogs/';
+const browsers = [];
+const servers = [];
+const lines = ["import { loadCatalog } from '#command-palette-catalog';", '', 'export function commandLabels(locale: string) {',
+  "  const [language, variant] = locale.split('-');", '  switch (language) {'];
 for (const locale of locales) {
   const messages = labels(locale);
   assert.deepEqual(Object.keys(messages).sort(), keys, 'Incomplete command palette labels for ' + locale);
   lines.push("    case '" + locale.split('-')[0] + "':");
-  if (locale === 'zh-Hans') lines.push("      if (['Hant', 'HK', 'MO', 'TW'].includes(variant)) break;");
-  lines.push('      return ' + JSON.stringify(messages, null, 2).replaceAll('\n', '\n      ') + ';');
+  if (locale === 'en') {
+    lines.push('      return ' + JSON.stringify(messages) + ';');
+  } else {
+    if (locale === 'zh-Hans') lines.push("      if (['Hant', 'HK', 'MO', 'TW'].includes(variant)) break;");
+    lines.push("      return loadCatalog('" + locale + "');");
+    const module = './' + locale + '.mjs';
+    output(directory + locale + '.mjs', 'export default ' + JSON.stringify(messages, null, 2) + ';\n');
+    browsers.push("  '" + locale + "': () => import('" + module + "'),");
+    servers.push("    case '" + locale + "': return require('" + module + "').default;");
+  }
 }
 lines.push('  }', '}', '');
 output('web/src/command-palette/messages.ts', lines.join('\n'));
+output(directory + 'imports.mjs', ['export const loaders = {', ...browsers, '};', ''].join('\n'));
+output(directory + 'server.cjs', ['exports.loadCatalog = function (language) {', '  switch (language) {', ...servers,
+  "    default: throw Error('Unsupported command catalog ' + language);", '  }', '};', ''].join('\n'));

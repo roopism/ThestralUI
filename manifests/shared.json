@@ -652,12 +652,16 @@
       "packages/web/src/workflows-commands.tsx",
       "packages/web/src/workflows-layout.tsx",
       "packages/web/src/workflows-status.tsx",
-      "packages/web/src/workflows.tsx"
+      "packages/web/src/workflows.tsx",
+      "packages/web/src/_shared/messages/locale.ts",
+      "packages/messages/locale.ts",
+      "packages/messages/renderer.mjs"
     ],
     "nativeSource": [
       "packages/native/src/dialog.tsx",
       "packages/native/src/form-field.tsx",
-      "packages/native/src/index.tsx"
+      "packages/native/src/index.tsx",
+      "packages/native/src/_shared/messages/locale.ts"
     ],
     "style": [
       "packages/web/src/_shared/styles/collections.css",
