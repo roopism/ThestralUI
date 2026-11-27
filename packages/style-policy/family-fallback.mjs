@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import * as css from 'css-tree';
@@ -63,45 +64,107 @@ function runtimeExport(root, registered, file, wanted, visit, visited = new Set(
   return false;
 }
 
-// Inline forwards className to its layout div. Other components may discard it.
-function classHost(tag, file) {
-  if (!ts.isIdentifier(tag)) return false;
-  if (/^[a-z]/.test(tag.text)) return true;
+function sourceChecker(file) {
   const options = { noLib: true, noResolve: true, types: [], jsx: ts.JsxEmit.Preserve };
   const host = ts.createCompilerHost(options);
   host.getSourceFile = name => name === file.fileName ? file : undefined;
-  const checker = ts.createProgram([file.fileName], options, host).getTypeChecker();
-  const decl = checker.getSymbolAtLocation(tag)?.declarations?.[0];
+  return ts.createProgram([file.fileName], options, host).getTypeChecker();
+}
+
+function imported(checker, identifier, name, path) {
+  const decl = checker.getSymbolAtLocation(identifier)?.declarations?.[0];
   return Boolean(decl && ts.isImportSpecifier(decl) && !decl.isTypeOnly && !decl.parent.parent.isTypeOnly &&
-    (decl.propertyName ?? decl.name).text === 'Inline' && decl.parent.parent.parent.moduleSpecifier.text === '../inline/binding.js');
+    (decl.propertyName ?? decl.name).text === name && decl.parent.parent.parent.moduleSpecifier.text === path);
+}
+
+// Inline passes the original props to layout. The layout div appends className
+// through classes(). Both reviewed layout variants preserve that return path.
+const inlineForwarders = [
+  ['packages/web/src/inline/binding', ['9fc6b607869bbbbada442888ac11fe2298fd05ee97c00c6a92665edec1fe3dfc']],
+  ['packages/web/src/_shared/primitives/binding', [
+    '191604d2f3454637ec1edf072f4aacd233bebde29945c7445b4ea574a8d67588',
+    '6f945bfb01820673cec35520d07a35c7e8c70f0e5e0437bd0673b46f6af87563',
+  ]],
+];
+function classHost(tag, root, checker) {
+  if (!ts.isIdentifier(tag)) return false;
+  if (/^[a-z]/.test(tag.text)) return true;
+  return imported(checker, tag, 'Inline', '../inline/binding.js') && inlineForwarders.every(([stem, digests]) =>
+    !['.ts', '.d.ts', '.js', '.jsx'].some(ext => existsSync(resolve(root, stem + ext))) &&
+    digests.includes(createHash('sha256').update(localText(root, stem + '.tsx')).digest('hex')));
+}
+
+function methodReceiver(call, name) {
+  if (call && ts.isCallExpression(call) && !call.questionDotToken && call.arguments.length === 1 &&
+      ts.isPropertyAccessExpression(call.expression) && !call.expression.questionDotToken &&
+      call.expression.name.text === name) return call.expression.expression;
+}
+
+// With children=1, Children.toArray yields [1] and isValidElement(1) is false.
+// Prove the callback returns true on that path without running candidate code.
+function contentPredicate(guard, props, checker) {
+  if (!ts.isCallExpression(guard) || !ts.isIdentifier(guard.expression) || guard.arguments.length !== 1) return;
+  const arg = guard.arguments[0];
+  if (!ts.isPropertyAccessExpression(arg) || arg.name.text !== 'children' || !ts.isIdentifier(arg.expression) ||
+      checker.getSymbolAtLocation(arg.expression)?.valueDeclaration?.name !== props) return;
+  const predicate = checker.getSymbolAtLocation(guard.expression)?.valueDeclaration;
+  if (!predicate || !ts.isFunctionDeclaration(predicate) || predicate.parent !== guard.getSourceFile() ||
+      predicate.modifiers?.length || predicate.asteriskToken || predicate.parameters.length !== 1 ||
+      predicate.body?.statements.length !== 1) return;
+  const statement = predicate.body.statements[0];
+  if (!ts.isReturnStatement(statement)) return;
+  const some = statement.expression, array = methodReceiver(some, 'some'), children = methodReceiver(array, 'toArray');
+  const refersTo = (node, parameter) => ts.isIdentifier(node) && checker.getSymbolAtLocation(node)?.valueDeclaration === parameter;
+  if (!children || !imported(checker, children, 'Children', 'react') || !refersTo(array.arguments[0], predicate.parameters[0])) return;
+  const callback = some.arguments[0];
+  if (!ts.isArrowFunction(callback) || callback.modifiers?.length || callback.parameters.length !== 1 ||
+      !ts.isBlock(callback.body)) return;
+  const item = callback.parameters[0];
+  if (!ts.isIdentifier(item.name) || item.dotDotDotToken || !ts.isIdentifier(predicate.parameters[0].name) ||
+      predicate.parameters[0].dotDotDotToken) return;
+  const steps = callback.body.statements;
+  for (const step of steps.slice(0,-1)) {
+    if (!ts.isIfStatement(step) || step.elseStatement || !ts.isCallExpression(step.expression)) return;
+    const check = step.expression;
+    if (!imported(checker, check.expression, 'isValidElement', 'react') ||
+        check.arguments.length !== 1 || !refersTo(check.arguments[0], item)) return;
+  }
+  const last = steps.at(-1);
+  if (!last || !ts.isReturnStatement(last) || !last.expression) return;
+  const result = last.expression;
+  const test = ts.isBinaryExpression(result) && result.operatorToken.kind === ts.SyntaxKind.BarBarToken ? result.left : result;
+  if (ts.isBinaryExpression(test) && test.operatorToken.kind === ts.SyntaxKind.ExclamationEqualsEqualsToken &&
+      ts.isTypeOfExpression(test.left) && refersTo(test.left.expression, item) &&
+      ts.isStringLiteral(test.right) && test.right.text === 'string') return predicate;
 }
 
 // A public component may delegate its returned host to a private function in the
 // same module. Only follow a direct call with the original props. Any other use
 // of the callee name (including shadowing or reassignment) makes it ambiguous.
-function returnedHost(binding) {
+function returnedHost(binding, root) {
   if (!ts.isFunctionDeclaration(binding) || !binding.body) return;
   const statements = binding.body.statements;
   const last = statements.at(-1);
   if (!last || !ts.isReturnStatement(last) || !statements.slice(0,-1).every(ts.isVariableStatement)) return;
   const props = binding.parameters[0]?.name;
-  let call = last.expression;
-  if (call && ts.isConditionalExpression(call)) {
-    const guard = call.condition;
-    if (call.whenFalse.kind !== ts.SyntaxKind.NullKeyword || !ts.isCallExpression(guard) ||
-        !guard.arguments.some(arg => ts.isPropertyAccessExpression(arg) && ts.isIdentifier(arg.expression) &&
-          arg.expression.text === props?.text)) return;
-    call = call.whenTrue;
-  }
-  if (!call || !ts.isCallExpression(call) || !ts.isIdentifier(call.expression) ||
-      !props || !ts.isIdentifier(props) || !call.arguments[0] || !ts.isIdentifier(call.arguments[0]) ||
-      call.arguments[0].text !== props.text) return;
+  const resultExpr = last.expression;
+  if (!resultExpr || !props || !ts.isIdentifier(props) || binding.parameters[0].dotDotDotToken) return;
+  const guarded = ts.isConditionalExpression(resultExpr);
+  if (guarded && resultExpr.whenFalse.kind !== ts.SyntaxKind.NullKeyword) return;
+  const call = guarded ? resultExpr.whenTrue : resultExpr;
+  if (!ts.isCallExpression(call) || !ts.isIdentifier(call.expression) ||
+      !call.arguments[0] || !ts.isIdentifier(call.arguments[0]) || call.arguments[0].text !== props.text) return;
   const file = binding.getSourceFile(), name = call.expression.text;
-  const helper = file.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === name);
-  if (!helper?.body || helper.modifiers?.length || helper.asteriskToken) return;
+  const checker = sourceChecker(file);
+  const helper = checker.getSymbolAtLocation(call.expression)?.valueDeclaration;
+  if (!helper || !ts.isFunctionDeclaration(helper) || helper.parent !== file || !helper.body ||
+      helper.modifiers?.length || helper.asteriskToken) return;
+  const predicate = guarded && contentPredicate(resultExpr.condition, props, checker);
+  if (guarded && !predicate) return;
   function ambiguous(node) {
     if (ts.isIdentifier(node)) {
-      if (node.text === name && node !== helper.name &&
+      if (((node.text === name && node !== helper.name) ||
+           (predicate && node.text === predicate.name.text && node !== predicate.name)) &&
           !(ts.isCallExpression(node.parent) && node === node.parent.expression)) return true;
       if (node.text === 'Boolean' && !ts.isCallExpression(node.parent)) return true;
     }
@@ -128,13 +191,13 @@ function returnedHost(binding) {
   }
   const host = ts.isJsxElement(result.expression) ? result.expression.openingElement : result.expression;
   if (!ts.isJsxOpeningElement(host) && !ts.isJsxSelfClosingElement(host)) return;
-  if (classHost(host.tagName, file)) return { host, locals, falseFlags };
+  if (classHost(host.tagName, root, checker)) return { host, locals, falseFlags };
 }
 
 // Inspect the value of the final className attribute. Conditions, discarded JSX,
 // opaque calls and props that a subsequent spread could replace prove no class.
-function returnedClasses(binding, add) {
-  const result = returnedHost(binding);
+function returnedClasses(binding, root, add) {
+  const result = returnedHost(binding, root);
   if (!result) return;
   const props = result.host.attributes.properties;
   const attr = props.findLast(p => ts.isJsxSpreadAttribute(p) || p.name.text === 'className');
@@ -162,10 +225,10 @@ function returnedClasses(binding, add) {
 // Check markers on the exported binding, including a local class expression passed
 // to JSX or a property on the props object passed directly to a returned renderer.
 // A comment, unused string, or unrelated module cannot create a family marker.
-function bindingMarkers(binding, slug, markers, parts) {
+function bindingMarkers(binding, slug, markers, parts, root) {
   const locals = new Map(), classes = new Set(['uld-' + slug, 'uld-' + slug + '-root']);
   const attribute = 'data-uld-' + slug;
-  returnedClasses(binding, text => {
+  returnedClasses(binding, root, text => {
     for (const value of text.split(/\s+/)) if (classes.has(value)) markers.add('.' + value);
   });
   const each = (node, visitor) => { visitor(node); ts.forEachChild(node, child => each(child,visitor)); };
@@ -234,7 +297,7 @@ export function registeredFallback(root, path, tokens) {
         const path = 'packages/web/src/' + slug + '/' + name + '.' + ext;
         let found = false;
         for (const name of exported) if (runtimeExport(root,manifest.files.source ?? [],path,name,
-          node => bindingMarkers(node,slug,markers,parts))) found = true;
+          node => bindingMarkers(node,slug,markers,parts,root))) found = true;
         return found;
       }))) return;
   const documented = namesInTokenSection(localText(root, 'docs/components/' + slug + '.md'));
