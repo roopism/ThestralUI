@@ -2,7 +2,6 @@
 // Usage: node scripts/verify-preflight.mjs [<commit>] --branch <proposal branch> [--base <integration commit>]
 import { withPreflightActivity } from './workers/resource-guard.mjs';
 import { gateGroup, observePreflightStage, typedGroup } from './gates/reuse/preflight.mjs';
-import { sealReceipt } from './gates/reuse/runner.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
@@ -13,7 +12,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { withRevisionSnapshot } from '../packages/policy/quality/staged-tree.mjs';
 import { installSnapshotDependencies } from '../packages/policy/quality/snapshot-dependencies.mjs';
-import { preflightChecks, preflightRunner, writePreflightReceipt } from './gates/preflight-receipt.mjs';
+import { preflightChecks, preflightRunner, publishPreflightVerdict } from './gates/preflight-receipt.mjs';
 
 const integration = 'feat/enterprise-ui';
 const proposalBranch = /^(?:family|gates|docs)\/[a-z0-9][a-z0-9-]*$/;
@@ -132,7 +131,7 @@ export async function codeOwners(ctx) {
 }
 
 // 6a. What the commit hook judges for each commit against its own parent.
-export async function commitHooks(ctx) {
+export async function commitHooks(ctx, judgeFindings) {
   const { noWeakening } = await fromTrusted(ctx, 'scripts/gates/no-weakening.mjs');
   const review = join(ctx.trusted, 'scripts/gates/review/qualification-policy.mjs');
   const { reviewPolicy } = existsSync(review) ? await import(pathToFileURL(review).href) : { reviewPolicy: () => [] };
@@ -145,8 +144,10 @@ export async function commitHooks(ctx) {
     const tree = git(ctx.root, 'rev-parse', commit + '^{tree}');
     // The integration-base judgments already cover a single commit on the base.
     if (git(ctx.root, 'rev-parse', parent + '^{tree}') === baseTree && tree === ctx.tree) continue;
-    for (const issue of [...noWeakening(ctx.root, parent, commit, ctx.root), ...reviewPolicy(ctx.root, parent, commit)])
+    for (const issue of [...noWeakening(ctx.root, parent, commit, ctx.root), ...reviewPolicy(ctx.root, parent, commit)]) {
       issues.push(label + issue);
+      judgeFindings?.push(label + issue);
+    }
   }
   return issues;
 }
@@ -282,10 +283,15 @@ async function runPhase(ctx, phase, checks) {
   const start = performance.now();
   const entry = { name: phase.name, result: 'passed' };
   try {
-    const issues = await phase.operation(ctx);
+    const parentFindings = [];
+    const issues = await phase.operation(ctx, parentFindings);
+    const judge = phase.check === 'No weakening' || phase.check === 'Qualification policy review';
+    if (judge) assert.ok(Array.isArray(issues) && issues.every(issue => typeof issue === 'string' && issue.length));
     if (issues.length) {
       entry.result = 'failed';
       entry.issues = issues.slice(0, 200);
+      // A per-commit hook can also report a missing lockfile on the same commit.
+      if (judge || phase.operation === commitHooks && parentFindings.length === issues.length) entry.findings = issues;
       for (const issue of issues) console.error(phase.check + ' (' + phase.name + '): ' + issue);
     }
   } catch (error) {
@@ -297,7 +303,7 @@ async function runPhase(ctx, phase, checks) {
   row.durationMs += entry.durationMs;
   row.phases.push(entry);
   if (entry.result !== 'passed') row.result = 'failed';
-  return entry.result === 'passed';
+  return entry.result === 'passed' || Boolean(entry.findings?.length && !('reason' in entry));
 }
 
 export async function runPreflight(ctx, snapshotted, selected = phases) {
@@ -388,8 +394,7 @@ async function main() {
     receipt.durationMs = Math.round(performance.now() - start);
     receipt.status = receipt.checks.every(check => check.result === 'passed') ? 'passed' : 'failed';
     receipt.finished = new Date().toISOString();
-    if (receipt.status === 'passed' && receipt.reuseSchema === 1) sealReceipt(root, receipt);
-    const path = writePreflightReceipt(common, receipt);
+    const path = publishPreflightVerdict(root, common, receipt);
     if (receipt.trainId && receipt.status === 'passed') {
       const { bindTrainPreflight } = await fromTrusted(ctx, 'scripts/gates/train-plan.mjs');
       bindTrainPreflight(root, receipt);
