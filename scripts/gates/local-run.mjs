@@ -89,8 +89,8 @@ const receipt = { ...initial, schema: 1, androidHostActivityPolicy:1, tree, base
     trainPreflightId: context.preflightId, trainDeviceChecks: trainDevices.checks } : {}),
   auditSeed: freshSuites ? null : randomBytes(32).toString('hex'), retries: null,
   status: 'running', vm: null, devices: {}, suites: [] };
-const timingSkip = verifiedTimingSkip(root, receipt);
-if (timingSkip) context.noReuse = true;
+const gateOnlySkip = verifiedTimingSkip(root, receipt);
+if (gateOnlySkip) context.noReuse = true;
 const steps = new Map();
 function step(name, operation, dependencies = [], phase) {
   if (phase) {
@@ -452,6 +452,7 @@ function reserveStandaloneTiming(name, run) {
   return parallelDevices ? run() : usingSimulator(name, run);
 }
 async function runParallelQualification() {
+  const timingSkip = steps.get('No weakening').entry.result === 'passed' ? gateOnlySkip : null;
   const macPerformance = 'Mac browser performance';
   const [iphone, android] = deviceNames;
   const prerequisites = steps.get(iphone).dependencies;

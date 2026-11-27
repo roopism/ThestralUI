@@ -9,7 +9,7 @@ import { installSnapshotDependencies } from '../packages/policy/quality/snapshot
 import { familyInputs, familyInputsAt } from './manifests/bundle-parent.mjs';
 import { verifyFirstAdoptionSources } from './manifests/reviewed-bundle-budgets.mjs';
 import { createHash } from 'node:crypto';
-import { judgeOnlyFindings, requirePreflight } from './gates/preflight-receipt.mjs';
+import { requirePreflight } from './gates/preflight-receipt.mjs';
 
 let runnerProcess;
 releaseLocksOnSignal(signal => {
@@ -82,9 +82,8 @@ function verify(snapshot, tree, env) {
     installSnapshotDependencies(trusted, join(common, 'uld-dependencies'), trustedEnv);
     const protocol = join(trusted, 'scripts/gates/preflight-judges.mjs');
     if (mode === 'qualification' && initial && existsSync(protocol)) {
-      execFileSync(process.execPath, [protocol, root, directory, initial.id, base, commit, tree], {
-        cwd: trusted, env: trustedEnv, stdio: ['pipe', 'inherit', 'inherit'],
-        input: JSON.stringify({ id: preflight?.id, findings: judgeOnlyFindings(preflight ?? {}) ?? [] }),
+      execFileSync(process.execPath, [protocol, root, directory, initial.id, base, commit, tree, preflight.id], {
+        cwd: trusted, env: trustedEnv, stdio: 'inherit',
       });
     } else {
       if (preflight?.status === 'failed') throw Error('The integration runner requires a passing preflight');

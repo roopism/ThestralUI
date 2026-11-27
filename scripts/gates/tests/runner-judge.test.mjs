@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { verifiedTimingSkip } from '../proposal-timing.mjs';
 import { phases, runPreflight } from '../../verify-preflight.mjs';
 import { preflightRunner, publishPreflightVerdict } from '../preflight-receipt.mjs';
 import { EventEmitter } from 'node:events';
@@ -29,17 +30,23 @@ async function qualification(t, failures, driver) {
       write('scripts/' + name + '.mjs', '');
     const helper = new URL('../preflight-judges.mjs', import.meta.url);
     write('scripts/gates/preflight-judges.mjs', readFileSync(helper));
-    write('scripts/gates/qualification-attempt.mjs', 'export * from ' + JSON.stringify(new URL('../qualification-attempt.mjs', import.meta.url).href));
+    for (const name of ['qualification-attempt', 'preflight-receipt'])
+      write('scripts/gates/' + name + '.mjs', 'export * from ' + JSON.stringify(new URL('../' + name + '.mjs', import.meta.url).href));
     write('scripts/gates/no-weakening.mjs', 'export function noWeakening() { if (!process.env.FIXTURE_TRUSTED_JUDGE) throw Error("Missing snapshot environment"); return ' + JSON.stringify(driver.outer ?? []) + '; }');
     write('scripts/gates/review/qualification-policy.mjs', 'export const reviewPolicy = () => []');
     git('add', 'scripts');
   }
-  git('commit', '--quiet', '--allow-empty', '-m', 'base');
-  const base = git('rev-parse', 'HEAD');
   const roster = { projects: ['fixture'], cases: ['appearance'] };
   mkdirSync(join(root, 'tests/acceptance'), { recursive: true });
   writeFileSync(join(root, 'tests/acceptance/visual-matrix.json'), JSON.stringify(roster));
-  git('add', 'tests');
+  if (driver?.gateOnly) git('add', 'tests');
+  git('commit', '--quiet', '--allow-empty', '-m', 'base');
+  const base = git('rev-parse', 'HEAD');
+  if (driver?.gateOnly) {
+    const path = 'scripts/gates/no-weakening.mjs';
+    writeFileSync(join(root, path), '\n// gate revision\n', { flag: 'a' });
+    git('add', path);
+  } else git('add', 'tests');
   git('commit', '--quiet', '-m', 'proposal');
   const commit = git('rev-parse', 'HEAD'), tree = git('rev-parse', 'HEAD^{tree}');
   const common = join(root, '.git'), directory = join(common, 'uld-receipts');
@@ -124,6 +131,12 @@ async function qualification(t, failures, driver) {
       },
     },
   };
+  if (driver?.gateOnly) {
+    delete stubs['../selection/proposal-devices.mjs'];
+    stubs['./android-timing-reuse.mjs'] = { apkIdentity: () => ({}) };
+    stubs['./android-host-activity.mjs'].observedIdentity = () => ({});
+    stubs['./device-verdict.mjs'] = { functionalAndroidDevices: () => [] };
+  }
   const command = new URL('../../qualify.mjs?' + id, import.meta.url).href;
   const bindings = { [url]: stubs };
   let preflight;
@@ -133,10 +146,16 @@ async function qualification(t, failures, driver) {
       if (phase.check === driver.crash) throw Error('judge process broke');
       return phase.check === driver.finding || phase.name === driver.other ? [phase.name + ' issue'] : [];
     } })));
+    if (driver.historical) {
+      const hook = checks.find(row => row.name === 'Commit hook on the exact tree');
+      const phase = hook.phases.find(row => row.name === 'each commit against its parent');
+      hook.result = 'failed';
+      Object.assign(phase, { result: 'failed', issues: [driver.historical], findings: [driver.historical] });
+    }
     preflight = { schema: 1, kind: 'preflight', id, reuseSchema: 1, reuseStages: [], base, tree, commit, checks,
       runner: preflightRunner(root, base, commit), status: checks.every(row => row.result === 'passed') ? 'passed' : 'failed' };
     publishPreflightVerdict(root, common, preflight);
-    process.argv = [process.execPath, 'qualify.mjs', '--no-reuse', commit];
+    process.argv = [process.execPath, 'qualify.mjs', ...(driver.gateOnly ? [] : ['--no-reuse']), commit];
     bindings[command] = {
       './workers/lock.mjs': { releaseLocksOnSignal() {} },
       '../packages/policy/quality/staged-tree.mjs': { withRevisionSnapshot: (_repo, rev, run) => run(root, git('rev-parse', rev + '^{tree}'), { ...process.env, FIXTURE_TRUSTED_JUDGE: '1' }) },
@@ -145,6 +164,8 @@ async function qualification(t, failures, driver) {
       './manifests/reviewed-bundle-budgets.mjs': { verifyFirstAdoptionSources() {} },
       'node:child_process': {
         execFileSync(tool, args, options) {
+          if (driver.handoff && args[0]?.endsWith('/preflight-judges.mjs'))
+            options = driver.handoff({ root, common, preflight, options });
           if (args[0]?.endsWith('/preflight-judges.mjs')) return execFileSync(tool, args, options);
           if (tool === 'git') return args[0] === 'fetch' ? '' : git(...args);
           assert.equal(tool, process.execPath);
@@ -278,4 +299,46 @@ test('qualify refuses other preflight failures and judge errors before any landi
     assert.equal(existsSync(join(result.directory, 'attempts')), false);
     assert.equal(result.land(), undefined);
   });
+});
+
+test('ordinary gate-only qualification measures both stages after a judge finding', async t => {
+  const { receipt, calls, land } = await qualification(t, [judges[0]], { gateOnly: true });
+  assert.deepEqual(verifiedTimingSkip(process.cwd(), receipt)?.files, ['scripts/gates/no-weakening.mjs']);
+  assert.deepEqual(calls.filter(call => call.startsWith('reserve ')), ['reserve macPerformance', 'reserve androidTiming']);
+  complete(receipt, calls, 'No weakening');
+  assert.equal(receipt.status, 'failed');
+  assert.throws(land, /failed qualification.*prevents landing/);
+});
+
+test('ordinary passing gate-only qualification keeps its verified timing skip', async t => {
+  const { receipt, calls } = await qualification(t, [], { gateOnly: true });
+  assert.equal(receipt.status, 'passed');
+  for (const stage of ['macPerformance', 'androidTiming'])
+    assert.deepEqual(receipt.lanes[stage], { result: 'skipped', reason: 'gate-only change', files: ['scripts/gates/no-weakening.mjs'] });
+  assert.deepEqual(calls.filter(call => call.startsWith('reserve ')), []);
+});
+
+test('the trusted handoff retains the admitted parent finding when the launcher omits it', async t => {
+  const historical = 'parent commit judge finding';
+  const result = await qualification(t, [], { historical, handoff({ root, common, preflight, options }) {
+    const checks = preflight.checks.map(row => ({ ...row, result: 'passed', phases: row.phases.map(phase => ({ name: phase.name, result: 'passed' })) }));
+    publishPreflightVerdict(root, common, { ...preflight, id: randomUUID(), status: 'passed', checks });
+    return { ...options, stdio: ['pipe', 'inherit', 'inherit'], input: JSON.stringify({ id: preflight.id, findings: [] }) };
+  } });
+  assert.deepEqual(result.receipt?.suites[0]?.findings, [historical], result.error?.message);
+  assert.equal(result.receipt.preflightId, result.preflight.id);
+  assert.equal(result.receipt.status, 'failed');
+  assert.throws(result.land, /failed qualification.*prevents landing/);
+  complete(result.receipt, result.calls, 'No weakening');
+});
+
+test('the trusted handoff refuses a preflight attempt changed after admission', async t => {
+  const result = await qualification(t, [], { handoff({ common, preflight, options }) {
+    const path = join(common, 'uld-receipts/preflight/attempts', preflight.id + '.json');
+    writeFileSync(path, JSON.stringify({ ...preflight, branch: 'changed' }, null, 2) + '\n');
+    return options;
+  } });
+  assert.equal(result.receipt?.status, 'failed');
+  assert.deepEqual(result.calls, []);
+  assert.throws(result.land, /failed qualification.*prevents landing/);
 });
