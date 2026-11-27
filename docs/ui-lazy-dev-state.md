@@ -29,6 +29,8 @@ The no-weakening, qualification-policy and gate-isolation checks passed, along w
 
 **PR #20** merged at `e83f0e88d2affddda6c9eb23c00ab80cd0c8f8a6` (tree `011d3124fa518086d0bb5791f2e94f7367804398`). Gate test fixtures now run Git in a hermetic environment. At the owner’s request in chat on 2026-11-26, the PR landed after its focused checks without full qualification.
 
+On 2026-11-27, PR #22 merged at `c2a9e9c1dee1e8bc6f922b3c8a4a4f4353e676d5` with `gh pr merge --match-head-commit` after the owner wrote “bypass and push directly” in chat. Both judges passed on the merged tree `d84d7d1465c39fb03fe26be5d06da52f7262aaa8`.
+
 On 2026-11-26, at the owner’s request, rule 6 dropped the limit of one supervisor and three workers. Each device has its own reservation. Mac, iPhone and Android functional checks can overlap. The two timed stages run alone after the other lanes finish and the Linux VM shuts down.
 
 These entries are history, not approval records; formal owner decisions await the signing bootstrap.
