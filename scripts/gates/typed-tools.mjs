@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 
 export const trustedRoot = fileURLToPath(new URL('../../', import.meta.url));
@@ -130,3 +130,5 @@ export function buildTypedInputs(candidate = process.cwd()) {
     if (name === 'web') runTrustedNode(at('scripts/copy-styles.mjs'), [], join(candidate, 'packages/web'));
   }
 }
+
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) buildTypedInputs();

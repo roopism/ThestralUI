@@ -83,8 +83,8 @@ async function memberReviews(ctx, review) {
 
 // 2. Strengthen-only judgment against the integration base.
 export async function integrationNoWeakening(ctx) {
-  const { noWeakening } = await fromTrusted(ctx, 'scripts/gates/no-weakening.mjs');
-  return noWeakening(ctx.root, ctx.base, ctx.tree, ctx.root);
+  const { noWeakening, measuredNoWeakening = noWeakening } = await fromTrusted(ctx, 'scripts/gates/no-weakening.mjs');
+  return measuredNoWeakening(ctx.root, ctx.base, ctx.tree, ctx.root);
 }
 
 // 3. The qualification-policy review against the integration base.
@@ -132,7 +132,6 @@ export async function codeOwners(ctx) {
 
 // 6a. What the commit hook judges for each commit against its own parent.
 export async function commitHooks(ctx, judgeFindings) {
-  const { noWeakening } = await fromTrusted(ctx, 'scripts/gates/no-weakening.mjs');
   const review = join(ctx.trusted, 'scripts/gates/review/qualification-policy.mjs');
   const { reviewPolicy } = existsSync(review) ? await import(pathToFileURL(review).href) : { reviewPolicy: () => [] };
   const baseTree = git(ctx.root, 'rev-parse', ctx.base + '^{tree}');
@@ -144,7 +143,7 @@ export async function commitHooks(ctx, judgeFindings) {
     const tree = git(ctx.root, 'rev-parse', commit + '^{tree}');
     // The integration-base judgments already cover a single commit on the base.
     if (git(ctx.root, 'rev-parse', parent + '^{tree}') === baseTree && tree === ctx.tree) continue;
-    for (const issue of [...noWeakening(ctx.root, parent, commit, ctx.root), ...reviewPolicy(ctx.root, parent, commit)]) {
+    for (const issue of [...await integrationNoWeakening({ ...ctx, base: parent, tree: commit }), ...reviewPolicy(ctx.root, parent, commit)]) {
       issues.push(label + issue);
       judgeFindings?.push(label + issue);
     }

@@ -86,6 +86,31 @@ export function bundleImports() {
   return registeredBundleImports(families, shared, packages, baseline);
 }
 
+export const packedGzipSize = bytes => gzipSync(bytes, { level: 9 }).length;
+
+export function buildPackedImport(cwd, name, entry, symbol) {
+  const css = entry.endsWith('.css');
+  const all = entry.endsWith('.json') ? '{ default }' : '*';
+  const selection = symbol ? '{ ' + symbol + ' }' : all;
+  const contents = css
+    ? '@import ' + JSON.stringify(name) + ';'
+    : 'export ' + selection + ' from ' + JSON.stringify(name) + ';';
+  return build({
+    absWorkingDir: cwd,
+    bundle: true,
+    write: false,
+    minify: true,
+    treeShaking: true,
+    platform: 'browser',
+    target: 'es2022',
+    format: 'esm',
+    metafile: true,
+    external: ['react', 'react-dom'],
+    define: { 'process.env.NODE_ENV': '"production"' },
+    stdin: { contents, resolveDir: cwd, loader: css ? 'css' : 'js' },
+  });
+}
+
 export async function measureBundles(cwd, { diagnostics = false, selectedEntries } = {}) {
   const results = [];
   for (const [pkg, entries] of bundleImports()) {
@@ -94,32 +119,13 @@ export async function measureBundles(cwd, { diagnostics = false, selectedEntries
     for (const [entry, symbols] of entries) {
       if (diagnostics && !Object.hasOwn(manifest.exports, entry)) continue;
       const name = pkg + (entry === '.' ? '' : entry.slice(1));
-      const css = entry.endsWith('.css');
-      const all = entry.endsWith('.json') ? '{ default }' : '*';
       for (const symbol of [null, ...symbols]) {
-        const selection = symbol ? '{ ' + symbol + ' }' : all;
         const label = name + (symbol ? '#' + symbol : '');
         if (selectedEntries && !selectedEntries.includes(label)) continue;
-        const contents = css
-          ? '@import "' + name + '";'
-          : 'export ' + selection + ' from "' + name + '";';
-        const result = await build({
-          absWorkingDir: cwd,
-          bundle: true,
-          write: false,
-          minify: true,
-          treeShaking: true,
-          platform: 'browser',
-          target: 'es2022',
-          format: 'esm',
-          metafile: true,
-          external: ['react', 'react-dom'],
-          define: { 'process.env.NODE_ENV': '"production"' },
-          stdin: { contents, resolveDir: cwd, loader: css ? 'css' : 'js' },
-        });
+        const result = await buildPackedImport(cwd, name, entry, symbol);
         assert.equal(result.outputFiles.length, 1, 'Additional assets require a budget: ' + name);
         const bytes = result.outputFiles[0].contents;
-        const gzip = gzipSync(bytes, { level: 9 }).length;
+        const gzip = packedGzipSize(bytes);
         const brotli = brotliCompressSync(bytes, {
           params: { [constants.BROTLI_PARAM_QUALITY]: 9 },
         }).length;

@@ -103,6 +103,12 @@ with zipfile.ZipFile(apk, "w") as archive:
     rows[0].entries.push(rows[0].entries[0]);
     return JSON.stringify(rows);
   }, /baseline gained/);
+  canary('tests/packaging/bundle-baseline.json', text => {
+    const rows = JSON.parse(text), [first] = Object.keys(rows);
+    return JSON.stringify({ ...rows, [first]: rows[first] + 1 });
+  }, /baseline gained/);
+  canary('tests/packaging/bundle-baseline.json', text =>
+    JSON.stringify({ ...JSON.parse(text), '@ui-lazy-dev/ui-web/unowned-canary': 1 }), /no single new family budget/);
   canary('tests/acceptance/control.spec.ts', text => text + "\ntest.describe.skip('group', () => {});",
     /focused or skipped/, "test('case', () => { assert.ok(true); });");
   canary('tests/acceptance/control-policy.json', () => '{"exceptions":[{"rule":"scope","path":"a.css"}]}',
@@ -147,6 +153,28 @@ with zipfile.ZipFile(apk, "w") as archive:
     assert.throws(() => derivedRegistrations(root, base, registration(edit), branch), expected);
     console.log('Rejected depth registration from', name);
   }
+  // A caller can dispatch on the cause, so adding or removing it changes the rejection.
+  const rejection = "export function guard(value) {\n  try { value(); } catch (error) {\n" +
+    "    throw Object.assign(Error('Control rejected'), { code: 'ECONTROL' });\n  }\n}\n";
+  const caused = rejection.replace("Error('Control rejected')", "Error('Control rejected', { cause: error })");
+  canary('scripts/gates/control-throw.mjs', () => caused, /removed reject/, rejection);
+  canary('scripts/gates/control-throw.mjs', text => text.replace('throw Object', 'throw  Object'), null, caused);
+  for (const [edit, seed] of [
+    [text => text.replace('Control rejected', 'Control failed'), caused],
+    [text => text.replace("'ECONTROL'", "'EOTHER'"), caused],
+    [text => text.replace('Error(', 'TypeError('), caused],
+    [text => text.replace(/^ {4}throw [^\n]*\n/m, ''), caused],
+    [text => text.replace(', { cause: error }', ''), caused],
+    [text => text.replace('cause: error', 'cause: value'), caused],
+  ]) canary('scripts/gates/control-throw.mjs', edit, /removed reject/, seed);
+  const guarded = rejection.replace('    throw', "    if (Error('guard').cause) throw");
+  const nested = rejection.replace("Error('Control rejected')", "Error(Error('detail').message)");
+  for (const [seed, edit] of [
+    [guarded, text => text.replace("Error('guard')", "Error('guard', { cause: error })")],
+    [nested, text => text.replace("Error('detail')", "Error('detail', { cause: error })")],
+    [rejection, () => caused.replace('cause: error', 'cause: value')],
+  ]) canary('scripts/gates/control-throw.mjs', edit, /removed reject/, seed);
+
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }

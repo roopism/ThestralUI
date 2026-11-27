@@ -1,13 +1,14 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { isDeepStrictEqual } from 'node:util';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { join, resolve } from 'node:path';
 import yaml from 'js-yaml';
 import ts from 'typescript';
 import { fixtureRegistry, registeredNativeSlugs } from '../selection/native-tier-two.mjs';
-import { stagedDiff } from '../selection/staged-tree.mjs';
+import { sheets as publicStylesheets } from '../selection/manifest-changes.mjs';
+import { stagedDiff, treeFiles } from '../selection/staged-tree.mjs';
 
 const budget = /budget|limit|allowance|threshold|ceiling|max(?:imum|[A-Z_-])/i;
 const baseline = /baseline|exceptions/i;
@@ -104,9 +105,173 @@ function retainedWorkflowAction(old, next, pins) {
   return isDeepStrictEqual(expected, next);
 }
 
-function checkData(file, before, after, issues, pins) {
+// A family can publish its first packed size rows once. The trusted judge owns the band limits.
+const sizeBaseline = 'tests/packaging/bundle-baseline.json';
+// Frozen goal section 9 size bands.
+const bandLimits = Object.freeze({
+  primitives: 1024, simple: 2560, inputs: 5120, overlays: 7168, heavy: 15360, datetime: 81920,
+});
+const publicLabel = /^(@[^/]+\/[^/#]+)(\/[^#]+)?(?:#([A-Za-z_$][\w$]*))?$/;
+
+function treeJson(root, tree, path) {
+  if (!git(root, ['ls-tree', tree, '--', path])) return undefined;
+  return JSON.parse(git(root, ['show', tree + ':' + path]));
+}
+
+function packageNames(root, tree) {
+  const names = new Map(), exports = new Map();
+  for (const line of git(root, ['ls-tree', tree, 'packages/']).split('\n').filter(Boolean)) {
+    const dir = line.split('\t')[1];
+    const pkg = treeJson(root, tree, dir + '/package.json');
+    if (!plain(pkg) || typeof pkg.name !== 'string') continue;
+    names.set(dir.slice('packages/'.length), pkg.name);
+    exports.set(pkg.name, plain(pkg.exports) ? Object.keys(pkg.exports) : typeof pkg.exports === 'string' ? ['.'] : []);
+  }
+  return { names, exports };
+}
+
+function familyManifests(root, tree) {
+  const files = treeFiles(root, tree, path => /^manifests\/families\/[^/]+\.json$/.test(path));
+  return new Map(Array.from(files, ([path, json]) => [path, JSON.parse(json)]));
+}
+
+const entryOf = label => {
+  const match = publicLabel.exec(label);
+  return match && { label, pkg: match[1], entry: match[2] ? '.' + match[2] : '.', symbol: match[3] };
+};
+const declaredEntries = (row, names) => (Array.isArray(row?.entries) ? row.entries : []).flatMap(item =>
+  plain(item) && names.has(item.pkg) && typeof item.path === 'string' && (item.path === '.' || item.path.startsWith('./'))
+    ? [names.get(item.pkg) + (item.path === '.' ? '' : item.path.slice(1))] : []);
+const budgetRows = row => (Array.isArray(row?.budgets) ? row.budgets : []).filter(item => plain(item) && typeof item.name === 'string');
+const apiBindings = row => Array.isArray(row?.inventory?.api) ? row.inventory.api : [];
+const bindingOf = entry => (entry.entry === '.' ? '.' : entry.entry.slice(2)) + ':' + entry.symbol;
+
+// All existing rows are retained. A new entry needs its own family, a band and packed evidence.
+function baselineAdmission(root, parent, next, before, after, options) {
+  if (!plain(before) || !plain(after)) return [sizeBaseline + ' requires a size map'];
+  const added = Object.keys(after).filter(name => !Object.hasOwn(before, name));
+  const issues = [];
+  const problem = (name, message) => issues.push(sizeBaseline + ' ' + name + ' ' + message);
+  for (const [name, old] of Object.entries(before)) {
+    if (!Object.hasOwn(after, name)) problem(name, 'baseline removed an existing entry');
+    else if (!Number.isSafeInteger(after[name]) || after[name] <= 0 || after[name] > old)
+      problem(name, 'baseline gained or enlarged an existing entry');
+  }
+  if (!added.length) return issues;
+  const candidatePackages = packageNames(root, next), parentPackages = packageNames(root, parent);
+  const previous = familyManifests(root, parent), current = familyManifests(root, next);
+  const shared = [treeJson(root, parent, 'manifests/shared.json'), treeJson(root, next, 'manifests/shared.json')];
+  const parentOwners = [...previous, [null, shared[0]]], nextOwners = [...current, [null, shared[1]]];
+  const webPackages = new Map(candidatePackages.names);
+  for (const workspace of ['native', 'codemods', 'policy', 'style-policy']) webPackages.delete(workspace);
+  const families = new Map();
+  const measured = options.measurements;
+  for (const name of added) {
+    const value = after[name], entry = entryOf(name);
+    if (!Number.isSafeInteger(value) || value <= 0 || !entry) { problem(name, 'new baseline row is not a positive public entry size'); continue; }
+    const owners = nextOwners.filter(([, row]) => budgetRows(row).some(item => item.name === name));
+    const [path, row] = owners[0] ?? [];
+    if (owners.length !== 1 || !path || parentOwners.some(([other, owner]) =>
+      other !== path && budgetRows(owner).some(item => item.name === name))) {
+      problem(name, 'new baseline row has no single new family budget');
+      continue;
+    }
+    const prior = previous.get(path);
+    const entries = declaredEntries(row, candidatePackages.names);
+    const priorEntries = new Set([...entries, ...declaredEntries(prior, parentPackages.names)]);
+    const priorBudgets = new Set([...budgetRows(prior), ...budgetRows(row)].map(item => item.name));
+    const web = candidatePackages.names.get('web');
+    const slug = path.split('/').at(-1).slice(0, -5);
+    const canonical = web + '/' + slug;
+    const familySymbol = symbol => symbol && symbol.toLowerCase() === slug.replaceAll('-', '');
+    const bindings = new Set([...apiBindings(prior), ...apiBindings(row)]);
+    priorEntries.add(canonical);
+    priorEntries.add(canonical + '.css');
+    if (!row.id || prior && prior.id !== row.id || [...previous, ...current].some(([other, owner]) => other !== path && owner.id === row.id) ||
+        Object.keys(before).some(label => {
+          const existing = entryOf(label);
+          return priorBudgets.has(label) || priorEntries.has(label.split('#')[0]) ||
+            existing?.pkg === web && existing.symbol && (familySymbol(existing.symbol) || bindings.has(bindingOf(existing)));
+        })) {
+      problem(name, 'new baseline row requires a newly added family or a registered family with no existing size row');
+      continue;
+    }
+    const subpath = name.split('#')[0];
+    const declaresBinding = owner => apiBindings(owner).includes(bindingOf(entry));
+    const alias = !entries.includes(subpath) && entry.pkg === web && entry.symbol &&
+      parentPackages.exports.get(entry.pkg)?.includes(entry.entry) && declaresBinding(row) &&
+      ![...parentOwners, ...nextOwners].some(([other, owner]) => other !== path && declaresBinding(owner));
+    const dedicated = entries.includes(subpath) &&
+      !parentOwners.some(([other, owner]) => other !== path && declaredEntries(owner, parentPackages.names).includes(subpath)) &&
+      !nextOwners.some(([other, owner]) => other !== path && declaredEntries(owner, candidatePackages.names).includes(subpath));
+    if (!(candidatePackages.exports.get(entry.pkg) ?? []).includes(entry.entry) || !(dedicated || alias)) {
+      problem(name, 'new baseline row is not a new public entry of ' + path);
+      continue;
+    }
+    const largestAlias = Math.max(families.get(row)?.largestAlias ?? 0, alias ? value : 0);
+    families.set(row, { canonical, largestAlias });
+    const limits = budgetRows(row).filter(item => item.name === name);
+    if (limits.length !== 1 || limits[0].bytes !== value)
+      problem(name, 'new baseline row differs from the family budget');
+    if (!Object.hasOwn(bandLimits, row.band)) problem(name, 'new baseline row requires a known size band');
+    else if (prior && bandLimits[row.band] > bandLimits[prior.band]) problem(name, 'first size rows cannot raise an existing family band');
+    else if (value > bandLimits[row.band]) problem(name, 'new baseline row exceeds its family band');
+    if (measured) {
+      const matching = measured.filter(item => item?.entry === name);
+      if (matching.length !== 1 || matching[0].gzip !== value) problem(name, 'new baseline row differs from the packed measurement');
+    } else if (options.deferMeasurement) options.pending?.push(name);
+    else problem(name, 'new baseline row requires the trusted packed measurement');
+  }
+  for (const [row, { canonical, largestAlias }] of families) {
+    // Named imports measure alternative selections from the same packed entry.
+    const fullEntries = new Set(declaredEntries(row, webPackages));
+    const canonicalEntry = entryOf(canonical);
+    const published = candidatePackages.exports.get(canonicalEntry?.pkg) ?? [];
+    if (published.includes(canonicalEntry?.entry)) fullEntries.add(canonical);
+    if (published.includes(canonicalEntry?.entry + '.css')) fullEntries.add(canonical + '.css');
+    for (const name of [...fullEntries]) {
+      const { pkg, entry } = entryOf(name);
+      if (candidatePackages.exports.get(pkg)?.includes(entry + '.css')) fullEntries.add(name + '.css');
+    }
+    if ((!fullEntries.size && !largestAlias) || [...fullEntries].some(name => !Object.hasOwn(after, name))) {
+      problem(row.id, 'missing a standalone packed size row for the combined family band');
+      continue;
+    }
+    let script = 0, styles = 0;
+    for (const name of fullEntries) {
+      if (name.endsWith('.css')) styles += after[name];
+      else script += after[name];
+    }
+    // Without standalone CSS, the family ships its registered rules in shared public sheets.
+    if (!styles && row.files?.style?.length) {
+      const files = new Set(row.files.style);
+      const sources = treeFiles(root, next, path => files.has(path));
+      const sharedSheets = new Set();
+      for (const path of files) {
+        for (const entry of publicStylesheets(sources.get(path) ?? '', path, published))
+          sharedSheets.add(canonicalEntry.pkg + entry.slice(1));
+      }
+      for (const name of sharedSheets) {
+        if (!measured && options.deferMeasurement) {
+          if (!options.pending?.includes(name)) options.pending?.push(name);
+          continue;
+        }
+        const matches = measured?.filter(item => item?.entry === name) ?? [];
+        if (matches.length !== 1 || !Number.isSafeInteger(matches[0].gzip) || matches[0].gzip <= 0)
+          problem(name, 'shared stylesheet requires one positive packed measurement');
+        else styles += matches[0].gzip;
+      }
+    }
+    if (Math.max(script, largestAlias) + styles > bandLimits[row.band])
+      problem(row.id, 'combined script and CSS exceeds its family band');
+  }
+  return issues;
+}
+
+function checkData(file, before, after, issues, pins, admitted) {
   const problem = (path, message) => issues.push(file + ' ' + path + ' ' + message);
-  const isBaseline = baseline.test(file);
+  // An admitted size map was compared row by row in baselineAdmission.
+  const isBaseline = baseline.test(file) && !admitted;
   if (isBaseline && after !== undefined && !subset(after, before ?? (Array.isArray(after) ? [] : {})))
     problem('', 'baseline gained or enlarged an entry');
   function visit(old, next, path, limit, rules, exceptions) {
@@ -342,9 +507,13 @@ function initialInventory(source, parent, next, data) {
     typeof entry[1] === 'string' && entry[1].length > 0 && typeof entry[2] === 'string' &&
     !entry[2].startsWith('/') && !entry[2].split('/').includes('..') && /^[0-9a-f]{64}$/.test(entry[3]));
 }
-export function noWeakening(root, base, candidate, source) {
+// options.measurements: the packed bundle measurement rows ({ entry, gzip }) of the candidate.
+// options.deferMeasurement: collect unmeasured new size rows in options.pending for a later measured run.
+export function noWeakening(root, base, candidate, source, options) {
   const tree = revision => git(root, ['rev-parse', '--verify', '--end-of-options', revision + '^{tree}']).trim();
   const parent = tree(base), next = tree(candidate);
+  const pending = [];
+  options ??= { deferMeasurement: true, pending };
   const incumbentOwners = protectedPaths(root, parent), proposedOwners = protectedPaths(root, next);
   const owners = [...incumbentOwners, ...proposedOwners, ...measuredStories];
   const issues = [];
@@ -391,7 +560,10 @@ export function noWeakening(root, base, candidate, source) {
       const data = parse(after);
       if (path === inventoryBaseline && before === undefined && initialInventory(source, parent, next, data)) continue;
       const pins = path === checksWorkflow ? trustedV4Pins(root, parent) : undefined;
-      checkData(path, before === undefined ? undefined : parse(before), data, issues, pins);
+      const admission = path === sizeBaseline && before !== undefined
+        ? baselineAdmission(root, parent, next, parse(before), data, options) : undefined;
+      if (admission) issues.push(...admission);
+      checkData(path, before === undefined ? undefined : parse(before), data, issues, pins, Boolean(admission));
     } else if (sourceCode.test(path) || /\.(?:java|kt|kts)$/.test(path)) {
       const inspect = body => sourceCode.test(path) ? facts(path, body) : jvmFacts(body);
       const old = inspect(before ?? ''), current = inspect(after);
@@ -407,14 +579,53 @@ export function noWeakening(root, base, candidate, source) {
       }
     }
   }
-  return issues;
+  if (issues.length || !pending.length) return issues;
+  // Synchronous qualification callers still require the trusted packer's exact rows.
+  let measurements;
+  if (git(root, ['ls-tree', next, '--', 'package-lock.json'])) {
+    const worker = fileURLToPath(new URL('./packed-admission.mjs', import.meta.url));
+    const rows = Array.from(new Set(pending), entryOf);
+    const result = spawnSync(process.execPath, [worker, source ?? root, parent, next, JSON.stringify(rows)],
+      { encoding: 'utf8', stdio: ['ignore', 'inherit', 'inherit', 'pipe'] });
+    if (result.error) console.error(result.error.message);
+    if (result.status === 0 && result.output[3]) {
+      try { measurements = JSON.parse(result.output[3]); }
+      catch (error) { console.error('Invalid packed measurement:', error.message); }
+    }
+  }
+  return noWeakening(root, parent, next, source, { measurements: Array.isArray(measurements) ? measurements : undefined });
+}
+
+// Preflight and train comparisons can name historical or stacked trees. Measure that
+// exact tree only when all structural checks pass and it actually introduces rows.
+export async function measuredNoWeakening(root, base, candidate, source = root) {
+  const tree = git(root, ['rev-parse', '--verify', '--end-of-options', candidate + '^{tree}']).trim();
+  const parent = git(root, ['rev-parse', '--verify', '--end-of-options', base + '^{tree}']).trim();
+  const pending = [];
+  const issues = noWeakening(root, parent, tree, source, { deferMeasurement: true, pending });
+  if (issues.length || !pending.length) return issues;
+  const { measureAdmission } = await import('./packed-admission.mjs');
+  const measurements = await measureAdmission(source, parent, tree, Array.from(new Set(pending), entryOf));
+  return noWeakening(root, parent, tree, source, { measurements });
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  const [base, tree, source] = process.argv.slice(2);
+  const args = process.argv.slice(2), options = { pending: [] };
+  const flag = args.indexOf('--measurements');
+  if (flag >= 0) options.measurements = JSON.parse(readFileSync(args.splice(flag, 2)[1], 'utf8'));
+  const defer = args.indexOf('--defer-measurement');
+  if (defer >= 0) { args.splice(defer, 1); options.deferMeasurement = true; }
+  if (args.length > 3 || (options.measurements && options.deferMeasurement))
+    throw Error('Pass either --measurements <bundles.json> or --defer-measurement once');
+  const [base, tree, source] = args;
   if (!base || !tree) throw Error('Usage: no-weakening.mjs <base> <candidate tree>');
-  const issues = noWeakening(process.cwd(), base, tree, source);
+  const issues = options.measurements || options.deferMeasurement
+    ? noWeakening(process.cwd(), base, tree, source, options)
+    : await measuredNoWeakening(process.cwd(), base, tree, source);
   for (const issue of issues) console.error(issue);
   if (issues.length) process.exitCode = 1;
-  else console.log('Protected inputs passed.');
+  else {
+    console.log('Protected inputs passed.');
+    if (options.pending.length) console.log('New size rows await the packed measurement: ' + options.pending.join(', '));
+  }
 }

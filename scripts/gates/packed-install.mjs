@@ -38,9 +38,9 @@ export function verifyPrivateResolutions(packages, archives) {
   }
 }
 
-export function installLockedConsumer(cwd, variant) {
+export function installLockedConsumer(cwd, variant, inputRoot = verdictInputRoot) {
   const manifest = read(join(cwd, 'package.json'));
-  const lock = read(join(verdictInputRoot, 'tests/packaging/locks', variant + '.json'));
+  const lock = read(join(inputRoot, 'tests/packaging/locks', variant + '.json'));
   assert.equal(lock.lockfileVersion, 3);
   assert.equal(lock.name, manifest.name);
   for (const field of ['dependencies', 'devDependencies'])
