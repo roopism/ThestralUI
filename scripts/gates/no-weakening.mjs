@@ -6,6 +6,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { join, resolve } from 'node:path';
 import yaml from 'js-yaml';
 import ts from 'typescript';
+import { familyInputsAt } from '../manifests/bundle-parent.mjs';
+import {
+  budgetCheckpoints, bundleStage, checkPackedBudgetAdoption, incumbentEntries, verifyBudgetAdoption,
+} from '../manifests/reviewed-bundle-budgets.mjs';
 import { fixtureRegistry, registeredNativeSlugs } from '../selection/native-tier-two.mjs';
 import { sheets as publicStylesheets } from '../selection/manifest-changes.mjs';
 import { stagedDiff, treeFiles } from '../selection/staged-tree.mjs';
@@ -21,8 +25,8 @@ const measuredStories = new Set([
 ]);
 const special = /^(?:tests\/|manifests\/|\.githooks\/|\.github\/|scripts\/|packages\/(?:policy|style-policy)\/)|(?:^|\/)(?:__tests__|test|scenarios|baselines)\/|\.(?:test|spec)\.|\.(?:scenarios\.ya?ml)$|(?:baseline|budget|threshold|ceiling|exceptions|eslint|prettier|roster)/i;
 
-function git(root, args) {
-  return execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 128 * 1024 * 1024 });
+function git(root, args, encoding = 'utf8') {
+  return execFileSync('git', args, { cwd: root, encoding, maxBuffer: 128 * 1024 * 1024 });
 }
 
 const immutableRegistry = 'scripts/gates/immutable-paths.json';
@@ -146,13 +150,53 @@ const budgetRows = row => (Array.isArray(row?.budgets) ? row.budgets : []).filte
 const apiBindings = row => Array.isArray(row?.inventory?.api) ? row.inventory.api : [];
 const bindingOf = entry => (entry.entry === '.' ? '.' : entry.entry.slice(2)) + ':' + entry.symbol;
 
+// Compare against the reviewed limits only after authenticating the complete first adoption.
+function incumbentLimits(root, parent, next, before, after, changes, options, issues) {
+  if (!incumbentEntries.some(name => after[name] > before[name])) return before;
+  const state = (tree, limits) => ({
+    limits, families: familyInputsAt(root, tree), exports: treeJson(root, tree, 'packages/web/package.json')?.exports ?? {},
+  });
+  const sourceHash = path => {
+    const blob = /^100644 blob ([a-f0-9]+)\t/.exec(git(root, ['ls-tree', next, '--', path]));
+    return blob && createHash('sha256').update(git(root, ['cat-file', 'blob', blob[1]], null)).digest('hex');
+  };
+  try {
+    const previous = state(parent, before), current = state(next, after);
+    if (!verifyBudgetAdoption(previous, current, sourceHash)) return before;
+    const step = budgetCheckpoints[bundleStage(previous.families)];
+    const manifest = 'manifests/families/' + step.slug + '.json';
+    const paths = changes.map(change => change.path);
+    const changedFamilies = paths.filter(path => path.startsWith('manifests/families/'));
+    if (changedFamilies.length !== 1 || changedFamilies[0] !== manifest)
+      throw Error('A reviewed raise requires exactly one changed family manifest: ' + step.id);
+    // Other manifests are unchanged, so their parent registrations also cover the candidate.
+    for (const [path, row] of familyManifests(root, parent)) {
+      if (path === manifest) continue;
+      const slug = path.split('/').at(-1).slice(0, -5);
+      const owned = new Set(['source', 'nativeSource', 'style'].flatMap(key => row.files?.[key] ?? []));
+      const foreign = paths.find(file => owned.has(file) || file.startsWith('packages/web/src/' + slug + '/') ||
+        file.startsWith('packages/native/src/' + slug + '/'));
+      if (foreign) throw Error('Reviewed step also changes ' + row.id + ' source: ' + foreign);
+    }
+    const reviewed = Object.fromEntries(Object.entries(step.limits).map(([name, bytes]) => ['@ui-lazy-dev/ui-web/' + name, bytes]));
+    if (options.measurements === undefined && options.deferMeasurement && Array.isArray(options.pending))
+      options.pending.push(...Object.keys(reviewed));
+    else checkPackedBudgetAdoption(previous.families, current.families, options.measurements ?? []);
+    return { ...before, ...reviewed };
+  } catch (error) {
+    issues.push(sizeBaseline + ' ' + error.message.split('\n')[0]);
+    return before;
+  }
+}
+
 // All existing rows are retained. A new entry needs its own family, a band and packed evidence.
-function baselineAdmission(root, parent, next, before, after, options) {
+function baselineAdmission(root, parent, next, before, after, changes, options) {
   if (!plain(before) || !plain(after)) return [sizeBaseline + ' requires a size map'];
   const added = Object.keys(after).filter(name => !Object.hasOwn(before, name));
   const issues = [];
   const problem = (name, message) => issues.push(sizeBaseline + ' ' + name + ' ' + message);
-  for (const [name, old] of Object.entries(before)) {
+  const limits = incumbentLimits(root, parent, next, before, after, changes, options, issues);
+  for (const [name, old] of Object.entries(limits)) {
     if (!Object.hasOwn(after, name)) problem(name, 'baseline removed an existing entry');
     else if (!Number.isSafeInteger(after[name]) || after[name] <= 0 || after[name] > old)
       problem(name, 'baseline gained or enlarged an existing entry');
@@ -521,7 +565,8 @@ export function noWeakening(root, base, candidate, source, options) {
   for (const old of incumbentOwners) {
     if (!proposedOwners.includes(old)) issues.push('.github/CODEOWNERS removed protected path ' + old);
   }
-  for (const { status, path } of stagedDiff(root, { parent, tree: next }).changes) {
+  const { changes } = stagedDiff(root, { parent, tree: next });
+  for (const { status, path } of changes) {
     if (!special.test(path) && !owners.some(entry => entry.endsWith('/') ? path.startsWith(entry) : path === entry) &&
         path !== 'docs/ui-lazy-dev-goal.md') continue;
     if (!['M', 'A'].includes(status) || path === 'docs/ui-lazy-dev-goal.md') {
@@ -561,7 +606,7 @@ export function noWeakening(root, base, candidate, source, options) {
       if (path === inventoryBaseline && before === undefined && initialInventory(source, parent, next, data)) continue;
       const pins = path === checksWorkflow ? trustedV4Pins(root, parent) : undefined;
       const admission = path === sizeBaseline && before !== undefined
-        ? baselineAdmission(root, parent, next, parse(before), data, options) : undefined;
+        ? baselineAdmission(root, parent, next, parse(before), data, changes, options) : undefined;
       if (admission) issues.push(...admission);
       checkData(path, before === undefined ? undefined : parse(before), data, issues, pins, Boolean(admission));
     } else if (sourceCode.test(path) || /\.(?:java|kt|kts)$/.test(path)) {
