@@ -1,5 +1,6 @@
 import { cssName, forcedColors, tokenLayer } from './modes/compile.mjs';
 import { modeOutputs } from './modes/outputs.mjs';
+import { readModeSystem } from './modes/resolve.mjs';
 import { resolveValue } from './resolve-value.mjs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { nativeOnlyToken } from './resolve-value.mjs';
@@ -57,21 +58,43 @@ for (const [name, leaves] of Object.entries(tokens)) for (const [key, token] of 
 // the body leading. The native theme recomputes it for every resolved brand, scheme, density,
 // motion and context, so it follows the same source as the web sheet.
 const scaleKey = 'ui-lazy-dev.scale';
+const aliasPath = value => typeof value === 'string' ? /^\{([^{}]+)\}$/.exec(value)?.[1] : undefined;
 const scaled = {};
 for (const [name, leaves] of Object.entries(nativeRaw)) for (const [key, token] of Object.entries(leaves)) {
   const scale = token.$extensions?.[scaleKey];
   if (scale === undefined) continue;
-  const base = /^\{([^{}]+)\}$/.exec(token.$value)?.[1], factor = /^\{([^{}]+)\}$/.exec(scale)?.[1];
+  const base = aliasPath(token.$value), factor = aliasPath(scale);
   if (token.$type !== 'dimension' || tokenAt(base ?? '')?.$type !== 'dimension' || tokenAt(factor ?? '')?.$type !== 'number')
     throw Error('A scaled native token multiplies a web dimension alias by a web number: ' + name + '.' + key);
   scaled[name + '.' + key] = [base, factor];
 }
-const product = (size, factor) => Math.round(size * factor * 100) / 100;
+const modeSystem = readModeSystem();
+const defaultValues = modeSystem.resolveModes().values;
+const aliases = [];
+function webOperand(path) {
+  const [group, key] = path.split('.');
+  // Private source groups such as palette are absent from resolved themes.
+  return Object.hasOwn(defaultValues[group] ?? {}, key) ? [group, key] : resolve(path);
+}
+function nativeOperands(path) {
+  if (scaled[path]) return scaled[path].map(webOperand);
+  const target = aliasPath(anyAt(path).$value);
+  if (!target) return [];
+  return nativePath(target) ? nativeOperands(target) : [webOperand(target)];
+}
+function nativeAliasValue(tokens, target, factor) {
+  const read = operand => Array.isArray(operand) ? tokens[operand[0]][operand[1]] : operand;
+  const value = read(target);
+  return factor === undefined ? value : Math.round(value * read(factor) * 100) / 100;
+}
 const nativeGroups = Object.fromEntries(Object.entries(nativeRaw).map(([name, leaves]) => [name,
   Object.fromEntries(Object.keys(leaves).sort().map(key => {
     const path = name + '.' + key;
     const value = resolveValue(anyAt, path);
-    return [key, scaled[path] ? product(value, resolve(scaled[path][1])) : value];
+    const operands = nativeOperands(path);
+    if (!operands.length) return [key, value];
+    aliases.push([name, key, ...operands]);
+    return [key, nativeAliasValue(defaultValues, ...operands)];
   }))]));
 // Fail when a native-only token reaches any web output, under any published spelling:
 // a sheet variable (leaf or path), a flat mode path or a nested token object member.
@@ -96,16 +119,12 @@ const nativeOutputs = {
   'native.js': [
     "import { createTheme } from './modes/index.js';",
     'export const nativeTokens = ' + nativeManifest + ';',
-    'const scaled = ' + JSON.stringify(scaled) + ';',
-    'const at = (tokens, path) => path.split(\'.\').reduce((node, key) => node?.[key], tokens);',
-    '// Add the native-only tokens to a resolved mode, recomputing each scaled dimension from it.',
+    'const aliases = ' + JSON.stringify(aliases) + ';',
+    nativeAliasValue.toString(),
     'export function withNativeTokens(tokens) {',
     '  const result = { ...tokens };',
-    '  for (const [group, leaves] of Object.entries(nativeTokens)) result[group] = { ...leaves };',
-    '  for (const [path, [size, factor]] of Object.entries(scaled)) {',
-    '    const [group, key] = path.split(\'.\');',
-    '    result[group][key] = Math.round(at(tokens, size) * at(tokens, factor) * 100) / 100;',
-    '  }',
+    '  for (const [group, leaves] of Object.entries(nativeTokens)) result[group] = { ...tokens[group], ...leaves };',
+    '  for (const [group, key, target, factor] of aliases) result[group][key] = nativeAliasValue(tokens, target, factor);',
     '  return result;',
     '}',
     'export function createNativeTheme(options) {',
@@ -177,7 +196,7 @@ const outputs = {
   'index.js': 'export const tokens = ' + manifest + ';\n',
   'index.d.ts': 'export declare const tokens: ' + manifest + ';\n',
   'styles.css': styles,
-  ...modeOutputs(),
+  ...modeOutputs(modeSystem),
 };
 for (const [file, contents] of Object.entries(outputs)) {
   assertWebOutput(file, contents);
