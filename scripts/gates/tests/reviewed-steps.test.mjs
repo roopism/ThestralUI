@@ -10,7 +10,9 @@ const baseline = 'tests/packaging/bundle-baseline.json';
 const original = { primitives: 1135, 'primitives.css': 862, document: 223, 'document#Heading': 143, other: 100 };
 const limits = values => Object.fromEntries(Object.entries(values).map(([name, value]) => [web + name, value]));
 const sizes = values => Object.entries(limits(values)).map(([entry, gzip]) => ({ entry, gzip }));
-const content = path => 'reviewed fixture for ' + path + '\n';
+const content = path => path.endsWith('/styles.css')
+  ? '/* @uld-css-chunk ' + path.split('/').at(-2) + ' */\n.fixture { display: block; }\n'
+  : 'reviewed fixture for ' + path + '\n';
 
 function state(active) {
   const files = {}, exports = {}, values = { ...original };

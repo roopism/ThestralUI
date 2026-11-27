@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { join, resolve } from 'node:path';
 import { loadManifests } from './manifests/generate.mjs';
 import { pathToFileURL } from 'node:url';
-import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
+import { brotliCompressSync, constants } from 'node:zlib';
+import { packedEntrySize } from './gates/family-styles.mjs';
 import { build } from 'esbuild';
 import { readJson, root, saveJson } from './verify-artifacts.mjs';
 import { assertCoverage, enforceBudget } from './verify-policy.mjs';
@@ -86,7 +87,7 @@ export function bundleImports() {
   return registeredBundleImports(families, shared, packages, baseline);
 }
 
-export const packedGzipSize = bytes => gzipSync(bytes, { level: 9 }).length;
+export { packedGzipSize } from './gates/family-styles.mjs';
 
 export function buildPackedImport(cwd, name, entry, symbol) {
   const css = entry.endsWith('.css');
@@ -125,7 +126,8 @@ export async function measureBundles(cwd, { diagnostics = false, selectedEntries
         const result = await buildPackedImport(cwd, name, entry, symbol);
         assert.equal(result.outputFiles.length, 1, 'Additional assets require a budget: ' + name);
         const bytes = result.outputFiles[0].contents;
-        const gzip = packedGzipSize(bytes);
+        const measurement = packedEntrySize(label, result.outputFiles[0]);
+        const { gzip } = measurement;
         const brotli = brotliCompressSync(bytes, {
           params: { [constants.BROTLI_PARAM_QUALITY]: 9 },
         }).length;
@@ -159,9 +161,8 @@ export async function measureBundles(cwd, { diagnostics = false, selectedEntries
           );
         }
         results.push({
-          entry: label,
+          ...measurement,
           minified: bytes.length,
-          gzip,
           brotli,
           referenceGzip: reference,
           deltaGzip: gzip - reference,

@@ -6,7 +6,8 @@ import { join } from 'node:path';
 import { installSnapshotDependencies } from '../../packages/policy/quality/snapshot-dependencies.mjs';
 import { withRevisionSnapshot } from '../../packages/policy/quality/staged-tree.mjs';
 import { packageWorkspaces } from '../package-workspaces.mjs';
-import { buildPackedImport, packedGzipSize } from '../verify-bundles.mjs';
+import { buildPackedImport } from '../verify-bundles.mjs';
+import { packedEntrySize } from './family-styles.mjs';
 import { withTimingReservation } from '../workers/timing-reservation.mjs';
 import { installLockedConsumer } from './packed-install.mjs';
 import { requireTypedControls, trustedRoot } from './typed-tools.mjs';
@@ -42,7 +43,7 @@ export async function measureAdmission(root, parent, tree, rows) {
           const name = label.split('#')[0];
           const result = await buildPackedImport(app, name, entry, symbol);
           assert.equal(result.outputFiles.length, 1, 'Additional assets require a budget: ' + name);
-          measurements.push({ entry: label, gzip: packedGzipSize(result.outputFiles[0].contents) });
+          measurements.push(packedEntrySize(label, result.outputFiles[0]));
         }
         return measurements;
       } finally {

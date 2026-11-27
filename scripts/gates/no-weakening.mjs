@@ -11,7 +11,7 @@ import {
   budgetCheckpoints, bundleStage, checkPackedBudgetAdoption, incumbentEntries, verifyBudgetAdoption,
 } from '../manifests/reviewed-bundle-budgets.mjs';
 import { fixtureRegistry, registeredNativeSlugs } from '../selection/native-tier-two.mjs';
-import { sheets as publicStylesheets } from '../selection/manifest-changes.mjs';
+import { familyStyleBytes, sharedStyleEntries } from './family-styles.mjs';
 import { stagedDiff, treeFiles } from '../selection/staged-tree.mjs';
 
 const budget = /budget|limit|allowance|threshold|ceiling|max(?:imum|[A-Z_-])/i;
@@ -281,21 +281,21 @@ function baselineAdmission(root, parent, next, before, after, changes, options) 
       problem(row.id, 'missing a standalone packed size row for the combined family band');
       continue;
     }
-    let script = 0, styles = 0;
+    let script = 0;
+    const sheetSizes = new Map();
     for (const name of fullEntries) {
-      if (name.endsWith('.css')) styles += after[name];
+      if (name.endsWith('.css')) sheetSizes.set(name, after[name]);
       else script += after[name];
     }
-    // Without standalone CSS, the family ships its registered rules in shared public sheets.
-    if (!styles && row.files?.style?.length) {
+    const standalone = new Set(sheetSizes.keys());
+    if (row.files?.style?.length) {
       const files = new Set(row.files.style);
       const sources = treeFiles(root, next, path => files.has(path));
-      const sharedSheets = new Set();
-      for (const path of files) {
-        for (const entry of publicStylesheets(sources.get(path) ?? '', path, published))
-          sharedSheets.add(canonicalEntry.pkg + entry.slice(1));
-      }
-      for (const name of sharedSheets) {
+      for (const name of sharedStyleEntries(files, sources, canonicalEntry.pkg, published, standalone))
+        sheetSizes.set(name, undefined);
+    }
+    for (const [name, styles] of sheetSizes) {
+      if (!styles && row.files?.style?.length) {
         if (!measured && options.deferMeasurement) {
           if (!options.pending?.includes(name)) options.pending?.push(name);
           continue;
@@ -303,9 +303,10 @@ function baselineAdmission(root, parent, next, before, after, changes, options) 
         const matches = measured?.filter(item => item?.entry === name) ?? [];
         if (matches.length !== 1 || !Number.isSafeInteger(matches[0].gzip) || matches[0].gzip <= 0)
           problem(name, 'shared stylesheet requires one positive packed measurement');
-        else styles += matches[0].gzip;
+        else sheetSizes.set(name, matches[0].gzip);
       }
     }
+    const styles = familyStyleBytes(sheetSizes, standalone, measured);
     if (Math.max(script, largestAlias) + styles > bandLimits[row.band])
       problem(row.id, 'combined script and CSS exceeds its family band');
   }

@@ -1,3 +1,4 @@
+import { gzipSync } from 'node:zlib';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -229,4 +230,57 @@ test('registered compatibility bindings can differ from their manifest filenames
       json({ id: 'Other', inventory: { api: [binding] } }) }), 'not a new public entry'));
     assert.ok(flagged(compare(json(first), { ...next, [webPackage]: pkg([]) }), 'not a new public entry'));
   }
+});
+
+function mixedStyles(t, source, scriptBytes, standaloneBytes) {
+  const script = web + '/sample', sheet = script + '.css', style = 'packages/web/src/sample/styles.css';
+  const exports = ['./sample', './sample.css', './primitives.css', './compat.css'];
+  const entries = exports.slice(0, 2).map(path => ({ pkg: 'web', path }));
+  const first = { [script]: scriptBytes, [sheet]: standaloneBytes };
+  const budgets = Object.entries(first).map(([name, bytes]) => ({ name, bytes }));
+  const catalog = 'catalog/sample/catalog.css';
+  const files = { [webPackage]: pkg(exports), [style]: source, [catalog]: '.story { display: grid; }',
+    'manifests/families/sample.json': json(family('supported', { entries, budgets, files: { style: [style, catalog] } })) };
+  return options => compareWithBase(t, sizes, '{}', {}, undefined, judge(options))(json(first), files);
+}
+
+const mixedSource = [
+  '/* @uld-css-chunk sample */', '.layout{display:block}',
+  '/* @uld-css-chunk compat */', "@import './sample.css';",
+  '/* @uld-css-chunk primitives.001 */', '.busy{opacity:.5}',
+  '/* @uld-css-chunk primitives.002 */', '.loading{cursor:progress}', '',
+].join('\n');
+
+test('standalone and distinct shared CSS must fit one band at the exact packed boundary', t => {
+  const check = mixedStyles(t, mixedSource, 700, 300);
+  const compare = sharedBytes => check({ measurements: [
+    { entry: web + '/sample', gzip: 700 }, { entry: web + '/sample.css', gzip: 300 },
+    { entry: primitives + '.css', gzip: sharedBytes },
+  ] });
+  assert.ok(flagged(compare(100), 'combined'), '700 + 300 + 100 exceeds the 1024-byte band');
+  assert.deepEqual(compare(24), []);
+  assert.ok(flagged(compare(25), 'combined'));
+});
+
+test('mixed CSS requests one measurement per required shared sheet and ignores a pure forward', t => {
+  const check = mixedStyles(t, mixedSource, 700, 300), pending = [];
+  assert.deepEqual(check({ deferMeasurement: true, pending }), []);
+  assert.deepEqual(pending.sort(), [web + '/sample', web + '/sample.css', primitives + '.css'].sort());
+  const entries = [{ entry: web + '/sample', gzip: 700 }, { entry: web + '/sample.css', gzip: 300 }];
+  const shared = { entry: primitives + '.css', gzip: 24 };
+  for (const invalid of [[], [{ ...shared, gzip: 0 }], [shared, shared]])
+    assert.ok(flagged(check({ measurements: [...entries, ...invalid] }), 'measurement'));
+});
+
+test('a shared sheet with both a repeated rule and a distinct rule charges only its distinct payload', t => {
+  const layout = '.layout{display:block}', busy = '.busy{opacity:.5}', standalone = layout + '\n';
+  const source = ['/* @uld-css-chunk sample */', layout, '/* @uld-css-chunk primitives */', layout, busy, ''].join('\n');
+  const size = css => gzipSync(css, { level: 9 }).length;
+  const shared = layout + busy + '\n', limit = 1024 - size(standalone) - size(busy + '\n');
+  const compare = script => mixedStyles(t, source, script, size(standalone))({ measurements: [
+    { entry: web + '/sample', gzip: script }, { entry: web + '/sample.css', gzip: size(standalone), css: standalone },
+    { entry: primitives + '.css', gzip: size(shared), css: shared },
+  ] });
+  assert.ok(flagged(compare(limit + 1), 'combined'));
+  assert.deepEqual(compare(limit), []);
 });
