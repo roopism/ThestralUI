@@ -48,6 +48,26 @@ test('token check rejects a stale generated artifact', () => {
     assert.throws(() => execFileSync(process.execPath, ['build.mjs', '--check'], { cwd: dir, stdio: 'pipe' }));
     execFileSync(process.execPath, ['build.mjs', '--write-source'], { cwd: dir });
     assert.equal(readFileSync(join(dir, 'tokens.json'), 'utf8'), raw);
+    const domainFile = join(dir, 'domains/shape.json');
+    const domain = JSON.parse(readFileSync(domainFile, 'utf8'));
+    domain.nativeProbe = { hairline: {
+      $type: 'dimension', $value: { value: 1, unit: 'px' },
+      $extensions: { 'ui-lazy-dev.platforms': ['native'] },
+    } };
+    writeFileSync(domainFile, JSON.stringify(domain));
+    execFileSync(process.execPath, ['build.mjs'], { cwd: dir });
+    for (const name of ['native.js', 'native.d.ts']) {
+      const artifact = join(dir, 'dist', name);
+      const content = readFileSync(artifact, 'utf8');
+      assert.match(content, /"nativeProbe":\s*\{\s*"hairline": 1/);
+      writeFileSync(artifact, 'stale');
+      assert.throws(
+        () => execFileSync(process.execPath, ['build.mjs', '--check'], { cwd: dir, stdio: 'pipe' }),
+        error => error.stderr.toString().includes('Stale token artifact: ' + name),
+      );
+      writeFileSync(artifact, content);
+    }
+    execFileSync(process.execPath, ['build.mjs', '--check'], { cwd: dir });
     writeFileSync(join(dir, 'dist/styles.css'), 'stale');
     assert.throws(() =>
       execFileSync(process.execPath, ['build.mjs', '--check'], { cwd: dir, stdio: 'pipe' }),

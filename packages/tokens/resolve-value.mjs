@@ -21,5 +21,20 @@ export function resolveValue(lookup, path, expectedType, seen = new Set()) {
   if (type === 'duration' && value?.unit === 'ms' && Number.isFinite(value.value) && value.value >= 0)
     return value.value;
   if (type === 'number' && Number.isFinite(value)) return value;
+  // A font family is a single native family name. Web sheets keep their own stacks.
+  if (type === 'fontFamily' && nativeOnlyToken(token, path) && typeof value === 'string' && /\S/.test(value)) return value;
   throw Error('Unsupported token: ' + path);
+}
+
+// A token marked for the native channel compiles into the native entry only:
+// never into tokens.json, the web token object, the modes or any sheet.
+// Themes and the source palette are shared with web sheets and cannot opt out.
+export const platformsKey = 'ui-lazy-dev.platforms';
+export function nativeOnlyToken(token, path) {
+  const platforms = token?.$extensions?.[platformsKey];
+  if (platforms === undefined) return false;
+  if (!Array.isArray(platforms) || platforms.length !== 1 || platforms[0] !== 'native' ||
+    ['palette', 'light', 'dark', 'highContrast'].includes(path.split('.')[0]))
+    throw Error('Unsupported token platform channel: ' + path);
+  return true;
 }
