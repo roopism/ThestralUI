@@ -6,6 +6,10 @@ import { pathToFileURL } from 'node:url';
 import { join, resolve } from 'node:path';
 import yaml from 'js-yaml';
 import ts from 'typescript';
+import { familyInputsAt } from '../manifests/bundle-parent.mjs';
+import {
+  budgetCheckpoints, bundleStage, checkPackedBudgetAdoption, incumbentEntries, verifyBudgetAdoption,
+} from '../manifests/reviewed-bundle-budgets.mjs';
 import { fixtureRegistry, registeredNativeSlugs } from '../selection/native-tier-two.mjs';
 import { stagedDiff } from '../selection/staged-tree.mjs';
 
@@ -20,8 +24,8 @@ const measuredStories = new Set([
 ]);
 const special = /^(?:tests\/|manifests\/|\.githooks\/|\.github\/|scripts\/|packages\/(?:policy|style-policy)\/)|(?:^|\/)(?:__tests__|test|scenarios|baselines)\/|\.(?:test|spec)\.|\.(?:scenarios\.ya?ml)$|(?:baseline|budget|threshold|ceiling|exceptions|eslint|prettier|roster)/i;
 
-function git(root, args) {
-  return execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 128 * 1024 * 1024 });
+function git(root, args, encoding = 'utf8') {
+  return execFileSync('git', args, { cwd: root, encoding, maxBuffer: 128 * 1024 * 1024 });
 }
 
 const immutableRegistry = 'scripts/gates/immutable-paths.json';
@@ -146,13 +150,39 @@ const declaredEntries = (row, names) => (Array.isArray(row?.entries) ? row.entri
   .filter(Boolean);
 const budgetRows = row => (Array.isArray(row?.budgets) ? row.budgets : []).filter(item => plain(item) && typeof item.name === 'string');
 
+// Compare against the reviewed limits only after authenticating the complete first adoption.
+function incumbentLimits(root, parent, next, before, after, measurements, issues) {
+  if (!incumbentEntries.some(name => after[name] > before[name])) return before;
+  const state = (tree, limits) => ({
+    limits, families: familyInputsAt(root, tree), exports: treeJson(root, tree, 'packages/web/package.json')?.exports ?? {},
+  });
+  const sourceHash = path => {
+    const blob = /^100644 blob ([a-f0-9]+)\t/.exec(git(root, ['ls-tree', next, '--', path]));
+    return blob && createHash('sha256').update(git(root, ['cat-file', 'blob', blob[1]], null)).digest('hex');
+  };
+  try {
+    const previous = state(parent, before), current = state(next, after);
+    if (!verifyBudgetAdoption(previous, current, sourceHash)) return before;
+    const step = budgetCheckpoints[bundleStage(previous.families)];
+    const changedFamilies = git(root, ['diff', '--no-renames', '--name-only', parent, next, '--', 'manifests/families/']).trim();
+    if (changedFamilies !== 'manifests/families/' + step.slug + '.json')
+      throw Error('A reviewed raise requires exactly one changed family manifest: ' + step.id);
+    checkPackedBudgetAdoption(previous.families, current.families, measurements ?? []);
+    return { ...before, ...Object.fromEntries(Object.entries(step.limits).map(([name, bytes]) => ['@ui-lazy-dev/ui-web/' + name, bytes])) };
+  } catch (error) {
+    issues.push(sizeBaseline + ' ' + error.message.split('\n')[0]);
+    return before;
+  }
+}
+
 // All existing rows are retained. A new entry needs its own family, a band and packed evidence.
 function baselineAdmission(root, parent, next, before, after, options) {
   if (!plain(before) || !plain(after)) return [sizeBaseline + ' requires a size map'];
   const added = Object.keys(after).filter(name => !Object.hasOwn(before, name));
   const issues = [];
   const problem = (name, message) => issues.push(sizeBaseline + ' ' + name + ' ' + message);
-  for (const [name, old] of Object.entries(before)) {
+  const limits = incumbentLimits(root, parent, next, before, after, options.measurements, issues);
+  for (const [name, old] of Object.entries(limits)) {
     if (!Object.hasOwn(after, name)) problem(name, 'baseline removed an existing entry');
     else if (!Number.isSafeInteger(after[name]) || after[name] <= 0 || after[name] > old)
       problem(name, 'baseline gained or enlarged an existing entry');
