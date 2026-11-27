@@ -40,7 +40,7 @@ function runtimeExport(root, registered, file, wanted, visit, visited = new Set(
   if (!registered.includes(file) || visited.has(file + ':' + wanted)) return false;
   visited.add(file + ':' + wanted);
   const text = localText(root, file);
-  const ast = ts.createSourceFile(file,text,ts.ScriptTarget.Latest,false,
+  const ast = ts.createSourceFile(file,text,ts.ScriptTarget.Latest,true,
     file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
   for (const node of ast.statements) {
     if (node.modifiers?.some(m => m.kind === ts.SyntaxKind.DeclareKeyword)) continue;
@@ -63,12 +63,111 @@ function runtimeExport(root, registered, file, wanted, visit, visited = new Set(
   return false;
 }
 
+// Inline forwards className to its layout div. Other components may discard it.
+function classHost(tag, file) {
+  if (!ts.isIdentifier(tag)) return false;
+  if (/^[a-z]/.test(tag.text)) return true;
+  const options = { noLib: true, noResolve: true, types: [], jsx: ts.JsxEmit.Preserve };
+  const host = ts.createCompilerHost(options);
+  host.getSourceFile = name => name === file.fileName ? file : undefined;
+  const checker = ts.createProgram([file.fileName], options, host).getTypeChecker();
+  const decl = checker.getSymbolAtLocation(tag)?.declarations?.[0];
+  return Boolean(decl && ts.isImportSpecifier(decl) && !decl.isTypeOnly && !decl.parent.parent.isTypeOnly &&
+    (decl.propertyName ?? decl.name).text === 'Inline' && decl.parent.parent.parent.moduleSpecifier.text === '../inline/binding.js');
+}
+
+// A public component may delegate its returned host to a private function in the
+// same module. Only follow a direct call with the original props. Any other use
+// of the callee name (including shadowing or reassignment) makes it ambiguous.
+function returnedHost(binding) {
+  if (!ts.isFunctionDeclaration(binding) || !binding.body) return;
+  const statements = binding.body.statements;
+  const last = statements.at(-1);
+  if (!last || !ts.isReturnStatement(last) || !statements.slice(0,-1).every(ts.isVariableStatement)) return;
+  const props = binding.parameters[0]?.name;
+  let call = last.expression;
+  if (call && ts.isConditionalExpression(call)) {
+    const guard = call.condition;
+    if (call.whenFalse.kind !== ts.SyntaxKind.NullKeyword || !ts.isCallExpression(guard) ||
+        !guard.arguments.some(arg => ts.isPropertyAccessExpression(arg) && ts.isIdentifier(arg.expression) &&
+          arg.expression.text === props?.text)) return;
+    call = call.whenTrue;
+  }
+  if (!call || !ts.isCallExpression(call) || !ts.isIdentifier(call.expression) ||
+      !props || !ts.isIdentifier(props) || !call.arguments[0] || !ts.isIdentifier(call.arguments[0]) ||
+      call.arguments[0].text !== props.text) return;
+  const file = binding.getSourceFile(), name = call.expression.text;
+  const helper = file.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === name);
+  if (!helper?.body || helper.modifiers?.length || helper.asteriskToken) return;
+  function ambiguous(node) {
+    if (ts.isIdentifier(node)) {
+      if (node.text === name && node !== helper.name &&
+          !(ts.isCallExpression(node.parent) && node === node.parent.expression)) return true;
+      if (node.text === 'Boolean' && !ts.isCallExpression(node.parent)) return true;
+    }
+    return ts.forEachChild(node, ambiguous);
+  }
+  if (ambiguous(file)) return;
+  const body = helper.body.statements, result = body.at(-1);
+  if (!result || !ts.isReturnStatement(result) || !result.expression) return;
+  const locals = new Map(), falseFlags = new Set();
+  const input = helper.parameters[0]?.name;
+  const flags = new Set(input && ts.isObjectBindingPattern(input) ? input.elements
+    .filter(e => !e.initializer && !e.dotDotDotToken && ts.isIdentifier(e.name)).map(e => e.name.text) : []);
+  for (const stmt of body.slice(0,-1)) {
+    if (ts.isIfStatement(stmt) && !stmt.elseStatement && ts.isIdentifier(stmt.expression) &&
+        flags.has(stmt.expression.text) && ts.isReturnStatement(stmt.thenStatement)) {
+      falseFlags.add(stmt.expression.text);
+      continue;
+    }
+    if (!ts.isVariableStatement(stmt) || !(stmt.declarationList.flags & ts.NodeFlags.Const)) return;
+    for (const decl of stmt.declarationList.declarations) {
+      if (!ts.isIdentifier(decl.name) || !decl.initializer) return;
+      locals.set(decl.name.text, decl.initializer);
+    }
+  }
+  const host = ts.isJsxElement(result.expression) ? result.expression.openingElement : result.expression;
+  if (!ts.isJsxOpeningElement(host) && !ts.isJsxSelfClosingElement(host)) return;
+  if (classHost(host.tagName, file)) return { host, locals, falseFlags };
+}
+
+// Inspect the value of the final className attribute. Conditions, discarded JSX,
+// opaque calls and props that a subsequent spread could replace prove no class.
+function returnedClasses(binding, add) {
+  const result = returnedHost(binding);
+  if (!result) return;
+  const props = result.host.attributes.properties;
+  const attr = props.findLast(p => ts.isJsxSpreadAttribute(p) || p.name.text === 'className');
+  if (!attr || !ts.isJsxAttribute(attr) || !attr.initializer) return;
+  const method = (expr, name) => ts.isCallExpression(expr) && ts.isPropertyAccessExpression(expr.expression) &&
+    expr.expression.name.text === name && expr.arguments.length === 1;
+  function collect(node, seen = new Set()) {
+    if (ts.isStringLiteralLike(node)) add(node.text);
+    else if (ts.isConditionalExpression(node) && ts.isIdentifier(node.condition) &&
+             result.falseFlags.has(node.condition.text)) {
+      collect(node.whenFalse, seen);
+    } else if (ts.isIdentifier(node) && result.locals.has(node.text) && !seen.has(node.text)) {
+      collect(result.locals.get(node.text), new Set([...seen, node.text]));
+    } else if (method(node, 'join') && ts.isStringLiteral(node.arguments[0]) && node.arguments[0].text === ' ') {
+      const filter = node.expression.expression;
+      if (method(filter, 'filter') && ts.isIdentifier(filter.arguments[0]) && filter.arguments[0].text === 'Boolean' &&
+          ts.isArrayLiteralExpression(filter.expression.expression))
+        for (const part of filter.expression.expression.elements) collect(part, seen);
+    }
+  }
+  if (ts.isStringLiteral(attr.initializer)) collect(attr.initializer);
+  else if (ts.isJsxExpression(attr.initializer) && attr.initializer.expression) collect(attr.initializer.expression);
+}
+
 // Check markers on the exported binding, including a local class expression passed
 // to JSX or a property on the props object passed directly to a returned renderer.
 // A comment, unused string, or unrelated module cannot create a family marker.
 function bindingMarkers(binding, slug, markers, parts) {
   const locals = new Map(), classes = new Set(['uld-' + slug, 'uld-' + slug + '-root']);
   const attribute = 'data-uld-' + slug;
+  returnedClasses(binding, text => {
+    for (const value of text.split(/\s+/)) if (classes.has(value)) markers.add('.' + value);
+  });
   const each = (node, visitor) => { visitor(node); ts.forEachChild(node, child => each(child,visitor)); };
   each(binding, node => {
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer)

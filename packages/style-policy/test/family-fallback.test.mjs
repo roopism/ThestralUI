@@ -71,13 +71,51 @@ test('ambiguous equal-valued spacings and swapped control variants cannot qualif
   assert.ok(find(header+coarse.replace(":not([data-size='lg'])", "[data-size='lg']")).length);
 }));
 
-test('the target element and every selector branch are family-owned within the actual standalone chunk',()=>fixture(({find})=>{
+test('the target element and every selector branch are family-owned within the actual standalone chunk',()=>fixture(({put,find})=>{
   for(const selector of ['.uld-foreign', '.uld-probe-family[data-p\\61rt="missing"]', '[data-uld-probe-family][data-part="missing"]', '[data-uld-probe-family][data-part="foreign"]', '[data-part="action"] [data-uld-probe-family]', '[uld-probe-family]', '.data-uld-probe-family', '.uld-probe-family-like', '.uld-probe-family .uld-foreign', '.uld-probe-family > [data-part="root"]', '.uld-probe-family + .other', ':not(.uld-probe-family)', ':has(.uld-probe-family)', '.uld-probe-family, .uld-foreign', ':is(.uld-probe-family,.other)', '[data-uld-probe-familyish]', '.uld-probe-family::before']) {
     assert.ok(find(header+valid.replace('.uld-probe-family',selector)).length,selector);
   }
   for(const source of [valid,'/* @uld-css-chunk primitives.005 */\n'+valid,header+'/* @uld-css-chunk primitives */\n'+valid,header+header+valid,
     '@media print {\n'+header+valid+'}',header+'@layer uld.reset {'+valid+'}',header+'@keyframes test {from{gap:var(--uld-gap,8px)}}',header+'.x {'+valid+'}'])assert.ok(find(source).length,source);
   assert.ok(find(header+valid,'packages/web/src/foreign/other.css').length);
+
+  const binding = `export function Probe(props) {
+    return hasContent(props.children) ? renderGroup(props) : null;
+  }`;
+  const helper = `function renderGroup({ unstyled, className, ...host }) {
+    const classes = [unstyled ? 'bare' : 'uld-probe-family', className].filter(Boolean).join(' ');
+    if (unstyled) return <div {...host} />;
+    return <div {...host} className={classes} />;
+  }`;
+  const ownsGap = (source, css = valid) => {
+    put(entry, source);
+    return find(header + css).length === 0;
+  };
+  const source = binding + helper;
+  assert.ok(ownsGap(source));
+  const inline = source.replace('return <div {...host} className={classes}', 'return <Layout {...host} className={classes}');
+  const layoutImport = "import { Inline as Layout } from '../inline/binding.js';";
+  assert.ok(ownsGap(layoutImport + inline));
+  assert.ok(ownsGap(source.replace('hasContent(props.children) ? renderGroup(props) : null', 'renderGroup(props)')));
+  assert.ok(!ownsGap(source, valid.replace('8px', '9px')));
+  assert.ok(!ownsGap(source, valid.replace('.uld-probe-family', '.uld-foreign')));
+  for (const decoy of [
+    binding.replace('renderGroup(props)', 'null') + helper,
+    binding.replace('hasContent(props.children)', 'false') + helper,
+    binding.replace('renderGroup(props)', 'renderGroup({ unstyled: true })') + helper,
+    binding.replace('return hasContent', 'const renderGroup = () => null; return hasContent') + helper,
+    source + 'renderGroup = () => null;',
+    binding + helper.replace('if (unstyled)', 'if (unstyled) return <div className="uld-probe-family"/>; return null; if (unstyled)'),
+    source.replace('className={classes} />','className={classes} {...host} />'),
+    source.replace("unstyled ? 'bare' : 'uld-probe-family'", "unstyled ? 'uld-probe-family' : 'bare'"),
+    source.replace("'uld-probe-family', className", "'uld-probe-family' + '-foreign', className"),
+    source.replace("className={classes}", "className={discard(classes)}"),
+    inline.replace('function renderGroup', 'function Layout() { return null; } function renderGroup'),
+    layoutImport.replace('../inline/binding.js', './foreign.js') + inline,
+    layoutImport + inline.replace('const classes =', 'const Layout = () => null; const classes ='),
+    'const Boolean = () => false;' + source,
+    binding + "import { renderGroup } from './other.js';",
+  ]) assert.ok(!ownsGap(decoy), decoy);
 }));
 
 test('manifest, exported target, family-owned source and nonsymlinked provenance are required',()=>fixture(({root,put,find,manifest,pkg})=>{
