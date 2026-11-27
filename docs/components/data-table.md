@@ -102,7 +102,7 @@ A filtered list with no rows shows an empty message. Loading and request errors 
 
 Default messages are mapped to `dataTable.search`, `dataTable.viewport`, `dataTable.selectPage`, `dataTable.previousPage`, `dataTable.nextPage`, `dataTable.empty`, `dataTable.cancel`, `dataTable.save`, `dataTable.saveFailed`, `dataTable.select`, `dataTable.edit`, `dataTable.page`, `dataTable.selected`, `dataTable.loading`, `dataTable.bulkFailed`, `dataTable.details`, `dataTable.ascending` and `dataTable.descending`. Pass translated strings and formatters through `labels`. Values and column headings belong to the caller. [Message inventory](../library-strings.md)
 
-The ten checked-in dictionaries supply message templates. The application selects one and passes its strings and callbacks through `labels`. On web, `labels={{ viewport: messages['dataTable.viewport'] }}` names the keyboard-focusable group while `label` names the table. Omitting `viewport` or passing `undefined` keeps the default “Table contents” name. An Arabic right-to-left consumer used the row name عائشة in its checkbox and edit actions and `Intl.NumberFormat('ar-EG')` for selected counts and pagination. It announced `عدد العناصر المحددة: ١` after selection and `الصفحة ٢ من ١٢` on the second page. Automatic dictionary selection through a shared locale provider remains open for 1.0. [Arabic messages](../../packages/messages/locales/ar.json)
+The ten checked-in dictionaries supply message templates. The application selects one and passes its strings and callbacks through `labels`. On web, `labels={{ viewport: messages['dataTable.viewport'] }}` names the keyboard-focusable group while `label` names the table. Omitting `viewport` or passing `undefined` keeps the default “Table contents” name. The public `DataTableLabels` type describes the resolved dictionary, so reading `viewport` returns a string. An Arabic right-to-left consumer used the row name عائشة in its checkbox and edit actions and `Intl.NumberFormat('ar-EG')` for selected counts and pagination. It announced `عدد العناصر المحددة: ١` after selection and `الصفحة ٢ من ١٢` on the second page. Automatic dictionary selection through a shared locale provider remains open for 1.0. [Arabic messages](../../packages/messages/locales/ar.json)
 
 ### Tokens
 
@@ -130,7 +130,7 @@ The caller owns record data, column definitions and persistence. The table owns 
 | `collections:DataTable` | `error` | `ReactNode` | Unspecified | Caller input | — |
 | `collections:DataTable` | `getRowLabel` | `(row: R) => string` | Required | Caller input | — |
 | `collections:DataTable` | `label` | `string` | Required | Caller input | — |
-| `collections:DataTable` | `labels` | `Partial<DataTableLabels> \| undefined` | Unspecified | Caller input | — |
+| `collections:DataTable` | `labels` | `DataTableLabelOverrides \| undefined` | Unspecified | Caller input | — |
 | `collections:DataTable` | `layout` | `"table" \| "adaptive" \| undefined` | Unspecified | Caller input | — |
 | `collections:DataTable` | `loading` | `boolean \| undefined` | Unspecified | Caller input | — |
 | `collections:DataTable` | `locale` | `string \| undefined` | Unspecified | Caller input | — |
@@ -159,7 +159,7 @@ The caller owns record data, column definitions and persistence. The table owns 
 | `data-table:DataTable` | `error` | `ReactNode` | Unspecified | Caller input | — |
 | `data-table:DataTable` | `getRowLabel` | `(row: R) => string` | Required | Caller input | — |
 | `data-table:DataTable` | `label` | `string` | Required | Caller input | — |
-| `data-table:DataTable` | `labels` | `Partial<DataTableLabels> \| undefined` | Unspecified | Caller input | — |
+| `data-table:DataTable` | `labels` | `DataTableLabelOverrides \| undefined` | Unspecified | Caller input | — |
 | `data-table:DataTable` | `layout` | `"table" \| "adaptive" \| undefined` | Unspecified | Caller input | — |
 | `data-table:DataTable` | `loading` | `boolean \| undefined` | Unspecified | Caller input | — |
 | `data-table:DataTable` | `locale` | `string \| undefined` | Unspecified | Caller input | — |

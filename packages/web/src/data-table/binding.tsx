@@ -21,11 +21,12 @@ export const english = {
   page: (current: number, total: number) => 'Page ' + current + ' of ' + total,
   selected: (count: number) => count + ' selected',
 };
-export type DataTableLabels = Omit<typeof english, 'viewport'> & { viewport?: string | undefined };
+export type DataTableLabels = typeof english;
+type DataTableLabelOverrides = Partial<Omit<DataTableLabels, 'viewport'>> & { viewport?: string | undefined };
 export interface DataTableProps<R extends { id: string }> extends UseDataTableOptions<R>, Omit<ComponentPropsWithRef<'section'>, 'children'> {
   label: string;
   getRowLabel: (row: R) => string;
-  labels?: Partial<DataTableLabels>;
+  labels?: DataTableLabelOverrides;
   /** Returned promises lock the action until they settle; existing synchronous callbacks keep their return contract. */
   bulkAction?: { label: string; onApply: (rowIds: string[]) => void };
   unstyled?: boolean;
@@ -161,7 +162,7 @@ export function DataTable<R extends { id: string }>({
   const model = useDataTable({ rows, columns, locale, pageSize, defaultSort, server, selectedIds,
     defaultSelectedIds, onSelectionChange, onSearchChange, onSortChange, onPageChange });
   const { state, visible, pages, selected } = model;
-  const labels = { ...english, ...overrides };
+  const labels = { ...english, ...overrides, viewport: overrides?.viewport ?? english.viewport };
   const id = useId();
   const applying = useRef(false);
   const saves = useCellSaves();
@@ -197,7 +198,7 @@ export function DataTable<R extends { id: string }>({
       {toolbar}
     </div>
     {(error || bulkFailed) && <div data-part="status" role="alert">{error || labels.bulkFailed}</div>}
-    <div data-part="viewport" className={classes('uld-data-scroll')} role="group" aria-label={labels.viewport ?? english.viewport} tabIndex={0}>
+    <div data-part="viewport" className={classes('uld-data-scroll')} role="group" aria-label={labels.viewport} tabIndex={0}>
       {loading && <span data-part="status" role="status">{labels.loading}</span>}
       <table data-part="table" id={id} role="table" aria-label={label} aria-busy={loading || undefined}>
         <thead data-part="header" role="rowgroup"><tr role="row">
