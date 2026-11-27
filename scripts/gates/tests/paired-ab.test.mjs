@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import test from 'node:test';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { legacyFrameReport, measure as measureStrategy, pairedProtocolSha256 } from '../timing/strategy.mjs';
+import { timingForIdenticalApk } from '../android-timing-reuse.mjs';
 import { evaluatePairs, measure } from '../timing/paired-ab.mjs';
 
 const read = name => JSON.parse(readFileSync(new URL('../../../tests/android/' + name, import.meta.url)));
@@ -9,6 +13,11 @@ const { limits, reference } = read('low-end-budget.json');
 const journeys = ['press', 'scroll'];
 const inputs = { config, limits, journeys, base: { name: 'original' }, candidate: { name: 'proposal' }, evidenceDir: '/fixture' };
 const evaluate = trials => evaluatePairs({ ...inputs, trials });
+
+function comparison({ pairedComparison, trials, evidence }) {
+  assert.ok(pairedComparison, 'Expected a separate comparison for shared contamination');
+  return { ...pairedComparison, trials, evidence };
+}
 
 function trace(pair) {
   // Both clean references come from the calibrated emulator. Replay a common time-varying disturbance.
@@ -66,15 +75,19 @@ test('paired timing adds one pair per shared overrun and retains persistent cont
     row.press.p95FrameMs = reference.trials[0].press.p95FrameMs;
     row.scroll.p95InputToCommitMs = limits.scroll.p95InputToCommitMs + 1;
   };
-  const recovered = await run((row, { pair, arm }) => {
+  const replaced = await run((row, { pair, arm }) => {
     if (pair === 1) { contaminate(row); if (arm === 'candidate') row.press.p95FrameMs += 1; }
   });
+  assert.equal(replaced.verdict, 'fail');
+  const recovered = comparison(replaced);
   assert.equal(recovered.verdict, 'pass');
   assert.equal(recovered.trials.length, 14);
   assert.deepEqual(recovered.evidence.contaminatedPairs.map(row => row.pair), [1]);
   assert.equal(recovered.evidence.contaminatedPairs[0].metrics.length, 2);
   assert.deepEqual(recovered.evidence.comparisons.press.p95FrameMs.differences, [1, 0, 0, 0, 0, 0, 0]);
-  const noisy = await run(contaminate);
+  const persistent = await run(contaminate);
+  assert.equal(persistent.verdict, 'fail');
+  const noisy = comparison(persistent);
   assert.equal(noisy.verdict, 'inconclusive');
   assert.equal(noisy.trials.length, 20);
   assert.equal(noisy.evidence.contaminatedPairs.length, 10);
@@ -111,10 +124,12 @@ test('paired timing reproduces an exhaustive 95 percent bootstrap interval and r
   assert.equal(result.trials.length, 12);
 
   const seven = [-1.5, -0.5, 0.5, 1.5, 2.25, 2.75, 3];
-  const odd = await run((row, { pair, arm }) => {
+  const shared = await run((row, { pair, arm }) => {
     if (pair === 1) row.press.p95FrameMs = limits.press.p95FrameMs + 1;
     row.scroll.p95FrameMs = 17 + (arm === 'candidate' ? seven[pair - 1] : 0);
   });
+  assert.equal(shared.verdict, 'fail');
+  const odd = comparison(shared);
   assert.deepEqual(odd.evidence.comparisons.scroll.p95FrameMs.interval95, [-0.5, 2.75]);
   assert.equal(odd.verdict, 'inconclusive');
 });
@@ -152,4 +167,39 @@ test('paired timing keeps partial evidence on collection errors and finishes six
   const malformed = await run((row, { pair }) => { if (pair === 1) delete row.press.inputs; });
   assert.equal(malformed.verdict, 'inconclusive');
   assert.equal(malformed.trials.length, 12);
+});
+
+
+test('a replacement pair cannot erase an absolute failure from the retained strategy verdict', async t => {
+  const evidenceDir = mkdtempSync(join(tmpdir(), 'paired-verdict-'));
+  t.after(() => rmSync(evidenceDir, { recursive: true, force: true }));
+  const result = await measureStrategy({ ...inputs, evidenceDir, device: {
+    reference, hostFacts: () => ({ ...reference, vm: 'stopped', bootedSimulators: [], otherJobs: [], reservation: 'test' }),
+    measureTrial({ pair }) {
+      const row = trace(pair);
+      if (pair === 1) row.scroll.p95FrameMs = limits.scroll.p95FrameMs + 1;
+      return row;
+    },
+  } });
+  const retained = JSON.parse(readFileSync(join(evidenceDir, 'strategy-result.json')));
+  assert.equal(retained.trials.length, 14);
+  assert.equal(retained.verdict, 'fail');
+  assert.equal(evaluate(retained.trials).verdict, 'fail');
+  assert.match(retained.reason, /pair 1 scroll p95FrameMs/);
+  assert.equal(result.verdict, retained.verdict);
+});
+
+test('paired reuse rejects six recorded pairs under an eight-pair requirement', async () => {
+  const result = await run();
+  const report = { ...result, strategy: 'paired-ab', protocolSha256: pairedProtocolSha256(), config };
+  const frameBudget = legacyFrameReport(report, limits);
+  const tree = 'a'.repeat(40), apk = 'b'.repeat(64), manifest = 'c'.repeat(64);
+  const receipt = { tree, status: 'passed', mode: 'qualification',
+    androidTiming: { apkSha256: apk, entryManifestSha256: manifest, frameBudget, strategyReport: report } };
+  const reuse = expected => timingForIdenticalApk(receipt, tree, apk, limits, manifest, manifest, expected);
+  assert.deepEqual(reuse(config), frameBudget);
+  assert.equal(reuse({ ...config, minPairs: 8 }), undefined);
+  assert.equal(reuse(undefined), undefined);
+  report.protocolSha256 = '0'.repeat(64);
+  assert.equal(reuse(config), undefined);
 });

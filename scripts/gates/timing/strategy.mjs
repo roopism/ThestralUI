@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { summarizeTrials } from '../../../tests/android/frame-budget.mjs';
@@ -7,8 +8,20 @@ import { measure as physical } from './real-device.mjs';
 import { measure as dedicated } from './dedicated-host.mjs';
 import { hostMismatch } from './host.mjs';
 
-export const timingConfig = () => JSON.parse(readFileSync(new URL('../../../tests/android/timing-strategy.json', import.meta.url), 'utf8'));
+export const timingConfig = (path = new URL('../../../tests/android/timing-strategy.json', import.meta.url)) =>
+  JSON.parse(readFileSync(path, 'utf8'));
 const strategies = { absolute, 'paired-ab': paired, 'real-device': physical, 'dedicated-host': dedicated };
+
+export function pairedProtocolSha256() {
+  const hash = createHash('sha256');
+  for (const path of ['./paired-ab.mjs', './android.mjs', './strategy.mjs', '../../../tests/android/frame-budget.mjs',
+    '../../../tests/android/FrameActivity.kt', '../../../tests/android/FrameFixture.js',
+    '../../../tests/android/index.js', '../../../tests/android/profiles.json']) {
+    const bytes = readFileSync(new URL(path, import.meta.url));
+    hash.update(createHash('sha256').update(bytes).digest());
+  }
+  return hash.digest('hex');
+}
 
 export async function measure(options) {
   const { device, evidenceDir } = options;
@@ -31,6 +44,7 @@ export async function measure(options) {
   });
   const trials = result.trials.map(row => row.reports ? { ...row, reports: relative(evidenceDir, row.reports) } : row);
   const report = { ...result, trials, strategy, config, facts, base: appIdentity(options.base), candidate: appIdentity(options.candidate) };
+  if (strategy === 'paired-ab') report.protocolSha256 = pairedProtocolSha256();
   writeFileSync(join(evidenceDir, 'strategy-result.json'), JSON.stringify(report, null, 2) + '\n');
   return report;
 }

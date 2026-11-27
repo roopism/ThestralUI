@@ -123,6 +123,7 @@ export async function reuseAndroidTiming({ snapshot, directory, base }, prepared
   let strategyReport;
   const timing = await androidTiming({ root: snapshot, apk: prepared.path, common: dirname(directory), limits,
     strategy: strategy.config.active['android-low-end'],
+    config: strategy.config, comparisonApp: strategy.base,
     measure: identity => usingSimulator('Android low-end timing', async () => {
       await stopVm();
       shutdownSimulators();

@@ -1,8 +1,9 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { androidTree } from '../../../tests/android/interaction.mjs';
 import { enforceBudget, measureFrameBudget, measureFrameTrial } from '../../../tests/android/frame-budget.mjs';
+import { requirePairedReference } from '../android-timing-reuse.mjs';
 import { hostFacts } from './host.mjs';
 import { prepareBaseApp } from './base-app.mjs';
 import { legacyFrameReport, measure, timingConfig } from './strategy.mjs';
@@ -27,7 +28,8 @@ export function measureAndroid({ common, profile, device, budgets, base, candida
 }
 
 export async function prepareTimingStrategy({ root, common, tools, reports }, cacheOnly = false) {
-  const config = timingConfig();
+  const file = join(root, 'tests/android/timing-strategy.json');
+  const config = existsSync(file) ? timingConfig(file) : { active: { 'android-low-end': 'absolute', 'mac-browser': 'absolute' } };
   if (config.active['android-low-end'] !== 'paired-ab') return { config };
   common ??= execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: root, encoding: 'utf8' }).trim();
   let base;
@@ -45,6 +47,7 @@ export async function prepareTimingStrategy({ root, common, tools, reports }, ca
 
 export async function measureTimingStrategy({ common, profile, device, budgets, strategy, apk, reports, identity }) {
   const { config, base } = strategy;
+  if (config.active['android-low-end'] === 'paired-ab') requirePairedReference(budgets, config);
   const candidate = { apk, apkSha256: identity.apkSha256, entryManifestSha256: identity.entryManifestSha256, tree: identity.tree };
   let report;
   try {

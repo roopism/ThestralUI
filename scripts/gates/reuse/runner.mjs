@@ -12,7 +12,7 @@ import { disabledGroups, selectAudit } from './audit.mjs';
 import { readDeviceReuse } from './device-run.mjs';
 import { captureOutputs, restoreOutputs } from './outputs.mjs';
 import { evidencePath, freshHistory, projectStoredPasses, readRecord, sha256, verifiedSource } from './store.mjs';
-import { timingForIdenticalApk } from '../android-timing-reuse.mjs';
+import { apkReplayForTree } from '../android-timing-reuse.mjs';
 import { proposalScope } from '../../selection/proposal-devices.mjs';
 import { deviceScope } from '../../selection/local-device.mjs';
 
@@ -185,6 +185,7 @@ export function verifyLandingReuse({directory,root,snapshot},receipt) {
       assert.deepEqual(receipt.devices.android,source.devices.android);
       const appId = app.appManifests['low-end'];
       const {limits} = JSON.parse(execFileSync('git',['--no-replace-objects','show',receipt.tree+':tests/android/low-end-budget.json'],{cwd:root}));
+      const timingForIdenticalApk = apkReplayForTree(root, receipt.tree);
       assert.ok(timingForIdenticalApk(receipt,receipt.tree,appId.fileSha256,limits,appId.manifestSha256),
         'Independent Android timing must pass every trial for this app');
     }

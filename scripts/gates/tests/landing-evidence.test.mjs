@@ -9,6 +9,8 @@ import { evidenceManifest, finishDiagnostic, reserveDiagnostic } from '../landin
 import { summarizeTrials } from '../../../tests/android/frame-budget.mjs';
 
 import { admission, claimDiagnostic } from '../android-host-activity.mjs';
+import { evaluatePairs } from '../timing/paired-ab.mjs';
+import { legacyFrameReport, pairedProtocolSha256 } from '../timing/strategy.mjs';
 import { sealReceipt } from '../reuse/runner.mjs';
 import { requireGateIsolation } from '../landing-policy.mjs';
 import { deviceSuites } from '../device-verdict.mjs';
@@ -25,7 +27,24 @@ const asJson = data => JSON.stringify(data) + '\n';
 const iso = n => new Date(n).toISOString();
 const namespace = 'uld-landing-evidence-v1';
 
-function fixture(t, stage = 'Fast', features = [], scoped = false) {
+function pairedFixtureReport(config, { limits, reference }, base, candidate) {
+  const journeys = ['press', 'scroll'];
+  const metrics = {};
+  for (const journey of journeys) {
+    const { trials, ...medians } = summarizeTrials(reference.trials.map(trial => trial[journey]));
+    metrics[journey] = medians;
+  }
+  const trials = Array.from({ length: 2 * config.minPairs }, (_, i) => ({
+    pair: Math.floor(i / 2) + 1, arm: ['base', 'candidate', 'candidate', 'base'][i % 4],
+    metrics: structuredClone(metrics),
+  }));
+  const { systemImage, fingerprint, hostGpu } = reference;
+  const facts = { systemImage, fingerprint, hostGpu, reservation: 'test', vm: 'stopped', bootedSimulators: [], otherJobs: [] };
+  return { ...evaluatePairs({ trials, config, limits, journeys }), strategy: 'paired-ab', protocolSha256: pairedProtocolSha256(), config, facts,
+    base: { ...base }, candidate: { ...candidate } };
+}
+
+function fixture(t, stage = 'Fast', features = [], scoped = false, pairedCase) {
   const temp = createObservationTestDirectory(t, 'uld-evidence-', 'repo');
   t.after(() => rmSync(temp, { recursive: true, force: true }));
   const root = join(temp, 'repo'), key = join(temp, 'key');
@@ -70,6 +89,22 @@ function fixture(t, stage = 'Fast', features = [], scoped = false) {
   const base = git('rev-parse', 'HEAD'), runnerTree = git('rev-parse', 'HEAD^{tree}');
   const changed = scoped ? 'README.md' : 'product';
   writeFileSync(join(root, changed), 'changed');
+  if (pairedCase) {
+    const settings = 'tests/android/timing-strategy.json';
+    copyFileSync(new URL('../../../' + settings, import.meta.url), join(root, settings));
+    git('add', settings);
+    const budgetFile = 'tests/android/low-end-budget.json';
+    const budget = JSON.parse(readFileSync(join(root, budgetFile)));
+    if (pairedCase === 'old reference') {
+      delete budget.reference.paired;
+    } else {
+      const config = JSON.parse(readFileSync(join(root, settings)));
+      const app = { tree: runnerTree, apkSha256: budget.reference.scrollInputSource.apkSha256, entryManifestSha256: '2'.repeat(64) };
+      budget.reference.paired = pairedFixtureReport(config, budget, app, app);
+    }
+    writeFileSync(join(root, budgetFile), JSON.stringify(budget, null, 2) + '\n');
+    git('add', budgetFile);
+  }
   git('add', changed);
   git('commit', '--quiet', '-m', 'proposal');
   const commit = git('rev-parse', 'HEAD'), tree = git('rev-parse', 'HEAD^{tree}');
@@ -171,7 +206,7 @@ function fixture(t, stage = 'Fast', features = [], scoped = false) {
     sign('contention', []);
     return { primary, diagnostic, claim };
   }
-  save(fail, true);
+  if (!pairedCase) save(fail, true);
   return { root, directory, git, tree, base, commit, runnerTree, pass, fail, reference, errors, check, save, sign,
     artifactDir, put, baseEvidence, contention, ssh, key };
 }
@@ -404,4 +439,40 @@ test('signed failure review accepts the original verified device scope and requi
   f.save(f.fail, true);
   f.baseEvidence();
   assert.throws(() => f.check(), /verified device scope/);
+});
+
+
+test('fresh landing replays the adopted paired protocol and binds both apps', t => {
+  for (const variant of ['missing', 'base identity', 'candidate identity', 'last trial', 'retained report', 'old reference', 'valid']) {
+    const f = fixture(t, android, ['scripts/gates/android-host-activity.mjs', 'scripts/gates/reuse/runner.mjs'], false, variant);
+    const read = file => JSON.parse(readFileSync(join(f.root, 'tests/android', file)));
+    const config = read('timing-strategy.json');
+    const budget = read('low-end-budget.json');
+    const base = { tree: f.runnerTree, apkSha256: '1'.repeat(64), entryManifestSha256: '2'.repeat(64) };
+    const candidate = { tree: f.tree, apkSha256: '3'.repeat(64), entryManifestSha256: '4'.repeat(64) };
+    const report = pairedFixtureReport(config, budget, base, candidate);
+    const frames = legacyFrameReport(report, budget.limits);
+    const sample = { atMs: 1000, load1: 1, cpus: 4, loadPerCpu: 0.25, hidIdleNs: '120000000000' };
+    const observation = { schema: 1, kind: 'primary', verdict: 'passed', numericVerdict: 'passed', policy: admission,
+      identity: { ...candidate, attempt: f.pass.id }, wait: [sample], start: sample, samples: [{ ...sample, atMs: 2000 }],
+      frameSha256: createHash('sha256').update(JSON.stringify(frames)).digest('hex') };
+    const low = join(f.directory, 'attempts', f.pass.id + '-evidence', 'android', 'low-end');
+    mkdirSync(join(low, 'timing'), { recursive: true });
+    writeFileSync(join(low, 'timing-admission.json'), asJson(observation));
+    writeFileSync(join(low, 'frame-measurements.json'), asJson(frames));
+    if (variant === 'base identity') report.base.apkSha256 = candidate.apkSha256;
+    if (variant === 'candidate identity') report.candidate.entryManifestSha256 = base.entryManifestSha256;
+    if (variant === 'last trial') report.trials.findLast(row => row.arm === 'candidate').metrics.scroll.p95FrameMs = 50;
+    if (variant !== 'missing') writeFileSync(join(low, 'timing/strategy-result.json'), asJson(variant === 'retained report' ? {} : report));
+    Object.assign(f.pass, { reuseSchema: 1, androidHostActivityPolicy: 1, androidTiming: {
+      result: 'timing measured', apkSha256: candidate.apkSha256, entryManifestSha256: candidate.entryManifestSha256,
+      baseTree: base.tree, baseApkSha256: base.apkSha256, baseEntryManifestSha256: base.entryManifestSha256,
+      admission: observation, frameBudget: frames, ...(variant === 'missing' ? {} : { strategyReport: report }),
+    } });
+    f.save(f.pass, true);
+    sealReceipt(f.root, f.pass);
+    if (variant === 'valid') assert.equal(f.check().id, f.pass.id);
+    else if (variant === 'old reference') assert.throws(() => f.check(), /paired.*(?:calibrat|reference)/i);
+    else assert.throws(() => f.check(), /paired/i, variant);
+  }
 });

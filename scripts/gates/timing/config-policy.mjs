@@ -73,3 +73,5 @@ export function assertTimingConfigChange(root, base, tree) {
   assertRatchet(approved, before);
   assertRatchet(before, after);
 }
+
+export { readConfig as readTimingConfig };

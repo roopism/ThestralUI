@@ -84,6 +84,7 @@ async function measureLowEnd(apk, device, dir, budgets, strategy, emulator) {
   let strategyReport;
   const common = process.env.ULD_ARTIFACT_COMMON;
   const timing = await androidTiming({ apk, root, common, limits: budgets.limits, strategy: strategy.config.active['android-low-end'],
+    config: strategy.config, comparisonApp: strategy.base,
     fresh: Boolean(emulator) || process.env.ULD_FRESH_ANDROID_TIMING === '1',
     measure: async (identity) => {
       await stopVm();

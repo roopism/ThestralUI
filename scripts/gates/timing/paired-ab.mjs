@@ -74,7 +74,14 @@ function validateInputs(journeys, limits, config) {
 
 export function evaluatePairs({ trials = [], journeys, limits, config } = {}) {
   const evidence = { strategy: 'paired-ab', contaminatedPairs: [], candidateOnly: [], comparisons: {}, extraPairsNeeded: 0 };
-  const outcome = (verdict, reason) => ({ verdict, reason, trials, evidence });
+  const outcome = (verdict, reason) => {
+    const shared = evidence.contaminatedPairs[0]?.metrics[0];
+    if (!shared) return { verdict, reason, trials, evidence };
+    // Replacement pairs refine the comparison. A retained candidate over its ceiling still fails.
+    const { pair, journey, metric, candidate, limit } = shared;
+    const absolute = 'candidate pair ' + pair + ' ' + journey + ' ' + metric + ' ' + candidate + ' exceeds ' + limit;
+    return { verdict: 'fail', reason: verdict === 'fail' ? reason : absolute, trials, evidence, pairedComparison: { verdict, reason } };
+  };
   try {
     validateInputs(journeys, limits, config);
     assert.ok(Array.isArray(trials) && trials.length % 2 === 0, 'Incomplete timing pair');
