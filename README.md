@@ -19,6 +19,8 @@ The `feat/enterprise-ui` branch builds the candidate locally. The web package pr
 
 Run `nvm install` and `nvm use` in the repository root to select Node 22.23.2. The tested npm version is 10.9.8. Install dependencies with `npm ci`. Run `npm run catalog` for the local workbench. For release verification run `npm run build`, `npm run typecheck`, `npm test`, `npm run test:native`, `npx playwright install chromium firefox webkit`, `npm run test:browser` and `npm run pack:release`. CI exercises the built catalog in all three engines.
 
+Local catalog deployment builds use the checkout’s timing reservation. For a source export on the same Mac, set `ULD_ARTIFACT_COMMON` to the output of `git rev-parse --path-format=absolute --git-common-dir` from the original checkout. Run `node --test tests/deployment/catalog-build.test.mjs` to check local and hosted build routing.
+
 MAIN integrates on `feat/enterprise-ui`. Workers use independent worktrees, assigned port blocks and gated commits. The contribution guide covers worktree setup, file ownership, the simulator and integration. [Contribution guide](CONTRIBUTING.md)
 
 ## Install a release

@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "buildCommand": "npm run build -w @ui-lazy-dev/tokens && npm run build -w @ui-lazy-dev/ui-web && npm run build -w @ui-lazy-dev/ui-native && npm exec --offline -- storybook build -o dist/catalog --disable-telemetry",
+  "buildCommand": "sh catalog/deploy-build.sh",
   "outputDirectory": "dist/catalog",
   "installCommand": "npm ci",
   "headers": [
