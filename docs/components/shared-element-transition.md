@@ -136,7 +136,7 @@ The existing regressions exercise the following bindings. The linked test identi
 | Animating | Measure, change layout and animate destination | Destination keeps its own role and identity | Host inputs | Host retains focus responsibility | [motion-choreography.test.tsx L65](../../tests/shared-element-transition/motion-choreography.test.tsx#L28) |
 | Completed | Allow destination animation to settle | Handle resolves finished | Host inputs | Host retains focus responsibility | [motion-choreography.test.tsx L65](../../tests/shared-element-transition/motion-choreography.test.tsx#L28) |
 | Skipped | Destination lacks measurable bounds | Final layout remains available | Host controls only | Host retains focus responsibility | [motion-choreography.test.tsx L60](../../tests/shared-element-transition/motion-choreography.test.tsx#L23) |
-| Interrupted | Move again while the prior transition is active | No extra overlay or duplicated accessible content is added | Host controls only | Focus remains with host | [motion.spec.ts L152](../../tests/browser/motion.spec.ts#L127) |
+| Interrupted | Move again while the prior transition is active | No extra overlay or duplicated accessible content is added | Host controls only | Focus remains with host | [motion.spec.ts L144](../../tests/browser/motion.spec.ts#L144) |
 
 #### Performance
 
@@ -147,10 +147,10 @@ The production named-import measurement is 1,463 B gzip for `animateSharedElemen
 - Animating. [motion-choreography.test.tsx L65](../../tests/shared-element-transition/motion-choreography.test.tsx#L28)
 - Completed. [motion-choreography.test.tsx L65](../../tests/shared-element-transition/motion-choreography.test.tsx#L28)
 - Skipped. [motion-choreography.test.tsx L60](../../tests/shared-element-transition/motion-choreography.test.tsx#L23)
-- Interrupted. [motion.spec.ts L152](../../tests/browser/motion.spec.ts#L127)
+- Interrupted. [motion.spec.ts L144](../../tests/browser/motion.spec.ts#L144)
 - Corner morph, cross-fade, pacing and reversal. [motion-choreography.test.tsx L44](../../tests/shared-element-transition/motion-choreography.test.tsx#L44)
 - Captured corner radius. [motion-choreography.test.tsx L62](../../tests/shared-element-transition/motion-choreography.test.tsx#L62)
-- Browser coverage. [motion.spec.ts L152](../../tests/browser/motion.spec.ts#L127)
+- Browser coverage. [motion.spec.ts L144](../../tests/browser/motion.spec.ts#L144)
 - A dedicated visual baseline for this family remains open.
 - Simulator coverage awaits a native export.
 

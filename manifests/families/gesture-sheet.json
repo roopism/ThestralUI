@@ -54,6 +54,7 @@
   },
   "cases": {
     "browser": [
+      "browser/motion.spec.ts | removing a saved publication moves focus to the next title",
       "browser/motion.spec.ts | save and remove a publication in the editorial theme",
       "browser/motion.spec.ts | save and remove a publication in the enterprise theme",
       "gesture-sheet/motion.spec.ts | sheet grip dismisses only after an outward drag; a cancelled drag and content scroll stay open",

@@ -2,6 +2,8 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 
 import { afterEach, expect, test, vi } from 'vitest';
 
+import type { DataTableLabels as CollectionLabels } from '@ui-lazy-dev/ui-web/collections';
+import type { DataTableLabels } from '@ui-lazy-dev/ui-web/data-table';
 import englishMessages from '../../packages/messages/locales/en.json';
 import frenchMessages from '../../packages/messages/locales/fr.json';
 import { DataTable, type DataColumn } from '../../packages/web/src/collections';
@@ -26,6 +28,25 @@ const props = {
   getRowLabel: (row: (typeof rows)[number]) => row.title,
   pageSize: 2,
 };
+
+test('legacy label dictionaries retain the viewport name with an undefined override', () => {
+  const legacy = {
+    search: 'Find records', loading: 'Loading', bulkFailed: 'Apply failed', selectPage: 'Select all',
+    previous: 'Previous', next: 'Next', empty: 'No records', cancel: 'Cancel', save: 'Save',
+    saveFailed: 'Save failed', select: (name: string) => 'Select ' + name,
+    edit: (column: string, name: string) => column + ', ' + name,
+    page: (current: number, total: number) => current + ' / ' + total,
+    selected: (count: number) => count + ' selected',
+  };
+  const collectionLabels: CollectionLabels = legacy;
+  const tableLabels: DataTableLabels = legacy;
+  const { rerender } = render(<DataTable {...props} labels={collectionLabels} />);
+  const viewport = () => screen.getByRole('group', { name: englishMessages['dataTable.viewport'] });
+  expect(viewport().contains(screen.getByRole('table', { name: props.label }))).toBe(true);
+  rerender(<DataTable {...props} labels={{ ...tableLabels, viewport: undefined }} />);
+  expect(viewport().contains(screen.getByRole('table', { name: props.label }))).toBe(true);
+  expect(screen.getByRole('searchbox', { name: legacy.search })).toBeTruthy();
+});
 
 test('retains selected IDs across search and pages and excludes removed records', () => {
   const apply = vi.fn();

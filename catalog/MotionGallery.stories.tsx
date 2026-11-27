@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   AlertDialog,
   Carousel,
@@ -62,7 +62,7 @@ const styles = `
   .publication-intro nav, .publication-library menu { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; padding: 0; margin: 0; }
   .publication-library li { list-style: none; }
   .publication-choice { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .5rem 0; }
-  .publication-library .uld-media-details { line-height: 1.5; }
+  .publication-library .uld-media-details { line-height: var(--uld-body-leading); }
   .publication-library .uld-media-details p { max-width: 60ch; }
   .publication-cover { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: flex-end; padding: 5%; color: #fff; background: #27453c; }
   .publication-cover b { font: 650 clamp(1.5rem, 5vw, 3rem)/1 system-ui, sans-serif; letter-spacing: -.04em; }
@@ -92,6 +92,7 @@ function PublicationLibrary({
   const browseTrigger = useRef<HTMLButtonElement>(null);
   const listTrigger = useRef<HTMLButtonElement>(null);
   const removeTrigger = useRef<HTMLButtonElement | null>(null);
+  const focusAfterRemoval = useRef<HTMLElement | null>(null);
   useLayoutEffect(() => {
     const root = document.documentElement;
     const previous = root.getAttribute('data-uld-theme');
@@ -109,6 +110,11 @@ function PublicationLibrary({
   const [queue] = useState(() => createToastQueue(2));
   const visible = titles.filter((book) => topic === 'All topics' || book.topic === topic);
   const savedBooks = titles.filter((book) => saved.includes(book.id));
+
+  useEffect(() => {
+    focusAfterRemoval.current?.focus();
+    focusAfterRemoval.current = null;
+  }, [saved]);
 
   return (
     <main className="publication-library" data-direction={direction} data-uld-theme={mode}>
@@ -242,6 +248,20 @@ function PublicationLibrary({
               cancelLabel="Keep title"
               onCancel={() => setRemoving(null)}
               onConfirm={() => {
+                const row = removeTrigger.current?.closest('li');
+                const neighbor = row?.nextElementSibling ?? row?.previousElementSibling;
+                const next = neighbor?.querySelector('button');
+                if (next) {
+                  focusAfterRemoval.current = next;
+                } else {
+                  const dialog = row?.closest('dialog');
+                  const headingId = dialog?.getAttribute('aria-labelledby');
+                  const heading = headingId ? dialog?.ownerDocument.getElementById(headingId) : null;
+                  if (heading) {
+                    heading.tabIndex = -1;
+                    focusAfterRemoval.current = heading;
+                  }
+                }
                 setSaved((previous) => previous.filter((id) => id !== removing.id));
                 setRemoving(null);
               }}

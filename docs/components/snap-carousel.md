@@ -146,7 +146,7 @@ The existing regressions exercise the following bindings. The linked test identi
 | --- | --- | --- | --- | --- | --- |
 | Current | Move to a visible item | Current group exposes its interactive descendants | Current controls only | Viewport and current controls | [motion-media.test.tsx L19](../../tests/snap-carousel/motion-media.test.tsx#L23) |
 | Offscreen | Select a different slide | Inactive group has inert and aria-hidden | No | No | [motion-media.test.tsx L19](../../tests/snap-carousel/motion-media.test.tsx#L23) |
-| Boundary | Reach the first or last slide | Position status updates and the unavailable direction has aria-disabled | Available direction only | Both boundary buttons stay in tab order | [motion.spec.ts L65](../../tests/browser/motion.spec.ts#L40) |
+| Boundary | Reach the first or last slide | Position status updates and the unavailable direction has aria-disabled | Available direction only | Both boundary buttons stay in tab order | [motion.spec.ts L57](../../tests/browser/motion.spec.ts#L57) |
 | Reordered | Change item order while preserving its ID | Position updates relative to new order | Current controls | Current controls | [motion-media.test.tsx L19](../../tests/snap-carousel/motion-media.test.tsx#L23) |
 | Empty | Remove all items | No region or controls remain | No | No | [motion-media.test.tsx L19](../../tests/snap-carousel/motion-media.test.tsx#L23) |
 | Keyboard | Arrow keys, Home and End on the viewport | Position follows the reading direction; ends set `aria-disabled` | Yes | Viewport | [Keyboard and boundaries](../../tests/snap-carousel/motion-media.test.tsx) |
@@ -160,7 +160,7 @@ The existing regressions exercise the following bindings. The linked test identi
 
 - Current. [motion-media.test.tsx L19](../../tests/snap-carousel/motion-media.test.tsx#L23)
 - Offscreen. [motion-media.test.tsx L19](../../tests/snap-carousel/motion-media.test.tsx#L23)
-- Boundary. [motion.spec.ts L65](../../tests/browser/motion.spec.ts#L40)
+- Boundary. [motion.spec.ts L57](../../tests/browser/motion.spec.ts#L57)
 - Reordered. [motion-media.test.tsx L19](../../tests/snap-carousel/motion-media.test.tsx#L23)
 - Empty. [motion-media.test.tsx L19](../../tests/snap-carousel/motion-media.test.tsx#L23)
 - Browser coverage. [motion.spec.ts](../../tests/browser/motion.spec.ts)

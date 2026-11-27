@@ -82,3 +82,21 @@ test('an invalid step cannot advance and pending submissions are disabled', () =
   expect(document.activeElement).toBe(outside);
   expect(change).not.toHaveBeenCalled();
 });
+
+test('moves focus to the current heading when an invalid step becomes busy', () => {
+  const props = {
+    label: 'Provision account', activeId: 'who', onStepChange: vi.fn(), onFinish: vi.fn(),
+    steps: [
+      { id: 'who', label: 'Identity', content: <input aria-label="Name" />, canAdvance: false },
+      { id: 'review', label: 'Review', content: null },
+    ],
+  };
+  const { rerender } = render(<Wizard {...props} />);
+  const field = screen.getByRole('textbox', { name: 'Name' });
+  field.focus();
+  expect(document.activeElement).toBe(field);
+  rerender(<Wizard {...props} busy />);
+  expect(field.matches(':disabled')).toBe(true);
+  expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Next' }).disabled).toBe(true);
+  expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Identity' }));
+});
