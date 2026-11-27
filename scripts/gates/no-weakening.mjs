@@ -290,7 +290,7 @@ function baselineAdmission(root, parent, next, before, after, changes, options) 
     const standalone = new Set(sheetSizes.keys());
     if (row.files?.style?.length) {
       const files = new Set(row.files.style);
-      const sources = treeFiles(root, next, path => files.has(path));
+      const sources = treeFiles(root, next, path => path.startsWith('packages/web/src/') && path.endsWith('.css'));
       for (const name of sharedStyleEntries(files, sources, canonicalEntry.pkg, published, standalone))
         sheetSizes.set(name, undefined);
     }

@@ -1,35 +1,59 @@
-import { gzipSync } from 'node:zlib';
+import { packedGzipSize } from '../verify-policy.mjs';
 import postcss from 'postcss';
 import { sheets } from '../selection/manifest-changes.mjs';
 
-export const packedGzipSize = bytes => gzipSync(bytes, { level: 9 }).length;
+export { packedEntrySize, packedGzipSize } from '../verify-policy.mjs';
 
-export function packedEntrySize(label, output) {
-  const size = { entry: label, gzip: packedGzipSize(output.contents) };
-  if (label.endsWith('.css')) size.css = output.text;
-  return size;
+// Assemble immutable sources in copy-styles.mjs order. PostCSS offsets then identify the owning blocks.
+function stylesheetBlocks(sources) {
+  const destinations = new Map();
+  for (const path of [...sources.keys()].sort()) {
+    if (!path.startsWith('packages/web/src/') || !path.endsWith('.css')) continue;
+    const source = sources.get(path);
+    const headers = [...source.matchAll(/^\/\* @uld-css-chunk ([\w-]+)(?:\.(\d+))? \*\/\n/gm)];
+    for (const [index, header] of headers.entries()) {
+      const entry = './' + header[1] + '.css';
+      const text = source.slice(header.index + header[0].length, headers[index + 1]?.index);
+      if (header[2] && !text.endsWith('\n')) throw Error('Unterminated numbered stylesheet block in ' + path);
+      const order = header[2] ? Number(header[2]) : Infinity;
+      if (!destinations.has(entry)) destinations.set(entry, []);
+      destinations.get(entry).push({ path, order, css: header[2] ? text.slice(0, -1) : '\n' + text.trimEnd() });
+    }
+  }
+  for (const blocks of destinations.values()) blocks.sort((a, b) => a.order - b.order);
+  return destinations;
 }
 
 // Skip a compatibility destination only if every family rule there is already supplied.
 export function sharedStyleEntries(files, sources, pkg, published, standalone) {
+  const destinations = stylesheetBlocks(sources);
   const rules = new Map();
   for (const path of files) {
     if (!path.startsWith('packages/web/src/') || !path.endsWith('.css')) continue;
     const source = sources.get(path) ?? '';
-    for (const css of source.split(/(?=^\/\* @uld-css-chunk [\w-]+(?:\.\d+)? \*\/\n)/m)) {
-      const [entry] = sheets(css, path, published);
+    for (const entry of new Set(sheets(source, path, published))) {
       const name = pkg + entry.slice(1);
       if (!rules.has(name)) rules.set(name, []);
+      const blocks = destinations.get(entry);
+      const ranges = [];
+      let css = '';
+      for (const block of blocks) {
+        const start = css.length;
+        css += block.css;
+        if (block.path === path && css.length > start) ranges.push([start, css.length]);
+      }
       let nodes;
       try { nodes = postcss.parse(css, { from: path }).nodes; }
       catch (error) {
         if (error.name !== 'CssSyntaxError') throw error;
-        // A numbered chunk can finish a rule from another source. Charge its packed sheet.
+        // An unparseable destination cannot supply proof of a duplicate.
         rules.get(name).push(Symbol(path));
         continue;
       }
       for (const node of nodes) {
-        if (node.type === 'comment') continue;
+        // A selector or enclosing condition may begin and end in another family's blocks.
+        if (node.type === 'comment' || !ranges.some(([start, end]) =>
+          node.source.start.offset < end && node.source.end.offset > start)) continue;
         const target = node.type === 'atrule' && node.name === 'import' && /^(["'])(\.\/[\w-]+\.css)\1$/.exec(node.params);
         rules.get(name).push(target ? pkg + target[2].slice(1) : 'rule:' + node.toString());
       }

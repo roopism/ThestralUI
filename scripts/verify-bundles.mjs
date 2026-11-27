@@ -3,10 +3,9 @@ import { join, resolve } from 'node:path';
 import { loadManifests } from './manifests/generate.mjs';
 import { pathToFileURL } from 'node:url';
 import { brotliCompressSync, constants } from 'node:zlib';
-import { packedEntrySize } from './gates/family-styles.mjs';
 import { build } from 'esbuild';
 import { readJson, root, saveJson } from './verify-artifacts.mjs';
-import { assertCoverage, enforceBudget } from './verify-policy.mjs';
+import { assertCoverage, enforceBudget, packedEntrySize } from './verify-policy.mjs';
 
 // Map each JavaScript subpath to a representative independent import.
 const policies = {
@@ -87,7 +86,7 @@ export function bundleImports() {
   return registeredBundleImports(families, shared, packages, baseline);
 }
 
-export { packedGzipSize } from './gates/family-styles.mjs';
+export { packedGzipSize } from './verify-policy.mjs';
 
 export function buildPackedImport(cwd, name, entry, symbol) {
   const css = entry.endsWith('.css');

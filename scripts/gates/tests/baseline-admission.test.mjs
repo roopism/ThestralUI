@@ -232,14 +232,14 @@ test('registered compatibility bindings can differ from their manifest filenames
   }
 });
 
-function mixedStyles(t, source, scriptBytes, standaloneBytes) {
+function mixedStyles(t, source, scriptBytes, standaloneBytes, otherSources = {}) {
   const script = web + '/sample', sheet = script + '.css', style = 'packages/web/src/sample/styles.css';
   const exports = ['./sample', './sample.css', './primitives.css', './compat.css'];
   const entries = exports.slice(0, 2).map(path => ({ pkg: 'web', path }));
   const first = { [script]: scriptBytes, [sheet]: standaloneBytes };
   const budgets = Object.entries(first).map(([name, bytes]) => ({ name, bytes }));
   const catalog = 'catalog/sample/catalog.css';
-  const files = { [webPackage]: pkg(exports), [style]: source, [catalog]: '.story { display: grid; }',
+  const files = { ...otherSources, [webPackage]: pkg(exports), [style]: source, [catalog]: '.story { display: grid; }',
     'manifests/families/sample.json': json(family('supported', { entries, budgets, files: { style: [style, catalog] } })) };
   return options => compareWithBase(t, sizes, '{}', {}, undefined, judge(options))(json(first), files);
 }
@@ -284,3 +284,28 @@ test('a shared sheet with both a repeated rule and a distinct rule charges only 
   assert.ok(flagged(compare(limit + 1), 'combined'));
   assert.deepEqual(compare(limit), []);
 });
+
+function compiledScope(t, opening, closing) {
+  const rule = '.busy{opacity:.5}', layout = '.layout{display:block}';
+  const source = ['/* @uld-css-chunk sample.2 */', rule, '/* @uld-css-chunk primitives.2 */', rule,
+    '/* @uld-css-chunk sample.4 */', layout, ''].join('\n');
+  const surround = (sheet, start, end) => ['/* @uld-css-chunk ' + sheet + '.1 */', start,
+    '/* @uld-css-chunk ' + sheet + '.3 */', end, ''].join('\n');
+  const size = css => gzipSync(css, { level: 9 }).length;
+  const scoped = opening + rule + closing;
+  const standalone = scoped + layout + '\n', script = 1024 - size(standalone);
+  const evidence = [{ entry: web + '/sample', gzip: script },
+    { entry: web + '/sample.css', gzip: size(standalone), css: standalone }];
+  const check = (shared, wrappers, options) => mixedStyles(t, source, script, size(standalone), {
+    'packages/web/src/other/scope.css': surround('sample', opening, closing) + wrappers,
+  })(options ?? { measurements: [...evidence, { entry: primitives + '.css', css: shared, gzip: size(shared) }] });
+  assert.ok(flagged(check(rule + '\n', ''), 'combined'), 'the unscoped shared rule costs additional bytes');
+  const pending = [];
+  assert.deepEqual(check(rule + '\n', '', { deferMeasurement: true, pending }), []);
+  assert.ok(pending.includes(primitives + '.css'), 'request the shared packed bytes');
+  assert.deepEqual(check(scoped + '\n', surround('primitives', opening, closing)), []);
+}
+
+test('a media query assembled across files counts distinct compiled rules', t => compiledScope(t, '@media print{', '}'));
+test('a supports condition assembled across files counts distinct compiled rules', t => compiledScope(t, '@supports (display:grid){', '}'));
+test('a selector assembled across files counts distinct compiled rules', t => compiledScope(t, '.panel ', ''));
