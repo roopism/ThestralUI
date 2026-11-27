@@ -1,5 +1,5 @@
 'use client';
-import { useId, useLayoutEffect, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useReducer, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { ButtonTarget, useButton } from '../button/binding.js';
 import { SelectionCheckbox, TableField } from './controls.js';
 import { useDataTable, type DataColumn, type UseDataTableOptions } from './state.js';
@@ -43,20 +43,25 @@ function TableAction({ busy, ...props }: ComponentPropsWithRef<'button'> & { bus
   return <ButtonTarget {...props} behavior={useButton({ ...props, busy })} />;
 }
 
-function useCellSaves() {
-  // A pending save holds its draft in the request. Keep rejected text here across cell unmounts.
-  const [cells, setCells] = useState(() => new Map<string, string | null>());
-  const latest = useRef(cells);
-  function update(key: string, rejectedDraft?: string | null) {
-    if (latest.current.get(key) === rejectedDraft) return false;
-    const next = new Map(latest.current);
-    if (rejectedDraft === undefined) next.delete(key);
-    else next.set(key, rejectedDraft);
-    latest.current = next;
-    setCells(next);
-    return true;
+function useCellSaves(rows?: readonly { id: string }[]) {
+  type Save = { id: string; draft: string | null };
+  const [cells] = useState(() => new Map<string, Save>());
+  const [, refresh] = useReducer((revision: number) => revision + 1, 0);
+
+  useLayoutEffect(() => {
+    if (!rows || !cells.size) return;
+    const ids = new Set(rows.map(row => row.id));
+    for (const [key, save] of cells) if (!ids.has(save.id)) cells.delete(key);
+  }, [rows, cells]);
+
+  function begin(key: string, id: string) {
+    if (cells.get(key)?.draft === null) return;
+    const save: Save = { id, draft: null };
+    cells.set(key, save);
+    refresh();
+    return save;
   }
-  return { cells, latest, update };
+  return { cells, begin, refresh };
 }
 
 export function EditableCell<R extends { id: string }>({
@@ -76,7 +81,7 @@ export function EditableCell<R extends { id: string }>({
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const key = JSON.stringify([row.id, column.id]);
-  const rejectedDraft = saves.cells.get(key);
+  const rejectedDraft = saves.cells.get(key)?.draft;
   const pending = rejectedDraft === null;
   const locked = disabled || busy;
   const trigger = useRef<HTMLButtonElement>(null);
@@ -99,7 +104,7 @@ export function EditableCell<R extends { id: string }>({
   }, [draft]);
   const finish = () => {
     restoreFocus.current = ownsFocus();
-    saves.update(key);
+    saves.cells.delete(key);
     setDraft(null);
   };
   const accessibleName = labels.edit(column.label, name);
@@ -124,24 +129,27 @@ export function EditableCell<R extends { id: string }>({
     <form data-part="editor"
       onSubmit={async (event) => {
         event.preventDefault();
-        if (locked || !saves.update(key, null)) return;
+        if (locked) return;
+        const save = saves.begin(key, row.id);
+        if (!save) return;
         try {
           await column.onEdit!(row, draft);
-          finish();
+          if (saves.cells.get(key) === save) finish();
         } catch {
-          saves.update(key, draft);
+          save.draft = draft;
           if (ownsFocus()) input.current?.focus({ preventScroll: true });
         }
+        saves.refresh();
       }}
       onKeyDown={(event) => {
-        if (event.key === 'Escape' && saves.latest.current.get(key) !== null) {
+        if (event.key === 'Escape' && saves.cells.get(key)?.draft !== null) {
           event.preventDefault();
           event.stopPropagation();
           finish();
         }
       }}
     >
-      <TableField ref={input} mode="edit" label={accessibleName} value={draft}
+      <TableField ref={input} type="text" autoFocus aria-label={accessibleName} value={draft}
         readOnly={pending || locked} onValueChange={setDraft} />
       <TableAction type="submit" disabled={locked} busy={pending}>
         {labels.save}
@@ -165,7 +173,7 @@ export function DataTable<R extends { id: string }>(props: DataTableProps<R>) {
   const labels = { ...english, ...overrides };
   const id = useId();
   const applying = useRef(false);
-  const saves = useCellSaves();
+  const saves = useCellSaves(server ? undefined : rows);
   const [pending, setPending] = useState(false);
   const [bulkFailed, setBulkFailed] = useState(false);
   const locked = disabled || loading || pending;
@@ -190,7 +198,7 @@ export function DataTable<R extends { id: string }>(props: DataTableProps<R>) {
     className={[classes('uld-data'), className].filter(Boolean).join(' ') || undefined}>
     <div data-part="toolbar" className={classes('uld-data-tools')}>
       <label>{labels.search}
-        <TableField mode="search" label={labels.search} value={state.query} controls={id}
+        <TableField type="search" data-part="search" aria-label={labels.search} value={state.query} aria-controls={id}
           disabled={disabled} onValueChange={model.search} />
       </label>
       {selectRows && <output data-part="selection">{labels.selected(selected.size)}</output>}

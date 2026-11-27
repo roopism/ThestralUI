@@ -116,7 +116,7 @@ For local collections, supply the complete array. For a server-fed table, supply
 
 ### API
 
-The caller owns record data, column definitions and persistence. The table owns local query, sort and page. Supply `server` to own those values, and `selectedIds` plus `onSelectionChange` to own selection independently. `bulkAction.onApply` receives selected IDs across pages. A cell keeps its draft while an asynchronous edit is pending or after an error. Web host props and ref reach the outer section.
+The caller owns record data, column definitions and persistence. The table owns local query, sort and page. Supply `server` to own those values, and `selectedIds` plus `onSelectionChange` to own selection independently. `bulkAction.onApply` receives selected IDs across pages. A cell keeps its draft while an asynchronous edit is pending or after an error. Paging and filtering preserve the draft. Removing the row from the complete local collection discards its edit state. A later save result belongs to the removed row, even if another row reuses its ID. Web host props and ref reach the outer section.
 
 | Export | Prop | Type | Default | Ownership | Ref target |
 | --- | --- | --- | --- | --- | --- |

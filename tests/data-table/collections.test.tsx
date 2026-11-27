@@ -252,3 +252,54 @@ test('returning to a rejected cell restores the submitted title for retry', asyn
   expect(edit.mock.calls).toEqual([[rows[0], 'Revised title'], [rows[0], 'Revised title']]);
   expect(screen.queryByRole('alert')).toBeNull();
 });
+
+test.each(['before', 'after'])('a rejected save %s local row deletion leaves its replacement editable', async when => {
+  let reject!: () => void;
+  const onEdit = vi.fn().mockImplementationOnce(() => new Promise<void>((_, fail) => { reject = () => fail(Error('offline')); }));
+  const editable = [{ ...columns[0], onEdit }];
+  const table = (items: typeof rows) => <DataTable {...props} rows={items} columns={editable} />;
+  const { rerender } = render(table(rows));
+  const click = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
+  click('Edit Name, Gamma');
+  fireEvent.change(screen.getByRole('textbox', { name: 'Edit Name, Gamma' }), { target: { value: 'Deleted draft' } });
+  click('Save');
+  if (when === 'before') await act(async () => reject());
+  rerender(table(rows.slice(1)));
+  const replacement = { ...rows[0], title: 'Replacement' };
+  rerender(table([replacement, ...rows.slice(1)]));
+  if (when === 'after') await act(async () => reject());
+  const name = 'Edit Name, Replacement';
+  expect(screen.getByRole('button', { name }).textContent).toBe('Replacement');
+  expect(screen.queryByRole('alert')).toBeNull();
+  click(name);
+  expect((screen.getByRole('textbox', { name }) as HTMLInputElement).value).toBe('Replacement');
+  await act(async () => { click('Save'); });
+  expect(onEdit.mock.calls).toEqual([[rows[0], 'Deleted draft'], [replacement, 'Replacement']]);
+});
+
+test('a late success for a deleted local row preserves its replacement’s failed edit', async () => {
+  let resolve!: () => void;
+  const onEdit = vi.fn().mockImplementationOnce(() => new Promise<void>(done => { resolve = done; }))
+    .mockRejectedValueOnce(Error('offline'));
+  const editable = [{ ...columns[0], onEdit }];
+  const table = (items: typeof rows) => <DataTable {...props} rows={items} columns={editable} pageSize={1} />;
+  const { rerender } = render(table(rows));
+  const click = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
+  click('Edit Name, Gamma');
+  click('Save');
+  rerender(table(rows.slice(1)));
+  const replacement = { ...rows[0], title: 'Replacement' };
+  rerender(table([replacement, ...rows.slice(1)]));
+  const name = 'Edit Name, Replacement';
+  expect(screen.getByRole('button', { name }).getAttribute('aria-busy')).toBeNull();
+  click(name);
+  fireEvent.change(screen.getByRole('textbox', { name }), { target: { value: 'New draft' } });
+  await act(async () => { click('Save'); });
+  click('Next page');
+  await act(async () => resolve());
+  click('Previous page');
+  expect(screen.getByRole('alert').textContent).toBe('Could not save changes. Try again.');
+  click(name);
+  await act(async () => { click('Save'); });
+  expect(onEdit.mock.calls).toEqual([[rows[0], 'Gamma'], [replacement, 'New draft'], [replacement, 'New draft']]);
+});

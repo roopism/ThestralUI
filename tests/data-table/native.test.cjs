@@ -284,3 +284,54 @@ test('a native save restores editor focus only while its input or action owns it
     await s.unmount();
   }
 });
+
+test.each(['before', 'after'])('a rejected save %s native local row deletion leaves its replacement editable', async when => {
+  let reject;
+  const onEdit = jest.fn().mockImplementationOnce(() => new Promise((_, fail) => { reject = () => fail(Error('offline')); }));
+  const editable = [{ ...columns[0], onEdit }];
+  const table = rows => h(DataTable, { ...options, rows, columns: editable });
+  const s = await render(table(records));
+  const click = name => press(s, 'button', name);
+  await click('Edit Name, Gamma');
+  await fireEvent.changeText(s.getByDisplayValue('Gamma'), 'Deleted draft');
+  await click('Save');
+  if (when === 'before') await act(async () => reject());
+  await s.rerender(table(records.slice(1)));
+  const replacement = { ...records[0], title: 'Replacement' };
+  await s.rerender(table([replacement, ...records.slice(1)]));
+  if (when === 'after') await act(async () => reject());
+  const name = 'Edit Name, Replacement';
+  expect(s.getByRole('button', { name })).toHaveTextContent('Replacement');
+  expect(s.queryByRole('alert')).toBeNull();
+  await click(name);
+  expect(s.getByDisplayValue('Replacement')).toBeVisible();
+  await click('Save');
+  expect(onEdit.mock.calls).toEqual([[records[0], 'Deleted draft'], [replacement, 'Replacement']]);
+});
+
+test('a late success for a deleted native local row preserves its replacement’s failed edit', async () => {
+  let resolve;
+  const onEdit = jest.fn().mockImplementationOnce(() => new Promise(done => { resolve = done; }))
+    .mockRejectedValueOnce(Error('offline'));
+  const editable = [{ ...columns[0], onEdit }];
+  const table = rows => h(DataTable, { ...options, rows, columns: editable, pageSize: 1 });
+  const s = await render(table(records));
+  const click = name => press(s, 'button', name);
+  await click('Edit Name, Gamma');
+  await click('Save');
+  await s.rerender(table(records.slice(1)));
+  const replacement = { ...records[0], title: 'Replacement' };
+  await s.rerender(table([replacement, ...records.slice(1)]));
+  const name = 'Edit Name, Replacement';
+  expect(s.getByRole('button', { name })).toBeEnabled();
+  await click(name);
+  await fireEvent.changeText(s.getByDisplayValue('Replacement'), 'New draft');
+  await click('Save');
+  await click('Next page');
+  await act(async () => resolve());
+  await click('Previous page');
+  expect(s.getByRole('alert')).toHaveTextContent('Could not save changes. Try again.');
+  await click(name);
+  await click('Save');
+  expect(onEdit.mock.calls).toEqual([[records[0], 'Gamma'], [replacement, 'New draft'], [replacement, 'New draft']]);
+});
