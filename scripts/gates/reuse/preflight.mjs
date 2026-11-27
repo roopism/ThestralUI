@@ -1,7 +1,8 @@
 // Only these two fresh subprocesses may supply preflight results to qualification.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { dirname } from 'node:path';
+import { readdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { readArtifact } from '../../build-cache/artifact-cache.mjs';
 import { preflightChecks, preflightRunner } from '../preflight-receipt.mjs';
 import { captureOutputs } from './outputs.mjs';
@@ -34,7 +35,13 @@ export async function observePreflightStage(ctx, name, run) {
   };
   const before = identity();
   const start = performance.now();
-  const result = await run();
+  let result;
+  try {
+    result = await run();
+  } catch (error) {
+    if (before && before === identity()) ctx.reuseStages.push({ name, result: 'failed', fingerprint: before });
+    throw error;
+  }
   const durationMs = Math.round(performance.now() - start);
   if (before && before === identity()) {
     try {
@@ -45,8 +52,39 @@ export async function observePreflightStage(ctx, name, run) {
   return result;
 }
 
+// Older failed preflights have phase verdicts but no fingerprint for the failing stage.
+function failedStageAttempts(directory, source, groupId, fingerprint, cutoff) {
+  const folder = 'preflight/attempts/';
+  const [checkName, phaseName] = groupId === typedGroup
+    ? ['Fast and Typed', 'Typed'] : ['Commit hook on the exact tree', 'canaries and gate tests'];
+  let failures = 0;
+  for (const file of readdirSync(join(directory, folder))) {
+    if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}\.json$/.test(file)) continue;
+    const attempt = JSON.parse(readBytes(directory, folder + file));
+    assert.equal(file, attempt.id + '.json');
+    if (attempt.status === 'passed' || attempt.base !== source.base || attempt.commit !== source.commit || attempt.tree !== source.tree) continue;
+    assert.equal(attempt.status, 'failed');
+    const finished = Date.parse(attempt.finished);
+    assert.ok(Number.isFinite(finished));
+    if (finished > cutoff) continue;
+    const observed = attempt.reuseStages?.filter(row => row.name === groupId && row.result === 'failed');
+    if (observed?.length === 1 && /^[a-f0-9]{64}$/.test(observed[0].fingerprint)) {
+      if (observed[0].fingerprint === fingerprint) failures++;
+      continue;
+    }
+    const check = attempt.checks.find(check => check.name === checkName);
+    assert.ok(check, 'Missing preflight check in ' + file);
+    if (check.result !== 'failed') continue;
+    const failed = check.phases?.filter(phase => phase.result === 'failed');
+    // A combined phase without a recorded stage may have reached the gate tests.
+    if (!failed?.length || failed.some(phase => phase.name === phaseName &&
+        (groupId !== gateGroup || phase.stage !== 'canaries'))) failures++;
+  }
+  return failures;
+}
+
 // Use the source attempt by ID so a later passing preflight cannot replace evidence at landing.
-export function preflightSource(directory, context, id, groupId, fingerprint) {
+export function preflightSource(directory, context, id, groupId, fingerprint, includeLaterFailures = false) {
   assert.ok(preflightGroup(groupId));
   assert.match(id, /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/);
   assert.match(fingerprint, /^[a-f0-9]{64}$/);
@@ -70,7 +108,10 @@ export function preflightSource(directory, context, id, groupId, fingerprint) {
   assert.equal(row.fingerprint, fingerprint);
   assert.ok(Number.isFinite(row.durationMs) && row.durationMs >= 0);
   for (const output of row.outputs) assert.ok(readArtifact(root, output.sha), 'Missing or corrupt preflight output');
+  const finished = Date.parse(source.finished);
+  assert.ok(Number.isFinite(finished));
+  const retries = failedStageAttempts(directory, source, groupId, fingerprint, includeLaterFailures ? Infinity : finished);
   const record = { sourceKind: 'preflight', sourceAttempt: id, sourceReceiptSha256: sha256(bytes), tree: source.tree,
-    groupId, fingerprint, createdAt: source.finished, retries: 0, result: 'passed' };
+    groupId, fingerprint, createdAt: source.finished, retries, result: 'passed' };
   return { source, row, evidence: row, record };
 }

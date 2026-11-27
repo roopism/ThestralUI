@@ -1,21 +1,24 @@
 import { prepareMemberPreflight } from '../train-preflight.mjs';
 import assert from 'node:assert/strict';
+import { execFile, execFileSync, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
+import { promisify } from 'node:util';
 import { preflightChecks, preflightRunner, requirePreflight, writePreflightReceipt } from '../preflight-receipt.mjs';
 import { gateGroup, observePreflightStage, typedGroup } from '../reuse/preflight.mjs';
 import { decideRow, executeChoice, rowIdentity, sealReceipt, useRecord } from '../reuse/runner.mjs';
-import { projectStoredPasses } from '../reuse/store.mjs';
+import { projectStoredPasses, verifiedSource } from '../reuse/store.mjs';
 import { selectAudit } from '../reuse/audit.mjs';
 import { compareFullRun } from '../reuse/full-run.mjs';
 import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
+import { phases, runPreflight } from '../../verify-preflight.mjs';
 
 isolateFixtureProcess();
 
-async function fixture(t) {
+async function fixture(t, files = {}) {
   const root = mkdtempSync(join(tmpdir(), 'uld-preflight-reuse-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   function write(path, value) {
@@ -32,6 +35,7 @@ async function fixture(t) {
     [typedGroup]: { mode: 'tree', reusable: true, exclude: [], envFacts: ['node','lockfile'], extraInputs: ['uld-cache/input'] },
   } }));
   write('.git/uld-cache/input', 'initial');
+  for (const [path, content] of Object.entries(files)) write(path, content);
   git('add', '.');
   git('commit', '--quiet', '-m', 'fixture');
   const base = git('rev-parse', 'HEAD'), tree = git('rev-parse', 'HEAD^{tree}');
@@ -200,4 +204,110 @@ test('stacked member preflight binds the predecessor and restores sealed Typed o
   clearOutputs();
   check(request);
   assert.deepEqual(calls, ['hook']);
+});
+
+test('preflight retries force the affected stage fresh on the same inputs', async t => {
+  const { ctx, choose, receipt } = await fixture(t);
+  function failed(check, phase, tree = ctx.tree, timeOffset = -1000, metadata = {}) {
+    writePreflightReceipt(ctx.common, {
+      schema: 1, kind: 'preflight', id: randomUUID(), status: 'failed', base: ctx.base, commit: ctx.commit, tree, ...metadata,
+      finished: new Date(Date.parse(receipt.finished) + timeOffset).toISOString(),
+      checks: preflightChecks.map(name => ({ name, result: name === check ? 'failed' : 'blocked',
+        phases: name === check ? [{ name: phase, result: 'failed' }] : [] })),
+    });
+  }
+  failed('Fast and Typed', 'Typed', '1'.repeat(40));
+  failed('Fast and Typed', 'Fast');
+  failed('Fast and Typed', 'Typed', ctx.tree, -1000, { commit: '2'.repeat(40) });
+  const observations = [];
+  await assert.rejects(observePreflightStage({ ...ctx, reuseStages: observations }, typedGroup,
+    async () => { throw Error('Known fixture failure'); }), /Known fixture failure/);
+  assert.deepEqual(observations, [{ name: typedGroup, result: 'failed', fingerprint: choose(typedGroup).record.fingerprint }]);
+  failed('Fast and Typed', 'Typed', ctx.tree, -1000, { reuseStages: [{ ...observations[0], fingerprint: 'a'.repeat(64) }] });
+  assert.equal(choose(typedGroup).reuse, true);
+  failed('Fast and Typed', 'Typed');
+  assert.equal(choose(typedGroup).reuse, false);
+  assert.equal(choose(typedGroup).record.retries, 1);
+  const firstGate = choose(gateGroup);
+  assert.equal(firstGate.reuse, true);
+  failed('Commit hook on the exact tree', 'canaries and gate tests', ctx.tree, 1000);
+  assert.equal(verifiedSource(ctx.directory, firstGate.record, ctx).record.retries, 0);
+  assert.equal(choose(gateGroup).reuse, false);
+});
+
+test('a failed offline canary preserves the sealed gate pass until the gate tests fail', async t => {
+  const { ctx, choose, receipt } = await fixture(t, {
+    'scripts/gates/canaries.mjs': '',
+    'scripts/gates/device-scope-canaries.mjs': '',
+    'scripts/gates/maestro-canary.mjs': "if (process.env.FAIL_CANARY === '1') throw Error('offline canary failed');",
+    'scripts/gates/tests/hardening.test.mjs': "import { writeFileSync } from 'node:fs';\n" +
+      "writeFileSync('release/gate-started', 'yes'); throw Error('gate suite failed');",
+  });
+  const checkName = 'Commit hook on the exact tree';
+  const controls = phases.filter(phase => phase.snapshot && phase.check === checkName && phase.name !== 'first budget adoption');
+  const pass = choose(gateGroup).record;
+  async function fail(canary) {
+    const attempt = { ...ctx, env: { ...process.env, FAIL_CANARY: canary }, reuseStages: canary === '1' ? [] : undefined };
+    // The fixture launches its own node --test process, as preflight does outside a test worker.
+    delete attempt.env.NODE_TEST_CONTEXT;
+    const checks = await runPreflight(attempt, run => run({}), controls);
+    const check = checks.find(check => check.name === checkName);
+    assert.equal(check.result, 'failed');
+    const path = writePreflightReceipt(ctx.common, {
+      ...receipt, id: randomUUID(), status: 'failed', checks, reuseStages: attempt.reuseStages ?? [],
+    });
+    return JSON.parse(readFileSync(path)).checks.find(check => check.name === checkName).phases.at(-1);
+  }
+  assert.match((await fail('1')).reason, /offline canary failed/);
+  assert.equal(existsSync(join(ctx.root, 'release/gate-started')), false);
+  assert.equal(choose(gateGroup).reuse, true);
+  assert.equal(verifiedSource(ctx.directory, pass, ctx).record.retries, 0);
+  assert.match((await fail('0')).reason, /gate suite failed/);
+  assert.equal(existsSync(join(ctx.root, 'release/gate-started')), true);
+  assert.equal(choose(gateGroup).record.retries, 1);
+  assert.equal(choose(gateGroup).reuse, false);
+  assert.throws(() => verifiedSource(ctx.directory, pass, ctx));
+});
+
+test('the daily ticket survives only a real or unresolved start', async t => {
+  const { ctx, path, git } = await fixture(t);
+  git('branch', 'feat/enterprise-ui', ctx.commit);
+  git('remote', 'add', 'origin', '.');
+  const bin = join(ctx.common, 'only-git');
+  mkdirSync(bin);
+  symlinkSync(execFileSync('which', ['git'], { encoding: 'utf8' }).trim(), join(bin, 'git'));
+  const url = new URL('../reuse/full-run.mjs', import.meta.url).href;
+  const command = ['--input-type=module', '-e', 'import {manualFullRun} from ' + JSON.stringify(url) + '; await manualFullRun()'];
+  const daily = () => spawnSync(process.execPath, command, { cwd: ctx.root, encoding: 'utf8', env: { ...process.env, PATH: bin } });
+  const folder = join(ctx.directory, 'reuse-shadow', 'requests');
+  const requests = () => existsSync(folder) ? readdirSync(folder) : [];
+  const passing = readFileSync(path);
+  unlinkSync(path);
+  const missing = daily();
+  assert.notEqual(missing.status, 0);
+  assert.match(missing.stderr, /no passing preflight receipt/);
+  assert.deepEqual(requests(), []);
+  writeFileSync(path, passing);
+  const unavailable = daily();
+  assert.notEqual(unavailable.status, 0);
+  assert.match(unavailable.stderr, /ENOENT/);
+  assert.deepEqual(requests(), []);
+  mkdirSync(folder, { recursive: true });
+  const today = new Date();
+  const day = [today.getFullYear(), today.getMonth() + 1, today.getDate()].join('-');
+  const held = join(folder, day + '-' + ctx.commit + '.json');
+  writeFileSync(held, 'existing request');
+  assert.match(daily().stderr, /already started/);
+  assert.equal(readFileSync(held, 'utf8'), 'existing request');
+  const shared = join(folder, 'competing-request');
+  const claim = ['--input-type=module', '-e',
+    'import {claimDailyRun} from ' + JSON.stringify(url) + '; claimDailyRun(...process.argv.slice(1),new Date())',
+    ctx.root, ctx.common, ctx.commit, ctx.tree, shared];
+  const compete = () => promisify(execFile)(process.execPath, claim, { cwd: ctx.root });
+  const outcomes = await Promise.allSettled([compete(), compete()]);
+  assert.equal(outcomes.filter(entry => entry.status === 'fulfilled').length, 1);
+  assert.match(outcomes.find(entry => entry.status === 'rejected').reason.stderr, /EEXIST/);
+  const winner = JSON.parse(readFileSync(shared));
+  assert.deepEqual([winner.commit, winner.tree], [ctx.commit, ctx.tree]);
+  assert.equal(Number.isFinite(Date.parse(winner.started)), true);
 });

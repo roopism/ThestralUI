@@ -49,7 +49,7 @@ const viewportUnit = /^[sld]?v(?:h|w|b|i)$/i;
 const quarterTurn = { deg: 90, grad: 100, turn: 0.25 };
 function structuralDimension(prop, node, fn) {
   const value = Number(node.value), unit = node.unit.toLowerCase();
-  if (value === 100 && viewportUnit.test(unit) && /(?:width|height|size)/.test(prop)) return true;
+  if (value === 100 && viewportUnit.test(unit) && /^(?:min-|max-)?(?:width|height|block-size|inline-size)$/.test(prop)) return true;
   const orientation = prop === 'rotate' || (/^(?:transform|rotate)$/.test(prop) && /^rotate[z]?$/i.test(fn?.name ?? ''));
   return orientation && unit in quarterTurn && Number.isInteger(value / quarterTurn[unit]);
 }

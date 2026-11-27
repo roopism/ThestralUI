@@ -1,8 +1,10 @@
 import { recordScopeFailure } from '../../selection/device-observations.mjs';
+import { requirePreflight } from '../preflight-receipt.mjs';
 import { reuseRows } from './preflight.mjs';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { disableGroup, disabledGroups } from './audit.mjs';
 
@@ -109,6 +111,13 @@ function checkDailyReport(root,directory,commit,tree,fresh,path,requireOriginalR
   assert.deepEqual(readJson(path),expected,'Stored daily report differs from sealed receipt history');
 }
 
+export function claimDailyRun(root, common, commit, tree, path, started) {
+  requirePreflight(root, common, commit, commit, tree);
+  const body = JSON.stringify({ id: randomUUID(), commit, tree, started: started.toISOString() }) + '\n';
+  writeFileSync(path, body, { flag: 'wx', mode: 0o600 });
+  return body;
+}
+
 export async function manualFullRun(root = process.cwd()) {
   const { requireOriginalReceipt } = await import('./runner.mjs');
   const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
@@ -117,7 +126,8 @@ export async function manualFullRun(root = process.cwd()) {
   assert.equal(git('rev-parse', 'HEAD'), commit, 'Run the daily check from the current integration checkout');
   assert.equal(git('status', '--porcelain=v1', '--untracked-files=all'), '', 'Daily checkout must be clean');
   const tree = git('rev-parse', commit + '^{tree}');
-  const directory = join(git('rev-parse', '--path-format=absolute', '--git-common-dir'), 'uld-receipts');
+  const common = git('rev-parse', '--path-format=absolute', '--git-common-dir');
+  const directory = join(common, 'uld-receipts');
   const before = attempts(directory), oldIds = new Set(before.map(attempt => attempt.id));
   const today = new Date().toDateString();
   const previous = before.find(row => row.mode === 'qualification' && row.noReuse &&
@@ -137,11 +147,16 @@ export async function manualFullRun(root = process.cwd()) {
   const folder = join(directory,'reuse-shadow');
   const requests = join(folder,'requests');
   mkdirSync(requests,{recursive:true,mode:0o700});
+  let ticket;
+  let ticketBody;
+  let startingRefs;
+  const attemptRefs = () => git('for-each-ref', '--points-at', commit, '--format=%(refname)', 'refs/uld-archive/qualification-attempts/');
   if (!previous) {
+    startingRefs = attemptRefs();
     const started=new Date();
     const day=[started.getFullYear(),started.getMonth()+1,started.getDate()].join('-');
-    const path=join(requests,day+'-'+commit+'.json');
-    try { writeFileSync(path,JSON.stringify({commit,tree,started:started.toISOString()})+'\n',{flag:'wx',mode:0o600}); }
+    ticket=join(requests,day+'-'+commit+'.json');
+    try { ticketBody = claimDailyRun(root, common, commit, tree, ticket, started); }
     catch (error) {
       if (error.code !== 'EEXIST') throw error;
       throw Error('A daily full run already started for this commit. Inspect its retained attempts in '+directory);
@@ -150,6 +165,15 @@ export async function manualFullRun(root = process.cwd()) {
   // Qualification owns the normal simulator, timing and integration reservations.
   const run = previous ? null : spawnSync('npm', ['run', 'qualify', '--', '--no-reuse', commit], { cwd: root, stdio: 'inherit' });
   const after = attempts(directory);
+  const failedBeforeStart = run && !run.signal && (run.error
+    ? ['ENOENT', 'EACCES'].includes(run.error.code) : Number.isInteger(run.status) && run.status !== 0);
+  if (failedBeforeStart && startingRefs === attemptRefs() &&
+      !after.some(row => !oldIds.has(row.id) && row.commit === commit && row.mode === 'qualification')) {
+    assert.equal(readFileSync(ticket, 'utf8'), ticketBody, 'Daily request changed');
+    unlinkSync(ticket);
+    if (run.error) throw run.error;
+    throw Error('Qualification exited before starting the daily attempt');
+  }
   const matches = previous ? [previous] : after.filter(row => !oldIds.has(row.id) && row.base === commit && row.commit === commit &&
     row.tree === tree && row.mode === 'qualification' && row.noReuse);
   assert.equal(matches.length, 1, 'Could not identify the exact full qualification attempt');

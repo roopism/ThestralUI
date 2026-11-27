@@ -28,8 +28,8 @@ const roles = {
   group: container(['group']),
   region: container(['region']),
   // A TextInput host carries no role prop.
-  'text field': { rn: [], android: { classes: ['android.widget.EditText'] }, ios: { allow: [49, 50, 52] }, evidence: 'distinct' },
-  'search field': { rn: ['searchbox', 'search'], android: { classes: ['android.widget.EditText'] }, ios: { allow: [45, 49] }, evidence: 'distinct' },
+  'text field': { rn: [], android: { classes: ['android.widget.EditText'] }, ios: { allow: [49, 50, 52], requireType: true }, evidence: 'distinct' },
+  'search field': { rn: ['searchbox', 'search'], android: { classes: ['android.widget.EditText'] }, ios: { allow: [45, 49], requireType: true }, evidence: 'distinct' },
   option: container(['option'], { activate: true }),
   radio: { rn: ['radio'], android: { classes: ['android.widget.RadioButton'] },
     ios: { value: /^radio button(?:, |$)/, allow: [10] }, activate: true, evidence: 'distinct' },
@@ -121,6 +121,8 @@ function verifyNativeRole(tree, platform, { role, name }) {
       (iosControlTypes[node.elementType] ?? node.elementType) + ' is not ' + iosControlTypes[spec.ios.elementType]);
   else assert.ok(!Object.hasOwn(iosControlTypes, node.elementType) || own.includes(node.elementType),
     id + ' native ' + role + ' role: iOS element type ' + iosControlTypes[node.elementType] + ' belongs to another role');
+  if (spec.ios.requireType) assert.ok(own.includes(node.elementType),
+    id + ' native ' + role + ' role requires an editable XCTest element type, got ' + node.elementType);
   if (spec.ios.value) assert.match(node.value ?? '', spec.ios.value, id + ' native ' + role + ' role and state');
   return { platform, role, evidence: spec.ios.elementType !== undefined || spec.ios.value ? 'distinct' : spec.evidence,
     elementType: node.elementType };

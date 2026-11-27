@@ -84,6 +84,8 @@ test('structural circle, full viewport and quarter-turn values pass while design
     ['block-size', '100vh'], ['min-block-size', '100svh'], ['transform', 'rotate(90deg)'], ['transform', 'rotate(-180deg)'],
     ['transform', 'rotate(1turn)'], ['rotate', '270deg']])
     assert.equal(literalIssue(property, value, options), false, property + ': ' + value);
+  for (const [property, value] of [['font-size', '100vh'], ['line-height', '100dvh'], ['border-width', '100vw']])
+    assert.equal(literalIssue(property, value, options), true, property + ': ' + value);
   for (const [property, value] of [['border-radius', '12px'], ['border-radius', '49%'], ['border-radius', '100vmax'],
     ['color', '#fff'], ['min-height', '90vh'], ['margin-block', '100vh'], ['transform', 'rotate(15deg)'],
     ['transform', 'translateX(12px)'], ['transform', 'rotate(90deg) translateX(2px)'], ['transform', 'skew(90deg)'], ['padding', '50%']])

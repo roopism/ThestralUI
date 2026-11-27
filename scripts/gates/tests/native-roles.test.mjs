@@ -171,3 +171,11 @@ test('the renderer reader keeps its original activation vocabulary while the dev
     rmSync(checkout, { recursive: true, force: true });
   }
 });
+
+test('iOS text fields require an editable XCTest element type', () => {
+  for (const [role, allowed] of [['text field', [49, 50, 52]], ['search field', [45, 49]]]) {
+    const run = type => runScenario([visible(role, 'Name')], { ios: iosTree(element(role, 'Name', type)) });
+    for (const type of allowed) assert.deepEqual(run(type).ids, ['probe.roles']);
+    for (const type of [48, 1, 9]) assert.throws(() => run(type), /native .*field role/);
+  }
+});
