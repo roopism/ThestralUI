@@ -41,7 +41,7 @@ if (mode !== 'hook') git('fetch', '--no-tags', 'origin',
   '+refs/heads/feat/enterprise-ui:refs/remotes/origin/feat/enterprise-ui');
 const base = mode === 'hook' ? git('rev-parse', 'HEAD') : git('rev-parse', '--verify', 'refs/remotes/origin/feat/enterprise-ui^{commit}');
 if (mode !== 'hook') git('merge-base', '--is-ancestor', base, commit);
-// Refuse before any attempt is recorded. A failed attempt bars landing the tree.
+// Verify preflight before recording a new attempt.
 const candidateTree = git('rev-parse', commit + '^{tree}');
 if (trainId) assert.equal(mode, 'qualification');
 const preflight = trainId ? (await import('./gates/train-plan.mjs')).requireTrainPreflight(root, common, base, commit, candidateTree, trainId) :

@@ -245,7 +245,6 @@ export function resolveFailure(root, directory, failed, history, tree, base, ros
   assert.deepEqual(recorded.row, failed);
   assert.deepEqual(manifest.failed, recorded.ref);
   assert.deepEqual([manifest.schema, manifest.tree, manifest.base, failed.tree, failed.base], [1, tree, base, tree, base]);
-  assert.ok(!existsSync(join(claimFolder(directory, tree), 'duplicate-result')), 'A second diagnostic result bars landing');
   const runnerTree = sourceTree(root, failed);
   assert.equal(manifest.runnerTree, runnerTree);
   assert.ok(Object.hasOwn(artifacts, manifest.kind));

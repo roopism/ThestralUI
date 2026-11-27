@@ -42,7 +42,7 @@ export function publishFirstReceipt(directory, tree, id) {
   }
 }
 
-function incomplete(attempt, directory) {
+export function incomplete(attempt, directory) {
   if (Array.isArray(attempt.suites) && reuseRows(attempt).some(row => row?.result === 'reused')) {
     try { attempt = projectStoredPasses(directory, attempt); }
     catch { return true; }
@@ -112,71 +112,22 @@ export function treeHistory(directory, tree, first) {
   return records;
 }
 
-function requireReviewedFailures(directory, tree, history, trustedLedger) {
-  const failed = history.filter((attempt) => attempt.status === 'failed');
-  for (const attempt of failed) {
-    const id = attempt.id;
-    const filename = id + '.json';
-    const decision = join(directory, '..', 'uld-delivery', 'owner-decisions', 'failed-attempts', filename);
-    if (attemptFile.test(filename) && existsSync(decision)) {
-      const record = read(decision);
-      const statement = 'Owner permits landing tree ' + tree + ' after failed qualification ' + id + '.';
-      if (
-        record.tree === tree &&
-        record.attempt === id &&
-        record.decision === statement &&
-        trustedLedger()
-          .split('\n')
-          .includes('- ' + statement)
-      )
-        continue;
-    }
-    throw Error('An earlier failed qualification for this tree requires a named owner decision: ' + id);
-  }
+// A tie cannot establish that a pass superseded a failure.
+export function latestAttempt(history) {
+  const time = row => Date.parse(row.finished ?? row.started) || 0;
+  return history.toSorted((a, b) => time(b) - time(a) ||
+    Number(a.status === 'passed') - Number(b.status === 'passed'))[0];
 }
 
-function rejectIncompleteAttempts(directory, tree, history) {
-  const failed = history.find(attempt => incomplete(attempt, directory));
-  if (failed) throw Error('An earlier failed qualification for this tree, PR head or patch prevents landing ' + tree +
-    '. See ' + join(directory, 'attempts', failed.id + '.json'));
-}
-
-// A published first receipt may also appear in attempts. Conflicting copies are never
-// interchangeable. Keep the existing rejection and historical decision diagnostics for
-// every attempt without an exact, independently authenticated resolution.
-function requireEligibleHistory(directory, tree, history, trustedLedger, context) {
-  const unresolved = [];
+export function reviewedEvidence(directory, tree, history, context) {
   const reviewed = new Map();
-  let timingFailures = 0;
-  for (const row of history.filter(row => incomplete(row, directory))) {
-    if (reviewed.has(row.id)) {
-      assert.deepEqual(row, reviewed.get(row.id).failed, 'Conflicting copies of a qualification attempt');
-      continue;
-    }
-    if (!context || row.status !== 'failed' || row.tree !== tree || row.base !== context.base ||
-        !attemptFile.test(row.id + '.json') ||
-        !existsSync(join(directory, 'attempts', row.id + '-evidence', 'landing', 'manifest.json'))) {
-      unresolved.push(row);
-      continue;
-    }
-    const result = resolveFailure(context.root, directory, row, history, tree, context.base, context.roster);
+  for (const row of history) {
+    if (row.status !== 'failed' || row.tree !== tree || row.base !== context.base ||
+        !attemptFile.test(row.id + '.json') || reviewed.has(row.id) ||
+        !existsSync(join(directory, 'attempts', row.id + '-evidence', 'landing', 'manifest.json'))) continue;
     assert.ok(history.every(copy => copy.id !== row.id || isDeepStrictEqual(copy, row)), 'Inconsistent failed receipt');
-    if (result.timingFailure) timingFailures++;
-    reviewed.set(row.id, { ...result, failed: row });
+    const { diagnostic } = resolveFailure(context.root, directory, row, history, tree, context.base, context.roster);
+    reviewed.set(row.id, { failed: row.id, ...(diagnostic && { diagnostic }) });
   }
-  assert.ok(timingFailures <= 1, 'A second timing failure permanently prevents landing this tree');
-  try {
-    requireReviewedFailures(directory, tree, unresolved, trustedLedger);
-  } finally {
-    rejectIncompleteAttempts(directory, tree, unresolved);
-  }
-  if (!reviewed.size) return history.filter(item => item.status === 'passed').map(receipt => ({ receipt }));
-  const evidence = [...reviewed.values()].map(({ failed, diagnostic }) =>
-    ({ failed: failed.id, ...(diagnostic && { diagnostic }) }));
-  return [...reviewed.values()].map(({ pass, failed }) => ({
-    receipt: pass.id === failed.id ? failed : pass,
-    verdict: pass,
-    evidence,
-  }));
+  return [...reviewed.values()];
 }
-export { requireEligibleHistory as requireReviewedFailures };

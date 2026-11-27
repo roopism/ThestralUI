@@ -165,7 +165,7 @@ export async function createTrain(context, prs) {
   if (context.preparePlan) train.plan = await context.preparePlan(stack, train.id);
   let receipt = await context.previous(train);
   let failure;
-  if (!receipt) {
+  if (!receipt || receipt.status === 'failed') {
     try { await context.qualify(train); }
     catch (error) { failure = error; }
     receipt = await context.previous(train);

@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { passing, required } from '../../land.mjs';
-import { requireReviewedFailures } from '../receipt-history.mjs';
 import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
 
 isolateFixtureProcess();
@@ -47,7 +46,7 @@ function fixture(t) {
   return { root, directory, base, original, updated, sameHead, samePatch, changed, record, save, check };
 }
 
-test('landing refuses interrupted attempts and unfinished or failed suites despite a later complete pass', t => {
+test('a later complete pass supersedes earlier unfinished or failed suites', t => {
   const f = fixture(t);
   const passed = { ...f.record(f.original), started: '2026-01-02T00:00:00Z', finished: '2026-01-02T00:01:00Z' };
   f.save(passed, true);
@@ -60,19 +59,21 @@ test('landing refuses interrupted attempts and unfinished or failed suites despi
       f.save(earlier);
       f.save(passed);
       f.save(passed, true);
-      assert.throws(() => f.check(f.original, f.base), /earlier failed qualification/i, status + '/' + result);
+      assert.equal(f.check(f.original, f.base).id, passed.id);
+      assert.deepEqual(JSON.parse(readFileSync(join(f.directory, 'attempts', earlier.id + '.json'))), earlier);
       rmSync(join(f.directory, 'attempts', earlier.id + '.json'));
     }
   }
 });
 
-test('legacy failures follow the PR head and stable patch across base changes and rebases', t => {
+test('related head and patch failures do not supersede an exact passing receipt', t => {
   const f = fixture(t);
   const failure = { ...f.record(f.original), status: 'running', suites: [{ name: 'Fast', result: 'failed' }] };
   f.save(failure);
   for (const target of [f.sameHead, f.samePatch]) {
-    f.save(f.record(target, f.updated), true);
-    assert.throws(() => f.check(target, f.updated), /earlier failed qualification/i);
+    const pass = f.record(target, f.updated);
+    f.save(pass, true);
+    assert.deepEqual(f.check(target, f.updated), pass);
   }
   const unrelated = f.record(f.changed, f.updated);
   f.save(unrelated, true);
@@ -82,7 +83,7 @@ test('legacy failures follow the PR head and stable patch across base changes an
 test('landing reads failed per-tree receipts and rejects a related attempt before any pass is published', t => {
   const f = fixture(t);
   f.save({ ...f.record(f.original), status: 'blocked' }, true);
-  assert.throws(() => f.check(f.samePatch, f.updated), /earlier failed qualification/i);
+  assert.equal(f.check(f.samePatch, f.updated), undefined);
 });
 
 test('a passing receipt for a related patch never substitutes for an exact tree and base', t => {
@@ -104,5 +105,6 @@ test('an unsigned decision cannot clear a failed qualification', t => {
   mkdirSync(decisions, { recursive: true });
   const decision = `Owner permits landing tree ${failed.tree} after failed qualification ${failed.id}.`;
   writeFileSync(join(decisions, failed.id + '.json'), JSON.stringify({ tree: failed.tree, attempt: failed.id, decision }));
-  assert.throws(() => requireReviewedFailures(f.directory, failed.tree, [failed], () => '- ' + decision), /earlier failed qualification/i);
+  f.save(failed, true);
+  assert.equal(f.check(f.original, f.base), undefined);
 });

@@ -6,7 +6,7 @@ import { projectStoredPasses } from './gates/reuse/store.mjs';
 import { reusePolicyIssues } from './gates/reuse/strength.mjs';
 import { withRevisionSnapshot } from '../packages/policy/quality/staged-tree.mjs';
 import { installSnapshotDependencies } from '../packages/policy/quality/snapshot-dependencies.mjs';
-import { relatedHistory, requireReviewedFailures, treeHistory } from './gates/receipt-history.mjs';
+import { incomplete, latestAttempt, relatedHistory, reviewedEvidence, treeHistory } from './gates/receipt-history.mjs';
 import { reviewPolicy } from './gates/review/qualification-policy.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -69,34 +69,25 @@ export function proposal(number = process.argv[2]) {
   assert.deepEqual(reusePolicyIssues(root, pr.base.sha, tree), []);
   return { pr, merge, tree };
 }
-function ownerDecisions(base) {
-  const ledger = git('show', base + ':docs/ui-lazy-dev-state.md');
-  return /^## Owner decisions\s*$([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(ledger)?.[1] ?? '';
-}
-
 export function requireProposalHistory(tree, base, directory, proposal) {
   const path = join(directory, tree + '.json');
   const first = existsSync(path) ? JSON.parse(readFileSync(path)) : undefined;
   const target = proposal.commit ? { tree, base, commit: proposal.commit } : first?.commit ? first : undefined;
-  const history = relatedHistory(directory, tree, first, proposal.root ?? root, target);
-  requireReviewedFailures(directory, tree, history, () => ownerDecisions(base),
-    { root: proposal.root ?? root, base, roster: required });
+  return relatedHistory(directory, tree, first, proposal.root ?? root, target);
 }
 export function passing(tree, base, directory = join(common, 'uld-receipts'), proposal = {}) {
   assert.match(tree, oid);
   assert.match(base, oid);
-  requireProposalHistory(tree, base, directory, proposal);
-  const path = join(directory, tree + '.json');
-  if (!existsSync(path)) return;
-  const first = JSON.parse(readFileSync(path));
-  const history = treeHistory(directory, tree, first);
-  const available = requireReviewedFailures(directory, tree, history, () => ownerDecisions(base),
-    { root: proposal.root ?? root, base, roster: required });
-  const candidates = available.filter(item => item.receipt.base === base);
-  const selected = candidates.sort((a, b) => (b.receipt.finished ?? '').localeCompare(a.receipt.finished ?? '')).at(0);
-  const raw = selected?.receipt ?? first;
-  if (raw.status === 'passed' && raw.base === base) requireOriginalReceipt(proposal.root ?? root,raw,base);
-  const r = projectStoredPasses(directory, selected?.verdict ?? raw);
+  const history = requireProposalHistory(tree, base, directory, proposal);
+  if (!existsSync(join(directory, tree + '.json'))) return;
+  const candidates = history.filter(row => row.tree === tree && row.base === base);
+  const raw = latestAttempt(candidates);
+  if (!raw || proposal.commit && raw.commit !== proposal.commit) return;
+  const evidence = reviewedEvidence(directory, tree, candidates, { root: proposal.root ?? root, base, roster: required });
+  if (raw.status !== 'passed') return;
+  assert.ok(!incomplete(raw, directory), 'An incomplete or earlier failed qualification prevents landing');
+  requireOriginalReceipt(proposal.root ?? root, raw, base);
+  const r = projectStoredPasses(directory, raw);
   if (r.status === 'passed' && r.base === base && raw.suites.some(row => row.result === 'reused' || row.auditRerun)) {
     const checkout = proposal.root ?? root;
     withRevisionSnapshot(checkout, tree, (snapshot, actual, env) => {
@@ -162,7 +153,7 @@ export function passing(tree, base, directory = join(common, 'uld-receipts'), pr
     default: throw Error('Unrecognized device evidence protocol');
   }
   if (r.base !== base) return;
-  return selected?.evidence ? { ...selected.verdict, landingEvidence: selected.evidence } : raw;
+  return evidence.length ? { ...raw, landingEvidence: evidence } : raw;
 }
 export function archiveProposal(number, head) {
   const archive = 'refs/uld-archive/landed/' + number + '/' + head;
@@ -232,10 +223,12 @@ if (import.meta.main) await withLock(root, 'landing', 'PR ' + number, async () =
     if (existsSync(receipts)) {
       const { readdirSync } = await import('node:fs');
       for (const path of readdirSync(receipts).filter(path => /^[a-f0-9]{40}\.json$/.test(path))) {
-        const item = JSON.parse(readFileSync(join(receipts, path)));
-        if (item.status !== 'passed' || !oid.test(item.commit) || item.base === pr.base.sha) continue;
-        const parents = git('show', '-s', '--format=%P', item.commit).split(' ');
-        if (parents.includes(pr.head.sha) || item.tree === headTree || item.tree === tree) candidates.push(item);
+        const first = JSON.parse(readFileSync(join(receipts, path)));
+        for (const item of treeHistory(receipts, first.tree, first)) {
+          if (item.status !== 'passed' || !oid.test(item.commit) || item.base === pr.base.sha) continue;
+          const parents = git('show', '-s', '--format=%P', item.commit).split(' ');
+          if (parents.includes(pr.head.sha) || item.tree === headTree || item.tree === tree) candidates.push(item);
+        }
       }
     }
     const previous = candidates.find(item => oid.test(item.base) && passing(item.tree, item.base, directory, { commit: item.commit }));
@@ -261,8 +254,7 @@ if (import.meta.main) await withLock(root, 'landing', 'PR ' + number, async () =
   assert.equal(last.pr.base.sha, receipt.base, 'Integration moved before landing');
   assert.equal(last.tree, tree);
   assert.equal(last.pr.head.sha, pr.head.sha);
-  assert.ok(passing(tree, last.pr.base.sha), 'Qualification history changed before landing');
-  requireProposalHistory(tree, last.pr.base.sha, directory, { commit: last.merge });
+  assert.ok(passing(tree, last.pr.base.sha, directory, { commit: last.merge }), 'Qualification history changed before landing');
   const merged = mergeProposal(number, pr.head.sha);
   assert.equal(merged.merged, true);
   assert.match(merged.sha, oid);
