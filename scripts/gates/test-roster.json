@@ -4,6 +4,7 @@
   "scripts/gates/tests/android-probe-integrity.test.mjs | Android refuses a candidate timing probe with rescaled durations before building",
   "scripts/gates/tests/android-probe-integrity.test.mjs | Android refuses a shorter scroll fixture before building",
   "scripts/gates/tests/android-probe-integrity.test.mjs | Android refuses changed probe bytes even if a candidate supplies its own pin",
+  "scripts/gates/tests/android-probe-integrity.test.mjs | Android rejects a substituted alert reader before host reuse and compilation",
   "scripts/gates/tests/android-split.test.mjs | Android functional and timing phases preserve the standalone warm-up order and refuse hardware serials",
   "scripts/gates/tests/android-split.test.mjs | Android functional evidence rejects missing journeys, scenarios, profiles and altered records",
   "scripts/gates/tests/android-split.test.mjs | Android joins both functional profiles only with fresh timing for the same APK and attempt",

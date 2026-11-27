@@ -6,6 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 import test from 'node:test';
 import fixtures from '../../../catalog/native/scenarios/fixtures.cjs';
 import { runNativeScenarios } from '../../../tests/simulator/scenarios.mjs';
+import { iosReviewBounds } from '../../../tests/simulator/button-pixels.mjs';
 
 test('the pending Button has a separate device journey with two physical presses 80 ms apart', () => {
   const resets = [];
@@ -106,8 +107,19 @@ test('phone receipts keep the exact dark Button PNG beside its replay inputs aft
   for (const [platform, profile] of [['iphone', ''], ['android', 'standard'], ['android', 'low-end']]) {
     const root = join(scratch, 'snapshot');
     const step = join(profile, 'maestro-session-example', '2');
+    const hierarchyStep = join(profile, 'maestro-session-example', '1');
+    const hierarchy = JSON.stringify({ children: [
+      { attributes: { 'resource-id': 'workspace-save', accessibilityText: 'Save', bounds: '[0,0][2,2]' } },
+      { attributes: { 'resource-id': 'workspace-review', accessibilityText: 'Review changes', bounds: '[3,3][357,66]' } },
+    ] });
+    const rect = platform === 'iphone' ? iosReviewBounds(JSON.parse(hierarchy)) : { x: 3, y: 3, right: 357, bottom: 66 };
+    if (platform === 'iphone') {
+      mkdirSync(join(root, hierarchyStep), { recursive: true });
+      writeFileSync(join(root, hierarchyStep, 'request.json'), JSON.stringify({ op: 'hierarchy' }));
+      writeFileSync(join(root, hierarchyStep, 'hierarchy.json'), hierarchy);
+    }
     const inputs = {
-      'request.json': JSON.stringify({ op: 'button-pixels', rect: { x: 3, y: 3, right: 357, bottom: 66 }, fill: '#bde8be', label: '#18211d' }),
+      'request.json': JSON.stringify({ op: 'button-pixels', rect, fill: '#bde8be', label: '#18211d' }),
       'counts.json': JSON.stringify({ pixels: 200718, fill: 171032, label: 24743, gridWidth: 360, gridHeight: 69 }),
       'dark-button.png': image,
     };
@@ -117,6 +129,12 @@ test('phone receipts keep the exact dark Button PNG beside its replay inputs aft
     rmSync(root, { recursive: true });
     for (const [file, data] of Object.entries(inputs)) {
       assert.deepEqual(readFileSync(join(directory, 'attempts/trial-evidence', platform, step, file)), Buffer.from(data));
+    }
+    if (platform === 'iphone') {
+      const receipt = join(directory, 'attempts/trial-evidence', platform);
+      const retained = readFileSync(join(receipt, hierarchyStep, 'hierarchy.json'), 'utf8');
+      assert.equal(retained, hierarchy);
+      assert.deepEqual(iosReviewBounds(JSON.parse(retained)), JSON.parse(readFileSync(join(receipt, step, 'request.json'))).rect);
     }
   }
 });

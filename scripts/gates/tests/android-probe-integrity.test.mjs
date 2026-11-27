@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { preparePackedApk } from '../../../tests/android/host.mjs';
+import { androidHostKey, buildAndroidHost } from '../../../scripts/build-cache/device-host.mjs';
 import { verifiedAndroidProbes } from '../../../tests/android/probe-integrity.mjs';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -22,6 +23,22 @@ function candidate(t) {
   assert.equal(resolve(verifiedAndroidProbes(dir)), probes);
   return dir;
 }
+
+test('Android rejects a substituted alert reader before host reuse and compilation', t => {
+  const dir = candidate(t);
+  const reader = join(dir, 'tests/android/MainActivity.kt');
+  const original = readFileSync(join(probes, 'MainActivity.kt'), 'utf8');
+  const forged = original.replace('AccessibilityNodeInfoCompat.wrap(node).roleDescription?.toString()', '"Alert"');
+  assert.notEqual(forged, original);
+  const android = { sdk: dir, env: { JAVA_HOME: dir } };
+  const abi = 'arm64-v8a';
+  const key = () => androidHostKey(dir, [], android, abi, probes);
+  writeFileSync(reader, original);
+  assert.match(key(), /^[a-f0-9]{64}$/);
+  writeFileSync(reader, forged);
+  assert.throws(key, /Android alert reader mismatch/);
+  assert.throws(() => buildAndroidHost(dir, dir, { archives: [], android, abi, probes }), /Android alert reader mismatch/);
+});
 
 test('Android refuses a candidate timing probe with rescaled durations before building', async t => {
   const dir = candidate(t);

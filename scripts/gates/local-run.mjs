@@ -158,7 +158,7 @@ async function runDevice(script, reports, platform, phase, env = process.env) {
     receipt.devices[platform] = platform === 'iphone' ? versions[0] ?? null : versions;
     const patterns = ['final-budget-failure.json', 'device.json', '*/device.json', 'maestro-session-*/ready.json', '*/maestro-session-*/ready.json',
       '{maestro-session-*,*/maestro-session-*}/*/{request.json,reply.json,suite.json,junit.xml,nodes.xml,roles.json,counts.json,elements.json,dark-button.png}',
-      'dark-button.json', '*/dark-button.json', '*/alert-roles-*.txt',
+      'maestro-session-*/*/hierarchy.json', 'dark-button.json', '*/dark-button.json', '*/alert-roles-*.txt',
       '*/timing-source.json', '*/timing-admission.json', '*/timing-diagnostic/**/*.txt',
       '*/timing-diagnostic/*.json', '*/timing-diagnostic-error.txt', '*/frame-trial-*/*.txt', '*/frame-measurements.json', '*/motion-target.json', '*/ripple.json'];
     for (const file of globSync(patterns, { cwd: root })) {

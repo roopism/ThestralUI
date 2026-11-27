@@ -105,7 +105,15 @@ export function iosHostKey(root, archives, { runtime, pods }) {
   });
 }
 
+function verifiedAlertReader(root) {
+  const path = 'tests/android/MainActivity.kt';
+  const trusted = readFileSync(new URL('../../' + path, import.meta.url));
+  assert.ok(trusted.equals(readFileSync(join(root, path))), 'Android alert reader mismatch');
+  return trusted;
+}
+
 export function androidHostKey(root, archives, android, abi, probes) {
+  const alertReader = verifiedAlertReader(root);
   const list = (folder) => {
     const path = join(android.sdk, folder);
     return existsSync(path) ? readdirSync(path).sort() : [];
@@ -126,7 +134,11 @@ export function androidHostKey(root, archives, android, abi, probes) {
   ];
   return nativeKey({
     platform: 'android',
-    files: { ...fileInputs(root, [...sharedFiles, 'tests/android/MainActivity.kt']), calibratedFrameActivity: digest(readFileSync(join(probes, 'FrameActivity.kt'))) },
+    files: {
+      ...fileInputs(root, sharedFiles),
+      trustedAlertReader: digest(alertReader),
+      calibratedFrameActivity: digest(readFileSync(join(probes, 'FrameActivity.kt'))),
+    },
     tools,
     archives: archives.map((archive) => archiveNativeInputs(archive.path)),
   });
@@ -369,6 +381,7 @@ export function stageAndroidJavaScript(root, host, probes) {
 }
 
 export function buildAndroidHost(root, host, { archives, android, abi, probes }) {
+  const alertReader = verifiedAlertReader(root);
   const fixture = join(root, hostFixture);
   for (const file of ['package.json', 'package-lock.json']) cpSync(join(fixture, file), join(host, file));
   const env = { ...android.env, NODE_BINARY: process.execPath };
@@ -378,7 +391,7 @@ export function buildAndroidHost(root, host, { archives, android, abi, probes })
   for (const name of ['app.json', 'babel.config.js', 'metro.config.js']) cpSync(join(template, name), join(host, name));
   installArchives(host, archives);
   stageAndroidJavaScript(root, host, probes);
-  cpSync(join(root, 'tests/android/MainActivity.kt'), join(host, 'android/app/src/main/java/com/helloworld/MainActivity.kt'));
+  writeFileSync(join(host, 'android/app/src/main/java/com/helloworld/MainActivity.kt'), alertReader);
   cpSync(join(probes, 'FrameActivity.kt'), join(host, 'android/app/src/main/java/com/helloworld/FrameActivity.kt'));
   const manifest = join(host, 'android/app/src/main/AndroidManifest.xml');
   const xml = readFileSync(manifest, 'utf8');
