@@ -61,11 +61,10 @@ export function WorkQueue() {
 
 export function EmptyQueue() {
   const [unassigned, setUnassigned] = useState(false);
-  const [state, setState] = useState<DataTableState>({ query: '', sort: null, page: 0 });
   const visible = unassigned ? initialWork.filter(ticket => ticket.owner === '') : initialWork;
   return <ScenarioSurface>
     <Button label="Show unassigned" testID="scenario.button.Show unassigned" onPress={() => setUnassigned(true)} />
-    <DataTable label="Assigned work" rows={visible} columns={names} server={{state,totalRows:visible.length,onStateChange:setState}}
+    <DataTable label="Assigned work" rows={visible} columns={names}
       getRowLabel={name} getPartTestID={scenarioPart} />
   </ScenarioSurface>;
 }
