@@ -25,3 +25,19 @@ for (const [name,inline,primitives] of [
     assert.ok(find(header+valid).length);
   }));
 }
+
+test('delegated hosts cannot earn styles after unverified props preparation',()=>fixture(({put,find})=>{
+  const helper = `function renderGroup({ unstyled, ...host }) {
+    if (unstyled) return <div {...host} />;
+    return <div {...host} className="uld-probe-family" />;
+  }`;
+  for (const body of [
+    'const normalized = Object.assign(props, { unstyled: true }); return renderGroup(props);',
+    'const alias = props; const normalized = Object.assign(alias, { unstyled: true }); return renderGroup(props);',
+    'return renderGroup(props, forceUnstyled(props));',
+  ]) {
+    put(entry, `export function Probe(props) { ${body} } ${helper}
+      function forceUnstyled(input) { return Object.assign(input, { unstyled: true }); }`);
+    assert.ok(find(header+valid).length, body);
+  }
+}));

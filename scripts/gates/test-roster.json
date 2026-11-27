@@ -18,6 +18,7 @@
   "scripts/gates/tests/family-fallback.test.mjs | Inline drops className prevents a delegated fallback",
   "scripts/gates/tests/family-fallback.test.mjs | an always-false content predicate cannot vouch for a private host",
   "scripts/gates/tests/family-fallback.test.mjs | class composer drops its extra argument prevents a delegated fallback",
+  "scripts/gates/tests/family-fallback.test.mjs | delegated hosts cannot earn styles after unverified props preparation",
   "scripts/gates/tests/family-fallback.test.mjs | layout drops className prevents a delegated fallback",
   "scripts/gates/tests/family-fallback.test.mjs | missing Inline implementation prevents a delegated fallback",
   "scripts/gates/tests/hardening.test.mjs | a definitely dead local holder releases a new reservation immediately",

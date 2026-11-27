@@ -142,7 +142,7 @@ function contentPredicate(guard, props, checker) {
 // same module. Only follow a direct call with the original props. Any other use
 // of the callee name (including shadowing or reassignment) makes it ambiguous.
 function returnedHost(binding, root) {
-  if (!ts.isFunctionDeclaration(binding) || binding.asteriskToken || !binding.body) return;
+  if (!ts.isFunctionDeclaration(binding) || binding.asteriskToken || !binding.body || binding.parameters.length !== 1) return;
   const statements = binding.body.statements;
   const last = statements.at(-1);
   if (!last || !ts.isReturnStatement(last) || !statements.slice(0,-1).every(ts.isVariableStatement)) return;
@@ -168,10 +168,35 @@ function returnedHost(binding, root) {
     return ts.forEachChild(node, writes);
   }
   if (writes(binding) || writes(helper)) return;
+  // The reviewed Button Group preparer reads options and returns host attributes.
+  // An opaque initializer or extra argument can mutate props before renderGroup runs.
+  const prepared = new Set();
+  let preparer;
+  function preparedArgument(expr) {
+    if (ts.isIdentifier(expr)) return prepared.has(checker.getSymbolAtLocation(expr));
+    if (!ts.isCallExpression(expr) || expr.questionDotToken || !ts.isIdentifier(expr.expression) ||
+        expr.arguments.length !== 1 || !ts.isIdentifier(expr.arguments[0]) ||
+        checker.getSymbolAtLocation(expr.arguments[0])?.valueDeclaration !== binding.parameters[0]) return false;
+    const fn = checker.getSymbolAtLocation(expr.expression)?.valueDeclaration;
+    if (!fn || !ts.isFunctionDeclaration(fn) || fn.parent !== file || createHash('sha256').update(fn.getText()).digest('hex') !==
+        '18ef9593a3c0b0bbcc399f96334d67ceedbb6d939586c8c1c45cf52ce88820a9') return false;
+    preparer = fn;
+    return true;
+  }
+  for (const statement of statements.slice(0, -1)) {
+    if (!(statement.declarationList.flags & ts.NodeFlags.Const)) return;
+    for (const decl of statement.declarationList.declarations) {
+      if (!ts.isIdentifier(decl.name) || !decl.initializer || !preparedArgument(decl.initializer)) return;
+      prepared.add(checker.getSymbolAtLocation(decl.name));
+    }
+  }
+  if (!call.arguments.slice(1).every(preparedArgument)) return;
   const predicate = guarded && contentPredicate(resultExpr.condition, props, checker);
   if (guarded && !predicate) return;
   function ambiguous(node) {
     if (ts.isIdentifier(node)) {
+      if (preparer && node !== preparer.name && checker.getSymbolAtLocation(node)?.valueDeclaration === preparer &&
+          !(ts.isCallExpression(node.parent) && node === node.parent.expression) && !ts.isTypeQueryNode(node.parent)) return true;
       if (((node.text === name && node !== helper.name) ||
            (predicate && node.text === predicate.name.text && node !== predicate.name)) &&
           !(ts.isCallExpression(node.parent) && node === node.parent.expression)) return true;
