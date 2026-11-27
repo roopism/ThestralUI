@@ -11,7 +11,7 @@ import { requireResolvedMerge } from './gates/landing-policy.mjs';
 import { confirmedZeroUpdateRejection, createTrain, inspectTrain, landTrain, pushAtomicTrain, readTrain, requireAtomicTrainTransport, trainGit } from './gates/merge-train.mjs';
 import { archiveTrainObject } from './gates/train-plan.mjs';
 import { cleanupArchivedBranch, landOrdered, publishOrderedMembers, requireOrderedAdmission } from './gates/ordered-landing.mjs';
-import { latestAttempt, treeHistory } from './gates/receipt-history.mjs';
+import { exactAttempts, latestAttempt, treeHistory } from './gates/receipt-history.mjs';
 import { withLock } from './workers/lock.mjs';
 
 const repository = 'roopism/ThestralUI';
@@ -133,14 +133,15 @@ export function exactTrainQualification(root, directory, train, passing) {
   const file = join(directory, train.finalTree + '.json');
   const first = existsSync(file) ? JSON.parse(readFileSync(file)) : undefined;
   const history = treeHistory(directory, train.finalTree, first).filter(Boolean);
-  const latest = latestAttempt(history.filter(r => r.base === train.base));
-  if (!latest || latest.commit !== train.finalCommit) return;
+  const latest = latestAttempt(exactAttempts(history, train.finalTree, train.base, train.finalCommit), directory);
+  if (!latest) return;
   assert.ok(latest.status === 'passed' || latest.status === 'failed', 'An unfinished qualification already exists for this tree');
   if (latest.status === 'failed') return latest;
   const receipt = passing(train.finalTree, train.base, directory, { root, commit: train.finalCommit });
   assert.ok(receipt && latest.id === receipt.id, 'Canonical landing checks did not verify this exact attempt');
   const attempt = JSON.parse(readFileSync(join(directory, 'attempts', receipt.id + '.json')));
-  assert.deepEqual(receipt, attempt, 'The passing receipt differs from the original attempt');
+  const { landingEvidence, ...raw } = receipt;
+  assert.deepEqual(raw, attempt, 'The passing receipt differs from the original attempt');
   return receipt;
 }
 

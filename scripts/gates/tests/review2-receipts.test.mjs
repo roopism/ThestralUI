@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { passing, required } from '../../land.mjs';
+import { exactTrainQualification } from '../../train.mjs';
 import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
 
 isolateFixtureProcess();
@@ -88,8 +89,16 @@ test('landing reads failed per-tree receipts and rejects a related attempt befor
 
 test('a passing receipt for a related patch never substitutes for an exact tree and base', t => {
   const f = fixture(t);
-  f.save(f.record(f.original), true);
+  const pass = { ...f.record(f.original), finished: '2026-01-02T00:00:00Z' };
+  f.save(pass, true);
+  f.save(pass);
   assert.equal(f.check(f.samePatch, f.updated), undefined);
+  const otherCommit = fixtureGit(f.root, ['commit-tree', pass.tree, '-p', pass.base, '-p', pass.commit, '-m', 'another merge']);
+  f.save({ ...pass, id: randomUUID(), commit: otherCommit, status: 'failed', finished: '2026-01-03T00:00:00Z' });
+  assert.equal(f.check({ tree: pass.tree, commit: otherCommit }, f.base), undefined);
+  assert.deepEqual(f.check(f.original, f.base), pass);
+  const train = { finalTree: pass.tree, finalCommit: pass.commit, base: pass.base };
+  assert.deepEqual(exactTrainQualification(f.root, f.directory, train, passing), pass);
 });
 
 test('landing verifies recorded identity fields against the preserved Git objects', t => {

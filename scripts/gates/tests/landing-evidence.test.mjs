@@ -5,6 +5,7 @@ import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'no
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { passing, required } from '../../land.mjs';
+import { exactTrainQualification } from '../../train.mjs';
 import { evidenceManifest, finishDiagnostic, reserveDiagnostic } from '../landing-evidence.mjs';
 import { summarizeTrials } from '../../../tests/android/frame-budget.mjs';
 
@@ -203,6 +204,8 @@ test('a quiet timing diagnostic preserves the failure and still needs a full pas
   const r = f.check();
   assert.equal(r.status, 'passed');
   assert.equal(r.landingEvidence[0].diagnostic, claim.id);
+  const train = { finalTree: f.tree, finalCommit: f.commit, base: f.base };
+  assert.deepEqual(exactTrainQualification(f.root, f.directory, train, passing), r);
   assert.equal(JSON.parse(readFileSync(join(f.directory, f.tree + '.json'))).status, 'failed');
 });
 
@@ -418,4 +421,12 @@ test('a latest failed qualification blocks landing an earlier complete pass', t 
   f.save(f.pass, true);
   f.save({ ...f.fail, started: f.pass.finished, finished: iso(Date.parse(f.pass.finished) + 1) });
   assert.equal(f.check(), undefined);
+  f.save({ ...f.fail, finished: f.pass.finished });
+  assert.equal(f.check(), undefined);
+  f.save({ ...f.fail, started: undefined, finished: undefined });
+  assert.equal(f.check(), undefined);
+  f.save({ ...f.fail, finished: 'unknown' });
+  assert.throws(() => f.check(), /qualification timestamp/);
+  f.save({ ...f.fail, started: f.pass.finished, finished: f.fail.finished });
+  assert.throws(() => f.check(), /qualification time order/);
 });

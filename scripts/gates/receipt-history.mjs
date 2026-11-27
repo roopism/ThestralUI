@@ -69,7 +69,7 @@ export function relatedHistory(directory, tree, first, root, target) {
   const proposed = target && identify(target);
   function include(attempt) {
     if (attempt.tree === tree) {
-      if (proposed && !incomplete(attempt, directory)) identify(attempt);
+      if (proposed && (attempt.base === target.base || !incomplete(attempt, directory))) identify(attempt);
       records.push(attempt);
     } else if (proposed && incomplete(attempt, directory)) {
       const earlier = identify(attempt);
@@ -78,7 +78,7 @@ export function relatedHistory(directory, tree, first, root, target) {
   }
   if (first) {
     assert.equal(first.tree, tree, 'Inconsistent published qualification tree');
-    if (proposed && !incomplete(first, directory)) identify(first);
+    if (proposed && (first.base === target.base || !incomplete(first, directory))) identify(first);
   }
   if (!existsSync(directory)) return records;
   for (const name of readdirSync(directory).filter(name => /^[a-f0-9]{40}\.json$/.test(name) && name !== tree + '.json')) {
@@ -112,11 +112,39 @@ export function treeHistory(directory, tree, first) {
   return records;
 }
 
-// A tie cannot establish that a pass superseded a failure.
-export function latestAttempt(history) {
-  const time = row => Date.parse(row.finished ?? row.started) || 0;
-  return history.toSorted((a, b) => time(b) - time(a) ||
-    Number(a.status === 'passed') - Number(b.status === 'passed'))[0];
+export function exactAttempts(history, tree, base, commit) {
+  const copies = new Map();
+  return history.filter(row => {
+    if (row.id && copies.has(row.id)) {
+      assert.deepEqual(row, copies.get(row.id), 'Conflicting copies of a qualification attempt');
+      return false;
+    }
+    copies.set(row.id, row);
+    if (row.tree !== tree || row.base !== base) return false;
+    if (commit === undefined) return true;
+    assert.match(row.commit, oid, 'Missing qualification commit');
+    return row.commit === commit;
+  });
+}
+
+export function latestAttempt(history, directory) {
+  function timestamp(value) {
+    if (value === undefined) return;
+    const time = Date.parse(value);
+    assert.ok(typeof value === 'string' && Number.isFinite(time), 'Invalid qualification timestamp');
+    return time;
+  }
+  let latest;
+  for (const row of history) {
+    const started = timestamp(row.started), finished = timestamp(row.finished);
+    assert.ok(started === undefined || finished === undefined || started <= finished, 'Invalid qualification time order');
+    const failed = incomplete(row, directory);
+    // An undated legacy pass cannot clear a failure. An undated failure cannot be superseded.
+    const time = finished ?? started ?? (failed ? Infinity : -Infinity);
+    if (!latest || time > latest.time || time === latest.time && failed && !latest.failed)
+      latest = { row, time, failed };
+  }
+  return latest?.row;
 }
 
 export function reviewedEvidence(directory, tree, history, context) {
