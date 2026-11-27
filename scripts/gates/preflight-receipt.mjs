@@ -1,4 +1,4 @@
-import { requireOriginalReceipt } from './reuse/runner.mjs';
+import { requireOriginalReceipt, sealReceipt } from './reuse/runner.mjs';
 import { readBytes } from './reuse/store.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -34,15 +34,43 @@ export function preflightRunner(root, base, commit) {
   }
 }
 
-// Every attempt keeps its own file. Only a passing attempt becomes the tree's receipt.
-export function writePreflightReceipt(common, receipt) {
+// Only a sealed integration verdict can admit a failed preflight for evidence collection.
+export function judgeOnlyFindings(receipt) {
+  if (receipt.status !== 'failed' || receipt.reuseSchema !== 1 || receipt.runner?.source !== 'integration' ||
+      !Array.isArray(receipt.checks) || receipt.checks.length !== preflightChecks.length) return;
+  const findings = [];
+  for (const [index, check] of receipt.checks.entries()) {
+    if (check.name !== preflightChecks[index] || !Array.isArray(check.phases) || !check.phases.length) return;
+    const failed = check.phases.filter(phase => phase.result !== 'passed');
+    if (check.result !== (failed.length ? 'failed' : 'passed')) return;
+    for (const phase of failed) {
+      const judge = ['No weakening', 'Qualification policy review'].includes(check.name) && phase.name === 'integration base';
+      const parent = check.name === 'Commit hook on the exact tree' && phase.name === 'each commit against its parent';
+      if (!(judge || parent) || phase.result !== 'failed' || 'reason' in phase ||
+          !Array.isArray(phase.findings) || !phase.findings.length ||
+          !phase.findings.every(issue => typeof issue === 'string' && issue.length) ||
+          JSON.stringify(phase.issues) !== JSON.stringify(phase.findings.slice(0, 200))) return;
+      findings.push(...phase.findings);
+    }
+  }
+  return findings.length ? findings : undefined;
+}
+
+export function publishPreflightVerdict(root, common, receipt) {
+  if (receipt.reuseSchema === 1 && (receipt.status === 'passed' || judgeOnlyFindings(receipt))) sealReceipt(root, receipt);
+  // A newer refusal supersedes any earlier diagnostic admission of the same tree.
+  return writePreflightReceipt(common, receipt, true);
+}
+
+// Every attempt keeps its own file.
+export function writePreflightReceipt(common, receipt, publish = receipt.status === 'passed') {
   const directory = preflightDirectory(common);
   mkdirSync(join(directory, 'attempts'), { recursive: true });
   const body = JSON.stringify(receipt, null, 2) + '\n';
   const attempt = join(directory, 'attempts', receipt.id + '.json');
   writeFileSync(attempt + '.tmp', body, { mode: 0o600 });
   renameSync(attempt + '.tmp', attempt);
-  if (receipt.status !== 'passed') return attempt;
+  if (!publish) return attempt;
   const published = join(directory, receipt.tree + '.json');
   writeFileSync(published + '.' + process.pid, body, { mode: 0o600 });
   renameSync(published + '.' + process.pid, published);
@@ -53,7 +81,7 @@ export function preflightCommand(commit, branch) {
   return 'node scripts/verify-preflight.mjs ' + commit + ' --branch ' + (branch ?? '<proposal branch>');
 }
 
-// Qualification starts only from a passing preflight of this exact commit, tree,
+// Qualification starts only from an admissible preflight of this exact commit, tree,
 // integration base and judging script. Older integration histories predate it.
 export function requirePreflight(root, common, base, commit, tree, attemptId) {
   for (const id of [base, commit, tree]) assert.match(id, oid, 'Expected a full Git object ID');
@@ -71,12 +99,13 @@ export function requirePreflight(root, common, base, commit, tree, attemptId) {
   const receipt = JSON.parse(bytes);
   if (attemptId !== undefined) assert.equal(receipt.id, attemptId);
   if (receipt.schema !== 1 || receipt.kind !== 'preflight' || receipt.tree !== tree) refuse('the preflight receipt is malformed');
-  if (receipt.status !== 'passed') refuse('the preflight receipt did not pass');
+  const diagnostic = judgeOnlyFindings(receipt);
+  if (receipt.status !== 'passed' && !diagnostic) refuse('the preflight receipt did not pass');
   if (receipt.base !== base) refuse('integration moved from ' + receipt.base + ' to ' + base + ' after preflight');
   if (receipt.commit !== commit) refuse('preflight checked commit ' + receipt.commit + ', not ' + commit);
   if (receipt.runner?.blob !== runner.blob) refuse('preflight ran ' + receipt.runner?.blob + ' instead of the ' + runner.source + ' script ' + runner.blob);
   const names = (receipt.checks ?? []).map(check => check.name);
-  if (JSON.stringify(names) !== JSON.stringify(preflightChecks) || !receipt.checks.every(check => check.result === 'passed'))
+  if (JSON.stringify(names) !== JSON.stringify(preflightChecks) || (!diagnostic && !receipt.checks.every(check => check.result === 'passed')))
     refuse('the preflight receipt does not record every passing check');
   const adopted = execFileSync('git', ['--no-replace-objects', 'ls-tree', base, '--', 'scripts/gates/reuse/preflight.mjs'], { cwd: root }).length;
   if (adopted || receipt.reuseSchema !== undefined) {

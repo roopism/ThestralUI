@@ -20,6 +20,7 @@ import { runQualificationLanes } from './qualification-lanes.mjs';
 import { admission, observedIdentity, observationIssues, quiet, sampleHost, waitForQuiet } from './android-host-activity.mjs';
 import { publishFirstReceipt, relatedHistory } from './receipt-history.mjs';
 import { readAttempt } from './qualification-attempt.mjs';
+import { noWeakening } from './no-weakening.mjs';
 import { reviewPolicy } from './review/qualification-policy.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
@@ -88,10 +89,29 @@ const receipt = { ...initial, schema: 1, androidHostActivityPolicy:1, tree, base
     trainPreflightId: context.preflightId, trainDeviceChecks: trainDevices.checks } : {}),
   auditSeed: freshSuites ? null : randomBytes(32).toString('hex'), retries: null,
   status: 'running', vm: null, devices: {}, suites: [] };
-const timingSkip = verifiedTimingSkip(root, receipt);
-if (timingSkip) context.noReuse = true;
+const gateOnlySkip = verifiedTimingSkip(root, receipt);
+if (gateOnlySkip) context.noReuse = true;
 const steps = new Map();
-function step(name, operation, dependencies = []) {
+function step(name, operation, dependencies = [], phase) {
+  if (phase) {
+    const suite = steps.get(name);
+    const previous = suite.operation;
+    suite.operation = async entry => {
+      await previous(entry);
+      if (phase === 'required') return operation(entry);
+      try { await operation(entry); }
+      catch (error) {
+        if (!(error instanceof assert.AssertionError) || error.operator !== 'deepStrictEqual' ||
+            !isDeepStrictEqual(error.expected, []) || !Array.isArray(error.actual) || !error.actual.length ||
+            !error.actual.every(issue => typeof issue === 'string' && issue.length)) throw error;
+        (entry.findings ??= []).push(...error.actual);
+        entry.result = 'failed';
+        entry.reason = entry.findings.join('\n');
+        console.error(phase, error.actual.join('\n'));
+      }
+    };
+    return;
+  }
   const entry = { name, result: 'pending', durationMs: 0, fingerprint: null, reusedFrom: null,
     reuseReason: null, auditRerun: false, retries: 0 };
   steps.set(name, { operation, entry, dependencies });
@@ -320,11 +340,25 @@ async function auditReuse() {
 
 const trustedGate = file => fileURLToPath(new URL(file, import.meta.url));
 const tests = globSync('*.test.mjs', { cwd: trustedGate('tests/') }).sort();
-step('No weakening', async () => {
+let controlsPassed = false;
+step('No weakening', entry => {
+  if (initial.judgeFindings?.length) {
+    entry.findings = [...initial.judgeFindings];
+    entry.result = 'failed';
+    entry.reason = entry.findings.join('\n');
+  }
   requireTypedControls(root, base, tree);
+});
+step('No weakening', () => {
   assert.deepEqual(reviewPolicy(root, base, tree), []);
+}, [], 'Qualification policy');
+step('No weakening', () => {
   assert.deepEqual(reusePolicyIssues(root,base,tree),[]);
-  node(trustedGate('no-weakening.mjs'), base, tree, root);
+}, [], 'required');
+step('No weakening', () => {
+  assert.deepEqual(noWeakening(snapshot, base, tree, root), []);
+}, [], 'No weakening');
+step('No weakening', async () => {
   node(trustedGate('canaries.mjs'), tree);
   node(trustedGate('device-scope-canaries.mjs'), tree);
   node(trustedGate('maestro-canary.mjs'), '--offline');
@@ -332,14 +366,15 @@ step('No weakening', async () => {
   assert.ok(tests.includes('hardening.test.mjs'));
   await execute(gateGroup);
   assert.ok(['passed','reused'].includes(receipt.gateTests.result), receipt.gateTests.reason);
-});
+  controlsPassed = true;
+}, [], 'required');
 step(gateGroup, () => {
   assert.ok(tests.includes('hardening.test.mjs'));
   // Keep the fixed-deadline reservation controls responsive on the shared host.
   node('--test', '--test-concurrency=2', ...tests.map(file => trustedGate('tests/' + file)));
 });
 step('Fast', fast);
-step('Typed and unit rosters', typed, ['Fast', 'No weakening']);
+step('Typed and unit rosters', typed, ['Fast']);
 if (mode !== 'hook') {
   step('Browser and visual rosters', browserRosters, ['Typed and unit rosters']);
   const preflight = ['Typed and unit rosters', 'Browser and visual rosters'];
@@ -417,6 +452,7 @@ function reserveStandaloneTiming(name, run) {
   return parallelDevices ? run() : usingSimulator(name, run);
 }
 async function runParallelQualification() {
+  const timingSkip = steps.get('No weakening').entry.result === 'passed' ? gateOnlySkip : null;
   const macPerformance = 'Mac browser performance';
   const [iphone, android] = deviceNames;
   const prerequisites = steps.get(iphone).dependencies;
@@ -519,7 +555,7 @@ save();
 try {
   await execute('No weakening');
   await execute('Fast');
-  if (receipt.suites.slice(0, 2).every(row => row.result === 'passed')) {
+  if (controlsPassed && steps.get('Fast').entry.result === 'passed') {
     await runWithIntegrationReservation(mode, root, tree, async () => {
       if (mode !== 'hook') await stopVm();
       writeFileSync('.git/local-device-scope.json', JSON.stringify(scope));

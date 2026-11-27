@@ -9,7 +9,7 @@ import test from 'node:test';
 import { withRevisionSnapshot } from '../../../packages/policy/quality/staged-tree.mjs';
 import { installSnapshotDependencies } from '../../../packages/policy/quality/snapshot-dependencies.mjs';
 import {
-  codeOwners, commitHooks, commitMessages, gateIsolation, integrationNoWeakening, phases, policyReview, prepareSnapshot, rosterFiles,
+  codeOwners, commitHooks, commitMessages, gateIsolation, integrationNoWeakening, phases, policyReview, prepareSnapshot, rosterFiles, runPreflight,
 } from '../../verify-preflight.mjs';
 import { preflightChecks, preflightRunner, requirePreflight, writePreflightReceipt } from '../preflight-receipt.mjs';
 import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
@@ -225,4 +225,19 @@ test('train command adoption binds the two manifest blobs, isolated gate PR and 
     assert.throws(() => requireTypedControls(project, parent, git(['rev-parse', candidate + '^{tree}'])));
   }
   assert.equal(trainEntryAdoption(project, parent, head, Date.UTC(2026, 11, 31)), false);
+});
+
+test('per-commit judge findings allow evidence only when every other hook control passes', async () => {
+  const path = 'tests/contracts/cascade-layers.test.mjs';
+  const weakened = show(path).replace(/^\s*assert\.equal\(rule\.type,[^\n]*\n/m, '\n');
+  for (const missingLock of [false, true]) {
+    const first = plant({ [path]: weakened, ...(missingLock ? { 'package-lock.json': null } : {}) });
+    const ctx = context(plant({ [path]: show(path), 'package-lock.json': show('package-lock.json') }, { parent: first }));
+    let snapshots = 0;
+    const checks = await runPreflight(ctx, run => { snapshots++; return run({}); }, phases.map(phase => ({
+      ...phase, operation: phase.operation === commitHooks ? commitHooks : () => [],
+    })));
+    assert.equal(checks.find(row => row.name === 'Commit hook on the exact tree').result, 'failed');
+    assert.equal(snapshots, missingLock ? 0 : 1);
+  }
 });

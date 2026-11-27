@@ -46,6 +46,7 @@ const candidateTree = git('rev-parse', commit + '^{tree}');
 if (trainId) assert.equal(mode, 'qualification');
 const preflight = trainId ? (await import('./gates/train-plan.mjs')).requireTrainPreflight(root, common, base, commit, candidateTree, trainId) :
   mode === 'hook' ? undefined : requirePreflight(root, common, base, commit, candidateTree);
+if (preflight?.status === 'failed') assert.equal(mode, 'qualification', 'Release requires a passing preflight');
 if (preflight?.trainPlan) {
   assert.ok(ordered, 'Ordered qualification requires its exact train admission');
   assert.equal(preflight.trainId, trainId);
@@ -79,10 +80,18 @@ function verify(snapshot, tree, env) {
   assert.ok(existsSync(join(snapshot, runner)), 'The committed candidate must contain the local qualification pipeline');
   return withRevisionSnapshot(root, base, (trusted, _baseTree, trustedEnv) => {
     installSnapshotDependencies(trusted, join(common, 'uld-dependencies'), trustedEnv);
-    execFileSync(process.execPath, [judge, base, tree, root], { cwd: trusted, env: trustedEnv, stdio: 'inherit' });
-    const extraJudge = 'scripts/gates/review/qualification-policy.mjs';
-    if (git('ls-tree', base, '--', extraJudge))
-      execFileSync(process.execPath, [join(trusted, extraJudge), root, base, tree], { cwd: trusted, env: trustedEnv, stdio: 'inherit' });
+    const protocol = join(trusted, 'scripts/gates/preflight-judges.mjs');
+    if (mode === 'qualification' && initial && existsSync(protocol)) {
+      execFileSync(process.execPath, [protocol, root, directory, initial.id, base, commit, tree, preflight.id], {
+        cwd: trusted, env: trustedEnv, stdio: 'inherit',
+      });
+    } else {
+      if (preflight?.status === 'failed') throw Error('The integration runner requires a passing preflight');
+      execFileSync(process.execPath, [judge, base, tree, root], { cwd: trusted, env: trustedEnv, stdio: 'inherit' });
+      const extraJudge = 'scripts/gates/review/qualification-policy.mjs';
+      if (git('ls-tree', base, '--', extraJudge))
+        execFileSync(process.execPath, [join(trusted, extraJudge), root, base, tree], { cwd: trusted, env: trustedEnv, stdio: 'inherit' });
+    }
     const reuseJudge = 'scripts/gates/reuse/strength.mjs';
     if (git('ls-tree', base, '--', reuseJudge))
       execFileSync(process.execPath, [join(trusted, reuseJudge), root, base, tree], { cwd: trusted, env: trustedEnv, stdio: 'inherit' });
