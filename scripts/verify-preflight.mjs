@@ -1,5 +1,6 @@
 // Cheap checks that must pass on the exact commit before a qualification run starts.
 // Usage: node scripts/verify-preflight.mjs [<commit>] --branch <proposal branch> [--base <integration commit>]
+import { withPreflightActivity } from './workers/resource-guard.mjs';
 import { gateGroup, observePreflightStage, typedGroup } from './gates/reuse/preflight.mjs';
 import { sealReceipt } from './gates/reuse/runner.mjs';
 import assert from 'node:assert/strict';
@@ -399,4 +400,4 @@ async function main() {
   });
 }
 
-if (import.meta.main) await main();
+if (import.meta.main) await withPreflightActivity('Member preflight', main);

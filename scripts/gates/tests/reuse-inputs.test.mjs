@@ -1,3 +1,5 @@
+import { buildImportGraph } from '../../selection/import-graph.mjs';
+import { moduleInputs } from '../reuse/suite-closure.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -183,4 +185,18 @@ test('Android app identity keeps signed file provenance and distinguishes change
   assert.equal(base.manifestSha256,signed.manifestSha256);
   assert.notEqual(changed.manifestSha256,signed.manifestSha256);
   assert.throws(()=>appIdentity('unknown',apk),/Unknown/);
+});
+
+test('suite inputs follow transitive gate imports and expose opaque code and data reads', () => {
+  const entry = 'scripts/gates/suite.mjs', helper = 'scripts/gates/helper.mjs', leaf = 'scripts/gates/rules.mjs';
+  const files = new Map([[entry, "export * from './helper.mjs';"], [helper, "import './rules.mjs';"],
+    [leaf, 'export const ceiling = 1;'], ['scripts/gates/other.mjs', 'export {};']]);
+  const inspect = () => moduleInputs(files, buildImportGraph(files), [entry]);
+  assert.deepEqual(inspect(), { paths: [helper, leaf, entry], unresolved: [] });
+  files.set(helper, 'export const load = name => import(name);');
+  assert.ok(inspect().unresolved.some(issue => issue.includes(helper)));
+  files.set(helper, "import { readFileSync } from 'node:fs'; export const load = name => readFileSync(name);");
+  assert.ok(inspect().unresolved.includes(helper + ' uses node:fs'));
+  files.set(helper, "import './missing.mjs';");
+  assert.ok(inspect().unresolved.some(issue => issue.includes(helper)));
 });

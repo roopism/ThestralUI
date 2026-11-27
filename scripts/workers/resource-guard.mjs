@@ -1,3 +1,4 @@
+import { inCommandGroup } from './isolated-command.mjs';
 import { withTimingReservation } from './timing-reservation.mjs';
 import { execFileSync } from 'node:child_process';
 import { hostname } from 'node:os';
@@ -23,6 +24,11 @@ export function withTiming(mode, holder, run) {
       else process.env.ULD_TIMING_RESERVATION = prior;
     }
   });
+}
+
+// Hold an activity through snapshot setup and every child of the preflight.
+export function withPreflightActivity(holder, run) {
+  return inCommandGroup(() => withTiming('activity', holder, run));
 }
 
 export function withFunctionalDeviceGroup(root, holder, run, options) {

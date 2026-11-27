@@ -1,3 +1,4 @@
+import { prepareMemberPreflight } from './train-preflight.mjs';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -38,7 +39,7 @@ export function withTrainSnapshot({ root, base, member }, run) {
     await withTiming('activity', 'Prepare train snapshot', () => installSnapshotDependencies(snapshot, join(common, 'uld-dependencies'), env));
     const node = (args, options = {}) => execFileSync(process.execPath, args, { cwd: snapshot,
       env: { ...env, ULD_ARTIFACT_COMMON: common }, stdio: 'inherit', ...options });
-    return run({ snapshot, node, env });
+    return run({ snapshot, node, env, common });
   });
 }
 
@@ -63,20 +64,34 @@ export function runMemberChecks(paths, gateTests, operations) {
   return { fast: 'passed', typedAndUnit: 'passed', changedGateTests, changedCanaries, macBehavior: mac ? 'passed' : 'no-web-inputs' };
 }
 
+function memberPreflight(request, { snapshot, node, common }) {
+  const { root, member, batch } = request;
+  const run = mode => node([join(trusted, 'scripts/gates/local-run.mjs'), root, member.parent, member.commit, mode]);
+  if (!batch) { run('hook'); return {}; }
+  const ctx = { ...request, snapshot, trusted, tree: member.tree, commit: member.commit,
+    directory: join(common, 'uld-receipts') };
+  return prepareMemberPreflight(ctx, () => run('hook'), () => run('member-controls'));
+}
+
+export function prepareTrainMember(request) {
+  return withTrainSnapshot(request, snapshot => memberPreflight(request, snapshot));
+}
+
 export function checkCheapMember(request) {
   const { root, member } = request;
   const paths = git(root, 'diff', '--no-renames', '--name-only', '-z', member.parent, member.tree).split('\0').filter(Boolean);
-  return withTrainSnapshot(request, ({ snapshot, node, env }) => withTiming('activity', 'Train member checks', () => {
+  return withTrainSnapshot(request, ({ snapshot, node, env, common }) => withTiming('activity', 'Train member checks', () => {
     const gateTests = new Set(globSync('scripts/gates/tests/*.test.mjs', { cwd: snapshot }));
+    let preflight;
     const checks = runMemberChecks(paths, gateTests, {
-      preflight: () => node([join(trusted, 'scripts/gates/local-run.mjs'), root, member.parent, member.commit, 'hook']),
+      preflight: () => { preflight = memberPreflight(request, { snapshot, node, common }); },
       canary: file => node([file, file.endsWith('maestro-canary.mjs') ? '--offline' : member.tree],
         { env: { ...env, ULD_ARTIFACT_COMMON: join(snapshot, '.git') } }),
       tests: cases => node(['--test', '--test-concurrency=1', ...cases],
         { env: { ...env, ULD_ARTIFACT_COMMON: join(snapshot, '.git') } }),
       browser: () => node([fileURLToPath(new URL('train-suite.mjs', import.meta.url)), root, member.parent, member.commit, 'Mac browser behavior']),
     });
-    return { tree: member.tree, ...checks };
+    return { tree: member.tree, ...checks, ...preflight };
   }));
 }
 

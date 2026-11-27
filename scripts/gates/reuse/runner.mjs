@@ -117,7 +117,8 @@ export function requireLandingIdentity(row,identity,decision) {
   assert.ok(decision.reuse && isDeepStrictEqual(decision.record,row.reuseRecord),'Reuse is no longer eligible for '+row.name);
 }
 
-function receiptRef(receipt, kind = receipt.kind === 'preflight' ? 'preflight-receipts' : 'reuse-receipts') {
+function receiptRef(receipt, kind = receipt.kind === 'member-preflight' ? 'member-preflight-receipts' :
+  receipt.kind === 'preflight' ? 'preflight-receipts' : 'reuse-receipts') {
   assert.match(receipt.id,/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/);
   return 'refs/uld-archive/'+kind+'/'+receipt.id;
 }

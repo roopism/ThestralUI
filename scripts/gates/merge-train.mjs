@@ -151,7 +151,7 @@ export async function createTrain(context, prs) {
   await context.requireTransport(stack);
   const cheapChecks = [];
   for (const member of stack.members) {
-    const result = await context.checkMember({ root: context.root, base: stack.base, member });
+    const result = await context.checkMember({ root: context.root, base: stack.base, member, batch: context.batch });
     assert.equal(result?.tree, member.tree, 'Member checks must bind the exact tree');
     assert.ok(!Object.hasOwn(result, 'status') || result.status === 'passed', 'Member checks failed');
     cheapChecks.push({ number: member.number, tree: member.tree, status: 'passed', result });

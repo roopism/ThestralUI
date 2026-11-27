@@ -13,6 +13,7 @@ import { landOrdered } from '../ordered-landing.mjs';
 import { requireTrainBranch } from '../../train.mjs';
 import { startAttempt, failUnfinishedAttempt } from '../qualification-attempt.mjs';
 import { createTrain, landTrain, pushAtomicTrain, readTrain } from '../merge-train.mjs';
+import { memberRepository, offlineTrainEnv } from './fixtures/member-preflight-cli.mjs';
 import { fixtureGit, fixtureGitEnv, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
 
 isolateFixtureProcess();
@@ -20,7 +21,7 @@ isolateFixtureProcess();
 const git = (cwd, ...args) => fixtureGit(cwd, args);
 const integration = 'refs/heads/feat/enterprise-ui';
 
-function fixture(t, count = 2, weaker = false) {
+function fixture(t, count = 2, weaker = false, setup) {
   const dir = mkdtempSync(join(tmpdir(), 'train-unit-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const root = join(dir, 'work'), server = join(dir, 'server');
@@ -35,6 +36,7 @@ function fixture(t, count = 2, weaker = false) {
   mkdirSync(join(root, '.github'));
   file('.github/CODEOWNERS', '/.github/ @fixture\n');
   file('sample-budget.json', '{"limit":2}\n');
+  setup?.(root);
   const base = commit(file('base', 'base'));
   git(root, 'remote', 'add', 'origin', server);
   git(root, 'push', '--quiet', 'origin', base + ':' + integration);
@@ -319,6 +321,22 @@ test('the GitHub train commands refuse an unavailable atomic publication before 
   assert.notEqual(solo.status, 0);
   assert.match(readFileSync(join(dir, 'network-called'), 'utf8'), /^api --method GET repos\/roopism\/ThestralUI\/pulls\/1\s*$/);
   assert.equal(existsSync(join(dir, '.git', 'uld-receipts', 'train-landing-blocked.json')), false);
+});
+
+test('batch preflight CLI seals the first member under the launcher activity', t => {
+  const f = fixture(t, 1, false, memberRepository);
+  const root = f.context.root, batch = randomUUID();
+  const result = spawnSync(process.execPath, [fileURLToPath(new URL('../../train.mjs', import.meta.url)),
+    '--preflight', batch, '1'], { cwd: root, env: offlineTrainEnv(f), encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  const prefix = 'refs/uld-archive/member-preflights/' + batch + '/1/' + f.base + '/' + f.base + '/' + f.members[0].soloCommit;
+  const blob = git(root, 'for-each-ref', '--format=%(objectname)', prefix + '/finished');
+  const receipt = JSON.parse(git(root, 'cat-file', 'blob', blob));
+  assert.deepEqual([receipt.kind, receipt.status, receipt.key.head], ['member-preflight', 'passed', f.members[0].head]);
+  assert.match(receipt.fingerprint, /^[a-f0-9]{64}$/);
+  assert.equal(receipt.outputs.length, 4);
+  assert.equal(git(root, 'rev-parse', 'refs/uld-archive/member-preflight-receipts/' + receipt.id), blob);
+  assert.equal(existsSync(join(root, '.git/uld-receipts/attempts')), false);
 });
 
 test('inspection builds and judges the stack without member execution or a train receipt', async t => {
