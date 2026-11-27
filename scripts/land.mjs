@@ -1,4 +1,4 @@
-import { verifiedDevicePlan, requireScopedEvidence } from './gates/device-verdict.mjs';
+import { verifiedDevicePlan, requireGateTimingEvidence, requireScopedEvidence } from './gates/device-verdict.mjs';
 import { timingForIdenticalApk } from './gates/android-timing-reuse.mjs';
 import { requireObservedSource } from './gates/android-host-activity.mjs';
 import { requireOriginalReceipt, verifyLandingReuse } from './gates/reuse/runner.mjs';
@@ -118,6 +118,9 @@ export function passing(tree, base, directory = join(common, 'uld-receipts'), pr
   assert.deepEqual(r.suites.map(row => row.name), required);
   // Both evidence protocols use the same history, seal, reuse verification and exact suite roster.
   switch (verifiedDevicePlan(proposal.root ?? root, r.base, tree, r)) {
+    case 'gate-only timing':
+      requireGateTimingEvidence(proposal.root ?? root, r);
+      break;
     case 'scoped':
       requireScopedEvidence(r);
       break;

@@ -207,3 +207,60 @@ test('one functional reservation carries every lane and the audited result throu
   assert.equal(denied.functionalReservation.result, 'failed');
   assert.ok([...stages, 'audit'].every(stage => denied[stage].result === 'blocked'));
 });
+
+test('only classified gate proposals skip both measurements and retain both functional devices', async t => {
+  const { gateTimingSkip } = await import('../proposal-timing.mjs');
+  const gate = ['.githooks/commit-msg', 'scripts/gates/tests/preflight.test.mjs'];
+  const proposal = {
+    mode: 'qualification', base: 'a'.repeat(40), commit: 'b'.repeat(40), noReuse: false,
+    scope: { iphone: true, families: null },
+  };
+  for (const [label, paths, overrides, skip] of [
+    ['gate', gate, {}, true],
+    ['Android fixture', ['tests/android/host.mjs'], {}, false],
+    ['Android timing', ['tests/android/frame-budget.mjs'], {}, false],
+    ['budget', ['tests/android/low-end-budget.json'], {}, false],
+    ['timing budget under a gate fixture', ['scripts/gates/tests/fixtures/low-end-budget.json'], {}, false],
+    ['gate fixture', ['scripts/gates/tests/fixtures/daily-observation.mjs'], {}, false],
+    ['Mac probe', ['scripts/performance/paired-frame.mjs'], {}, false],
+    ['timing protocol', ['scripts/gates/qualification-lanes.mjs'], {}, false],
+    ['transitive Android driver import', ['.github/gate-review.mjs'], {}, false],
+    ['indirect timing input', ['scripts/build-cache/device-host.mjs'], {}, false],
+    ['product', ['packages/web/src/button.tsx'], {}, false],
+    ['family', ['manifests/families/button.json'], {}, false],
+    ['docs', ['docs/guide.md'], {}, false],
+    ['mixed', [...gate, 'packages/native/src/button.tsx'], {}, false],
+    ['unknown gate input', ['scripts/unknown.bin'], {}, false],
+    ['empty', [], {}, false],
+    ['unclassifiable', [null], {}, false],
+    ['device dependency', gate, { devicePlan: { run: true, paths: [{ status: 'M', path: gate[0], classification: 'Android harness read' }] } }, false],
+    ['full', gate, { noReuse: true }, false],
+    ['daily', gate, { commit: proposal.base, noReuse: true }, false],
+    ['release', gate, { mode: 'release' }, false],
+    ['train', gate, { trainPlan: 'plan' }, false],
+  ]) {
+    const receipt = { ...proposal, devicePlan: { run: true, paths: paths.map(path => ({ status: 'M', path, classification: 'gate or tooling' })) }, ...overrides };
+    const { settings, retained } = setup(t);
+    const calls = [];
+    const operation = stage => () => { calls.push(stage); return pass(); };
+    settings.functional = Object.fromEntries(functional.map(stage => [stage, operation(stage)]));
+    settings.audit = operation('audit');
+    const ready = [];
+    settings.ready = stage => { ready.push(stage); return true; };
+    settings.timed = Object.fromEntries(timed.map(stage => [stage, operation(stage)]));
+    settings.reserveTiming = (stage, run) => { calls.push('reserve ' + stage); return run(); };
+    settings.timingSkip = gateTimingSkip(receipt);
+    const lanes = await runQualificationLanes(settings);
+    assert.deepEqual(ready, skip ? functional : stages, label);
+    assert.deepEqual(calls, [...functional, 'audit', ...(skip ? [] : timed.flatMap(stage => ['reserve ' + stage, stage]))], label);
+    for (const stage of timed) {
+      const row = retained().filter(event => event.stage === stage).at(-1);
+      assert.deepEqual(row, { stage, ...lanes[stage] }, label);
+      assert.equal(row.result, skip ? 'skipped' : 'passed', label);
+      if (skip) {
+        assert.equal(row.reason, 'gate-only change');
+        assert.deepEqual(row.files, gate);
+      }
+    }
+  }
+});

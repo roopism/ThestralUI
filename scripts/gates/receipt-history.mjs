@@ -1,3 +1,4 @@
+import { approvedTimingSuites } from './proposal-timing.mjs';
 import { scopedSkip } from './device-verdict.mjs';
 import assert from 'node:assert/strict';
 import { reuseRows } from './reuse/preflight.mjs';
@@ -46,9 +47,11 @@ function incomplete(attempt, directory) {
     try { attempt = projectStoredPasses(directory, attempt); }
     catch { return true; }
   }
-  return attempt.status !== 'passed' || !Array.isArray(attempt.suites) || !attempt.suites.length ||
+  const skips = approvedTimingSuites(directory, attempt);
+  return skips === null || attempt.status !== 'passed' || !Array.isArray(attempt.suites) || !attempt.suites.length ||
     reuseRows(attempt).some(row => row?.result !== 'passed' &&
-      !scopedSkip(attempt, row) && !(!attempt.devicePlan && row?.name === 'iPhone Simulator' && row.result === 'web-only' && attempt.scope?.iphone === false));
+      !scopedSkip(attempt, row) && !(row?.result === 'skipped' && skips.includes(row.name)) &&
+      !(!attempt.devicePlan && row?.name === 'iPhone Simulator' && row.result === 'web-only' && attempt.scope?.iphone === false));
 }
 
 export function relatedHistory(directory, tree, first, root, target) {

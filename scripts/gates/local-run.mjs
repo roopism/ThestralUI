@@ -1,3 +1,6 @@
+import { isDeepStrictEqual } from 'node:util';
+import { timingSuites, verifiedTimingSkip } from './proposal-timing.mjs';
+import { apkIdentity } from './android-timing-reuse.mjs';
 import { collectObservation, registerObservation } from '../selection/device-observations.mjs';
 import { deviceInputs } from '../selection/device-inputs.mjs';
 import { checkDeviceCompleteness } from './device-completeness.mjs';
@@ -14,7 +17,7 @@ import { trustedVerdict } from './verdict.mjs';
 import { shutdownSimulators, usingSimulator, withFunctionalDeviceGroup, withTiming } from '../workers/resource-guard.mjs';
 import { withTimingReservation } from '../workers/timing-reservation.mjs';
 import { runQualificationLanes } from './qualification-lanes.mjs';
-import { admission, observationIssues, quiet, sampleHost, waitForQuiet } from './android-host-activity.mjs';
+import { admission, observedIdentity, observationIssues, quiet, sampleHost, waitForQuiet } from './android-host-activity.mjs';
 import { publishFirstReceipt, relatedHistory } from './receipt-history.mjs';
 import { readAttempt } from './qualification-attempt.mjs';
 import { reviewPolicy } from './review/qualification-policy.mjs';
@@ -27,7 +30,7 @@ import { qualificationStatus, runWithIntegrationReservation } from './qualificat
 import { randomBytes, randomUUID } from 'node:crypto';
 import { releaseLocksOnSignal, withLock } from '../workers/lock.mjs';
 import { proposalDevices, proposalScope, requireFullDevices } from '../selection/proposal-devices.mjs';
-import { deviceSuites } from './device-verdict.mjs';
+import { deviceSuites, functionalAndroidDevices } from './device-verdict.mjs';
 import { browserMatrix, scenarioMatrix } from '../../packages/policy/quality/browser-matrix.mjs';
 import { verifyCandidatePassed } from '../../packages/policy/quality/api-depth/evidence.mjs';
 import { packedDepth, checkNewBudgets } from '../../packages/policy/quality/check-staged.mjs';
@@ -83,6 +86,8 @@ const receipt = { ...initial, schema: 1, androidHostActivityPolicy:1, tree, base
     trainPreflightId: context.preflightId, trainDeviceChecks: trainDevices.checks } : {}),
   auditSeed: freshSuites ? null : randomBytes(32).toString('hex'), retries: null,
   status: 'running', vm: null, devices: {}, suites: [] };
+const timingSkip = verifiedTimingSkip(root, receipt);
+if (timingSkip) context.noReuse = true;
 const steps = new Map();
 function step(name, operation, dependencies = []) {
   const entry = { name, result: 'pending', durationMs: 0, fingerprint: null, reusedFrom: null,
@@ -424,6 +429,7 @@ async function runParallelQualification() {
     .filter(name => ![...prerequisites, ...deviceNames, macPerformance, 'Linux browser behavior'].includes(name));
   receipt.lanes = {};
   const lanes = await runQualificationLanes({
+    timingSkip,
     ready(stage) {
       if (stage === 'androidTiming') return receipt.lanes.android?.result === 'passed';
       if (stage === 'macPerformance') return passed('Catalog build');
@@ -437,6 +443,11 @@ async function runParallelQualification() {
       iphone: async () => { await execute(iphone); return verdict([iphone]); },
       android: async env => {
         await runDevice(trustedVerdict('verify-android-emulator.mjs'), 'android-emulator', 'android', 'functional', env);
+        if (timingSkip) {
+          const apk = join(snapshot, 'test-results/android-emulator/apk/app-release.apk');
+          receipt.androidFunctional = observedIdentity(snapshot, common, apkIdentity(apk));
+          receipt.devices.android = functionalAndroidDevices(common, receipt.androidFunctional);
+        }
         return {result:'passed'};
       },
       mac: () => withTimingReservation(root, 'activity', 'Mac functional checks', async () => {
@@ -465,9 +476,17 @@ async function runParallelQualification() {
       macPerformance: async () => { await execute(macPerformance); return verdict([macPerformance]); },
       androidTiming: async () => { await execute(android); return verdict([android]); },
     },
-    record(stage, row) { receipt.lanes[stage] = row; save(); },
+    record(stage, row) {
+      if (isDeepStrictEqual(row, timingSkip) && Object.hasOwn(timingSuites, stage)) {
+        Object.assign(steps.get(timingSuites[stage]).entry, timingSkip);
+        if (stage === 'androidTiming') receipt.androidTiming = timingSkip;
+      }
+      receipt.lanes[stage] = row;
+      save();
+    },
   });
-  const failures = Object.entries(lanes).filter(([, row]) => row.result !== 'passed');
+  const failures = Object.entries(lanes).filter(([stage, row]) => row.result !== 'passed' &&
+    !(Object.hasOwn(timingSuites, stage) && isDeepStrictEqual(row, timingSkip)));
   if (failures.length) throw Error(failures.map(([name, row]) => name + ': ' + row.reason).join(' / '));
 }
 
@@ -483,7 +502,7 @@ if (mode!=='hook') {
     const firstPath=join(directory,tree+'.json');
     const prior=relatedHistory(directory,tree,existsSync(firstPath)?read(firstPath):undefined,root,receipt);
     receipt.retries = new Set(prior.filter(old=>old.id!==id && (old.status!=='passed' ||
-      qualificationStatus(reuseRows(projectStoredPasses(directory,old)),old.error,old)!=='passed')).map(old=>old.id)).size;
+      qualificationStatus(reuseRows(projectStoredPasses(directory,old)),old.error,old,root)!=='passed')).map(old=>old.id)).size;
   } catch { receipt.retries=null; }
 }
 save();
@@ -504,7 +523,7 @@ try {
 } catch (error) { receipt.error = String(error.message); }
 finally {
   for (const row of reuseRows(receipt)) if (row.result === 'pending') { row.result = 'blocked'; row.reason = receipt.error ?? 'Preflight failed'; }
-  try { receipt.status = qualificationStatus(reuseRows(projectStoredPasses(directory,receipt)), receipt.error, receipt); }
+  try { receipt.status = qualificationStatus(reuseRows(projectStoredPasses(directory,receipt)), receipt.error, receipt, root); }
   catch (error) { receipt.status='failed'; receipt.error=error.message; }
   receipt.finished = new Date().toISOString();
   if (mode!=='hook' && receipt.status==='passed') {

@@ -5,7 +5,7 @@ import { depthRegistry } from './registrations.mjs';
 const gateDirectories = [
   'scripts/', '.githooks/', '.github/', 'packages/policy/', 'packages/style-policy/', 'tests/android/', 'tests/simulator/',
 ];
-const gateCode = path => gateDirectories.some(directory => path.startsWith(directory));
+export const gateCode = path => gateDirectories.some(directory => path.startsWith(directory));
 
 // derived holds the registry outputs that derivedRegistrations verified for a family branch.
 export function requireGateIsolation(branch, paths, _owners, derived = new Set()) {

@@ -485,3 +485,66 @@ test('production Metro capture retains the selected platform modules in both bui
   }
   checkDeviceCompleteness(map, platforms);
 });
+
+test('landing replays gate timing skips and requires sealed functional evidence for both profiles', async t => {
+  const { verifiedTimingSkip } = await import('../proposal-timing.mjs');
+  const { abi, config } = await import('../../../tests/android/emulator.mjs');
+  const { recordAndroidFunctional } = await import('../../../tests/android/split-qualification.mjs');
+  const { root, base, edit, commit, witness } = repository(t);
+  const common = join(root, '.git'), directory = join(common, 'uld-receipts');
+  mkdirSync(directory);
+  const tree = edit(base, { '.githooks/commit-msg': '#!/bin/sh\n' });
+  const devicePlan = proposalDevices(root, base, tree, true);
+  const flows = ['workspace.yaml', 'appearance.yaml'], scenarioIds = ['button.save-once', 'stack.child-order'];
+  const profiles = config.profiles.map(profile => ({
+    id: profile.id, hardware: { fingerprint: 'fixture' }, serial: 'emulator-5554',
+    name: 'uld-api' + (profile.platform ?? config.platform).slice('android-'.length).replaceAll('.', '-') + '-' + profile.id + '-' + abi,
+    scenarioIds, passed: ['appearance-dark', 'appearance-light', 'workspace-light'], interaction: { heldPixels: 20 },
+  }));
+  const receipt = {
+    id: randomUUID(), tree, base, commit: commit(tree, base), mode: 'qualification', noReuse: false,
+    status: 'passed', androidHostActivityPolicy: 1, reuseSchema: 1, devicePlan, scope: proposalScope(root, base, tree, devicePlan),
+    gateTests: { name: 'Trusted gate tests', result: 'passed' },
+    suites: required.map(name => ({ name, durationMs: 1, result: 'passed' })),
+    devices: { iphone: { passed: true }, android: profiles.map(({ id, hardware }) => ({ id, hardware })) },
+    vm: { browsers: 'fixture', sourceImageSha256: 'fixture' },
+  };
+  const skip = verifiedTimingSkip(root, receipt);
+  assert.deepEqual(skip, { result: 'skipped', reason: 'gate-only change', files: ['.githooks/commit-msg'] });
+  for (const name of ['Mac browser performance', 'Android standard and low-end']) {
+    Object.assign(receipt.suites.find(row => row.name === name), skip, { durationMs: 0 });
+  }
+  receipt.lanes = Object.fromEntries(['mac', 'android', 'iphone', 'audit'].map(stage => [stage, { result: 'passed' }]));
+  for (const stage of ['macPerformance', 'androidTiming']) receipt.lanes[stage] = { ...skip };
+  receipt.androidTiming = { ...skip };
+  receipt.androidFunctional = { attempt: receipt.id, tree, base, commit: receipt.commit,
+    apkSha256: 'a'.repeat(64), entryManifestSha256: 'b'.repeat(64) };
+  sealReceipt(root, receipt);
+  writeFileSync(join(directory, tree + '.json'), JSON.stringify(receipt));
+  const land = () => passing(tree, base, directory, { root, commit: receipt.commit });
+  assert.throws(land, { code: 'ENOENT' });
+  recordAndroidFunctional(common, receipt.androidFunctional, profiles, {}, [], flows, scenarioIds);
+  assert.deepEqual(land(), receipt);
+  assert.equal(qualificationStatus(receipt.suites, undefined, receipt, root), 'passed');
+  const productTree = edit(base, { 'packages/native/src/button.js': 'export const button = 2;' });
+  const forged = { ...receipt, tree: productTree, commit: commit(productTree, base), id: randomUUID() };
+  sealReceipt(root, forged);
+  writeFileSync(join(directory, productTree + '.json'), JSON.stringify(forged));
+  assert.equal(verifiedTimingSkip(root, forged), null);
+  assert.throws(() => passing(productTree, base, directory, { root, commit: forged.commit }), /prevents landing|diff/);
+  const timedTree = edit(tree, { 'tests/android/host.mjs': '// updated Android fixture' });
+  assert.throws(() => verifiedDevicePlan(root, base, timedTree, { ...receipt, tree: timedTree }), /diff/);
+  const timedPlan = proposalDevices(root, base, timedTree, true);
+  assert.throws(() => verifiedDevicePlan(root, base, timedTree, { ...receipt, tree: timedTree, devicePlan: timedPlan }), /Timing skip differs/);
+  const measured = { ...receipt, androidTiming: { ...skip, frameBudget: {} } };
+  assert.throws(() => verifiedDevicePlan(root, base, tree, measured), /Timing skip differs/);
+  assert.equal(qualificationStatus(receipt.suites, undefined, { ...receipt, macTiming: { samples: [] } }, root), 'failed');
+  receipt.lanes.androidTiming = { ...skip, files: [] };
+  assert.throws(() => verifiedDevicePlan(root, base, tree, receipt), /Timing skip differs/);
+  assert.equal(qualificationStatus(receipt.suites, undefined, receipt, root), 'failed');
+  receipt.lanes.androidTiming = skip;
+  receipt.suites.find(row => row.name === 'Android standard and low-end').result = 'failed';
+  assert.equal(qualificationStatus(receipt.suites, undefined, receipt, root), 'failed');
+  witness(base, [['file', '.githooks/commit-msg']]);
+  assert.equal(verifiedTimingSkip(root, receipt), null, 'A retained Android read keeps both timings');
+});
