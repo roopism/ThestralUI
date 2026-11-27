@@ -95,6 +95,8 @@ In a dialog, keep the visible label near the input and leave the error available
 
 On web the child owns value, event handlers, form attributes and ref; FormField supplies or reuses its ID and composes description IDs. The wrapper accepts className but exposes no ref. On native, TextInput receives forwarded host props and the ref; `onChangeText` delivers the new string, and `value` or `defaultValue` determines ownership. A caller hint is combined with field hint and error.
 
+The native component accepts a resolved `theme` for its scope. When omitted, its colors follow the device color scheme.
+
 | Export | Prop | Type | Default | Ownership | Ref target |
 | --- | --- | --- | --- | --- | --- |
 | `.:FormField` | `children` | `ReactElement<HTMLAttributes<HTMLInputElement \| HTMLTextAreaElement \| HTMLSelectElement>, "input" \| "textarea" \| "select">` | Required | Caller content | — |
@@ -108,6 +110,7 @@ On web the child owns value, event handlers, form attributes and ref; FormField 
 | `native:FormField` | `label` | `string` | Required | Caller input | — |
 | `native:FormField` | `ref` | `Ref<import("react-native/types_generated/Libraries/Components/TextInput/TextInput.flow.js")._TextInputInstance> \| undefined` | Unspecified | Caller reference | `import("react-native/types_generated/Libraries/Components/TextInput/TextInput.flow.js")._TextInputInstance` |
 | `native:FormField` | `style` | `import("react-native/types_generated/Libraries/StyleSheet/StyleSheetTypes.js").____TextStyleProp_Internal \| undefined` | Unspecified | Caller input | — |
+| `native:FormField` | `theme` | `ResolvedTokens \| undefined` | Unspecified | Caller input | — |
 | `native:FormField` | Host attributes | 180 standard platform attributes, not listed | Unspecified | Caller input | — |
 
 ### React web

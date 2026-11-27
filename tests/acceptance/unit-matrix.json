@@ -198,6 +198,7 @@
     "tests/modal-dialog/native.test.cjs | a custom native modal uses the headless window, heading and escape behavior",
     "tests/modal-dialog/native.test.cjs | a native dialog exposes its localized title and delegates Back dismissal to its owner",
     "tests/modal-dialog/native.test.cjs | a newer presentation cancels a pending accessibility focus return from the previous close",
+    "tests/modal-dialog/native.test.cjs | dark scoped controls keep their palette inside a dialog on a light device",
     "tests/modal-dialog/native.test.cjs | native parts retain accessible behavior, omit empty slots and accept consumer styles",
     "tests/modal-dialog/native.test.cjs | returns accessibility focus only to the mounted opener of a presented dialog",
     "tests/modal-dialog/native.test.cjs | the theme supplies native modal colors, spacing and corners without changing its behavior",

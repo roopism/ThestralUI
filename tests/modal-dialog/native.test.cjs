@@ -190,3 +190,24 @@ test('a newer presentation cancels a pending accessibility focus return from the
     send.mockRestore();
   }
 });
+
+test('dark scoped controls keep their palette inside a dialog on a light device', async () => {
+  const { defaultTheme } = require('@ui-lazy-dev/tokens/modes');
+  const { Appearance, StyleSheet } = require('react-native');
+  const { Button, IconButton } = require('@ui-lazy-dev/ui-native');
+  const scheme = jest.spyOn(Appearance, 'getColorScheme').mockReturnValue('light');
+  const { tokens: theme } = defaultTheme.resolve({ scheme: 'dark' });
+  try {
+    const view = await render(React.createElement(Dialog, { title: 'Dark editor', theme, onDismiss() {} },
+      React.createElement(Button, { theme, label: 'Save', testID: 'save', onPress() {} }),
+      React.createElement(IconButton, { theme, label: 'More', testID: 'more', onPress() {}, icon: React.createElement(Text, null, '…') }),
+      React.createElement(FormField, { theme, label: 'Name', testID: 'name' })));
+    const style = id => StyleSheet.flatten(view.getByTestId(id).props.style);
+    expect(style('dialog.root').backgroundColor).toBe(theme.color.surface);
+    expect(style('save').backgroundColor).toBe(theme.color.accent);
+    expect(style('save.label').color).toBe(theme.color.onAccent);
+    expect(style('more').backgroundColor).toBe(theme.color.accent);
+    expect(style('name')).toMatchObject({ color: theme.color.text, backgroundColor: theme.color.surface, borderColor: theme.color.border });
+    expect(view.getByTestId('name').props.placeholderTextColor).toBe(theme.color.muted);
+  } finally { scheme.mockRestore(); }
+});

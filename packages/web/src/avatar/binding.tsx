@@ -1,6 +1,7 @@
 'use client';
 import { safeUrl } from "../_shared/safe-url/binding.js";
 import { type ReactNode, useState } from "react";
+const graphemes = new Intl.Segmenter();
 export function Avatar({
   name,
   image,
@@ -14,7 +15,7 @@ export function Avatar({
     .trim()
     .split(/\s+/u)
     .slice(0, 2)
-    .map((word) => Array.from(word)[0])
+    .map((word) => graphemes.segment(word).containing(0)?.segment)
     .join('');
   const src = safeUrl(image);
   const placeholder = <span className="uld-avatar" role="img" aria-label={name}>{fallback ?? initials}</span>;

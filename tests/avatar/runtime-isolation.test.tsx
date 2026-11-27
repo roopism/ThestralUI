@@ -21,6 +21,10 @@ test('initials use the first two words, whole characters and a caller fallback w
   expect(screen.getByRole('img', { name: 'Ana María López' }).textContent).toBe('AM');
   rerender(<Avatar name="𝒵oë" />);
   expect(screen.getByRole('img').textContent).toBe('𝒵');
+  rerender(<Avatar name="क्षमा" />);
+  expect(screen.getByRole('img').textContent).toBe('क्ष');
+  rerender(<Avatar name={'한글'.normalize('NFD')} />);
+  expect(screen.getByRole('img').textContent).toBe('한'.normalize('NFD'));
   rerender(<Avatar name="Support team" fallback="?" />);
   expect(screen.getByRole('img', { name: 'Support team' }).textContent).toBe('?');
 });

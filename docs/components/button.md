@@ -125,6 +125,8 @@ Use one submit Button in a form plus explicit secondary actions. Keep interactiv
 
 The root web Button forwards HTML button props, events and a button ref. It defaults to `type="button"`; explicitly set submit for form submission. `useButton` returns the same behaviour as `buttonProps` for a plain button, with no styling. `startIcon` and `endIcon` accept elements. On native the required onPress receives the Pressable event and `label` supplies both visible text and the accessible name. The native ref points to the underlying Pressable view. Native Button and useButton are available from the root and the dedicated `@ui-lazy-dev/ui-native/button` entry. `navigation:Trigger` uses the separate React Aria press-event and render-prop contract.
 
+The native component accepts a resolved `theme` for its scope. When omitted, its colors follow the device color scheme.
+
 | Export | Prop | Type | Default | Ownership | Ref target |
 | --- | --- | --- | --- | --- | --- |
 | `.:Button` | `busy` | `boolean \| undefined` | Unspecified | Caller input | — |
@@ -203,6 +205,7 @@ The root web Button forwards HTML button props, events and a button ref. It defa
 | `native:Button` | `startIcon` | `ReactElement<unknown, string \| import("react").JSXElementConstructor<any>> \| undefined` | Unspecified | Caller input | — |
 | `native:Button` | `style` | `StyleProp<ViewStyle> \| undefined` | Unspecified | Caller input | — |
 | `native:Button` | `testID` | `string \| undefined` | Unspecified | Caller input | — |
+| `native:Button` | `theme` | `ResolvedTokens \| undefined` | Unspecified | Caller input | — |
 | `native:Button` | `tone` | `"primary" \| "secondary" \| "ghost" \| "danger" \| "link" \| undefined` | Unspecified | Caller input | — |
 | `native:Button` | `unstyled` | `boolean \| undefined` | Unspecified | Caller input | — |
 | `native:useButton` | `__0` | `UseButtonOptions` | Required | Caller input | — |
@@ -222,6 +225,7 @@ The root web Button forwards HTML button props, events and a button ref. It defa
 | `native/button:Button` | `startIcon` | `ReactElement<unknown, string \| import("react").JSXElementConstructor<any>> \| undefined` | Unspecified | Caller input | — |
 | `native/button:Button` | `style` | `StyleProp<ViewStyle> \| undefined` | Unspecified | Caller input | — |
 | `native/button:Button` | `testID` | `string \| undefined` | Unspecified | Caller input | — |
+| `native/button:Button` | `theme` | `ResolvedTokens \| undefined` | Unspecified | Caller input | — |
 | `native/button:Button` | `tone` | `"primary" \| "secondary" \| "ghost" \| "danger" \| "link" \| undefined` | Unspecified | Caller input | — |
 | `native/button:Button` | `unstyled` | `boolean \| undefined` | Unspecified | Caller input | — |
 | `native/button:useButton` | `__0` | `UseButtonOptions` | Required | Caller input | — |

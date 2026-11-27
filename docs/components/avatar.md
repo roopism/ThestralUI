@@ -41,7 +41,7 @@ A photograph or readable substitute represents the same person.
 
 ### Variants
 
-Displays a validated URL, caller fallback, or the first Unicode code point of each of at most two whitespace-separated name words.
+Displays a validated URL, caller fallback, or the first Unicode grapheme cluster of each of at most two whitespace-separated name words.
 
 ### States matrix
 
@@ -112,7 +112,7 @@ None. Consumers currently query the accessible roles and names described in the 
 | --- | --- | --- | --- |
 | Renderer | Image or named fallback span | No native family export | Native parity remains open in the [family audit](../component-depth.md). |
 
-**Variants.** Displays a validated URL, caller fallback, or the first Unicode code point of each of at most two whitespace-separated name words. The visual size comes from the stylesheet.
+**Variants.** Displays a validated URL, caller fallback, or the first Unicode grapheme cluster of each of at most two whitespace-separated name words. The visual size comes from the stylesheet.
 
 **Accessibility.** The name stays constant across image and fallback branches. For scripts or names where automatic initials are unsuitable, supply a localized short fallback. The round crop carries no extra meaning. The component has no animation, target or live announcement. Initials use the theme text/surface colors and inherit the surrounding text direction. Forced colors use the browser’s normal adjustments for text. A containing button owns the hit target.
 
