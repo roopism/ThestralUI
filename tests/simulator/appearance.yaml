@@ -52,3 +52,8 @@ name: Native dynamic type, color scheme and long content
       id: "workspace-saved"
       text: "Saved International product design and accessible mobile engineering working group"
     direction: DOWN
+- scrollUntilVisible:
+    element:
+      id: "workspace-review"
+      text: "Review changes"
+    direction: UP

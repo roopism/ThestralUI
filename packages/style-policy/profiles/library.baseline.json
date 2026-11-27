@@ -168,8 +168,7 @@
   ]},
   {"path": "packages/web/src/_shared/motion-choreography/binding.tsx", "owner": "UI platform", "reason": "The animation uses measured element bounds and an interruptible timeline.", "expires": "2027-02-18", "entries": [
     ["3a639e570abced7ab1242cbbdbcf5587335fcfee119713aae037d150b651dda6", "style/runtime", 1, "play duration = duration"],
-    ["f65fa171b2cb1cfd42cbe3cbe2247a766cf335e1d7dd64b2855d5d5112cfa5cb", "style/runtime", 1, "play style = frames"],
-    ["fa9005d51aaad17631fc0e7c25f1389b20392d76ac53b1e836d297b851c3bc87", "style/runtime", 1, "play delay = index * Math.max(0, stagger)"]
+    ["f65fa171b2cb1cfd42cbe3cbe2247a766cf335e1d7dd64b2855d5d5112cfa5cb", "style/runtime", 1, "play style = frames"]
   ]},
   {"path": "packages/web/src/_shared/motion-overlays/binding.tsx", "owner": "UI platform", "reason": "The pointer distance controls the sheet drag offset.", "expires": "2027-02-18", "entries": [
     ["5fd9f0656ca5d18ef0453df7d8fe62cee3722d79f4c9e83754391e0aec45a1e4", "style/runtime", 1, "move --uld-drag-offset = distance(event, active) * active.sign + 'px'"]

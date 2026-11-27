@@ -37,3 +37,20 @@ export function bounds(node) {
     centerY: Math.floor((y + bottom) / 2),
   };
 }
+
+export function readScenarioRoles(nodes, targets, dumpAlerts) {
+  const alerts = targets.filter(target => target.role === 'alert');
+  if (!alerts.length) return nodes;
+  const rows = dumpAlerts().split('\n').flatMap(line => {
+    const match = /^\s*ULD_ALERT (.+)$/.exec(line);
+    return match ? [JSON.parse(match[1])] : [];
+  });
+  for (const { name } of alerts) {
+    const id = 'scenario.alert.' + name;
+    const xml = target(nodes, id, { name });
+    const detail = target(rows, id, { name });
+    assert.equal(detail.class, xml.class, id + ' accessibility node class');
+    xml.roleDescription = detail.roleDescription;
+  }
+  return nodes;
+}

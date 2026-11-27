@@ -80,6 +80,11 @@ export function withMaestroSession({ platform, device, maestro, env, reports }, 
     assert.equal(handshake.device, device);
     ready = true;
     return check(run, {
+      buttonPixels(rect, fill, label) {
+        const step = request({ op: 'button-pixels', rect, fill, label });
+        return JSON.parse(readFileSync(join(step, 'counts.json'), 'utf8'));
+      },
+      iosRoles: () => JSON.parse(readFileSync(join(request({ op: 'ios-roles' }), 'roles.json'), 'utf8')),
       reconnectIOS: () => request({ op: 'reconnect-ios' }),
       androidXML: () => readFileSync(join(request({ op: 'android-xml' }), 'nodes.xml'), 'utf8'),
       iosElements: () => JSON.parse(readFileSync(join(request({ op: 'ios-elements' }), 'elements.json'), 'utf8')),

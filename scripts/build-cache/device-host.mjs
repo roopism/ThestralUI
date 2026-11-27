@@ -126,7 +126,7 @@ export function androidHostKey(root, archives, android, abi, probes) {
   ];
   return nativeKey({
     platform: 'android',
-    files: { ...fileInputs(root, sharedFiles), calibratedFrameActivity: digest(readFileSync(join(probes, 'FrameActivity.kt'))) },
+    files: { ...fileInputs(root, [...sharedFiles, 'tests/android/MainActivity.kt']), calibratedFrameActivity: digest(readFileSync(join(probes, 'FrameActivity.kt'))) },
     tools,
     archives: archives.map((archive) => archiveNativeInputs(archive.path)),
   });
@@ -378,6 +378,7 @@ export function buildAndroidHost(root, host, { archives, android, abi, probes })
   for (const name of ['app.json', 'babel.config.js', 'metro.config.js']) cpSync(join(template, name), join(host, name));
   installArchives(host, archives);
   stageAndroidJavaScript(root, host, probes);
+  cpSync(join(root, 'tests/android/MainActivity.kt'), join(host, 'android/app/src/main/java/com/helloworld/MainActivity.kt'));
   cpSync(join(probes, 'FrameActivity.kt'), join(host, 'android/app/src/main/java/com/helloworld/FrameActivity.kt'));
   const manifest = join(host, 'android/app/src/main/AndroidManifest.xml');
   const xml = readFileSync(manifest, 'utf8');

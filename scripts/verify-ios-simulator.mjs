@@ -33,7 +33,8 @@ import { pathToFileURL } from 'node:url';
 import { SaxesParser } from 'saxes';
 import { withMaestroSession } from '../tests/simulator/maestro-session.mjs';
 import { iosWindow } from '../tests/simulator/window-ready.mjs';
-import { runNativeScenarios } from '../tests/simulator/scenarios.mjs';
+import { classOrTypeRoles, parseHierarchy, runQualifiedNativeScenarios } from '../tests/simulator/scenarios.mjs';
+import { iosReviewBounds, verifyDarkButton } from '../tests/simulator/button-pixels.mjs';
 
 const root = process.cwd();
 const evidence = join(root, 'release/evidence');
@@ -169,7 +170,7 @@ export function prepareIOSJourney(phoneId, app, appearance, textSize, control = 
   assert.ok(!existsSync(join(dataContainer(), 'Documents', marker)), 'iPhone retained the previous journey data');
 }
 
-function runJourneys(phoneId, app, maestro, env, reports, run, reconnect) {
+function runJourneys(phoneId, app, maestro, env, reports, run, reconnect, buttonPixels) {
   let passed = 0;
   for (const [flow, appearance, textSize] of profiles) {
     prepareIOSJourney(phoneId, app, appearance, textSize, sim, reconnect);
@@ -203,6 +204,11 @@ function runJourneys(phoneId, app, maestro, env, reports, run, reconnect) {
       { stdio: 'inherit', env },
     );
     passed += checkFlow(readFileSync(resultFile, 'utf8'));
+    if (name === 'appearance-dark') {
+      const tree = parseHierarchy(run(root, maestro, ['--device', phoneId, 'hierarchy', '--no-ansi', '--no-reinstall-driver'], { env }));
+      const observed = verifyDarkButton(iosReviewBounds(tree), buttonPixels);
+      writeFileSync(join(reports, 'dark-button.json'), JSON.stringify(observed) + '\n');
+    }
   }
   return passed;
 }
@@ -280,14 +286,14 @@ export function qualify(functional = false) {
       iosWindow(sim, phone.udid, bundleId);
       const { testsPassed, scenarioIds } = withMaestroSession({
         platform: 'ios', device: phone.udid, maestro, env: driverEnv, reports,
-      }, (sessionRun, { reconnectIOS: reconnect, iosElements }) => {
-        const testsPassed = runJourneys(phone.udid, app, maestro, driverEnv, reports, sessionRun, reconnect);
+      }, (sessionRun, { reconnectIOS: reconnect, buttonPixels, iosRoles, iosElements }) => {
+        const testsPassed = runJourneys(phone.udid, app, maestro, driverEnv, reports, sessionRun, reconnect, buttonPixels);
         const reset = () => {
           prepareIOSJourney(phone.udid, app, 'light', 'large', sim, reconnect);
           iosWindow(sim, phone.udid, bundleId);
         };
-        const scenarioIds = runNativeScenarios({ root, appId: bundleId, maestro, device: phone.udid,
-          env: driverEnv, run: sessionRun, reports, reset, readIOSElements: iosElements });
+        const scenarioIds = runQualifiedNativeScenarios({ root, appId: bundleId, maestro, device: phone.udid,
+          env: driverEnv, run: sessionRun, reports, reset, readRoles: iosRoles, readIOSElements: iosElements });
         return { testsPassed, scenarioIds };
       });
       const native = archives.find(archive => archive.name === 'ui-native');
@@ -302,6 +308,7 @@ export function qualify(functional = false) {
         maestro: maestroVersion,
         testsPassed,
         scenarioIds,
+        enrolledClassOrTypeRoles: classOrTypeRoles.ios,
         failed: 0,
         skipped: 0,
         nativeSha256: native.sha256,

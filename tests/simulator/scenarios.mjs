@@ -75,6 +75,41 @@ export function verifyNativeCheckbox(source, platform, name, { enabled, state } 
   return actual;
 }
 
+// Checkbox traits and state are checked separately by verifyNativeCheckbox.
+// The iOS inline error exposes StaticText and has no native alert value on the
+// integration app. Its stricter alert contract remains open in the delivery ledger.
+export const classOrTypeRoles = {
+  android: ['button', 'text', 'alert'],
+  ios: ['button', 'text'],
+};
+
+// Native classes come from React Native's AccessibilityRole mapping. The numeric
+// iOS types are the Button, StaticText and Alert cases in XCUIElementTypes.h.
+export function verifyNativeRole(source, platform, { role, name }, busy = false) {
+  const classes = { button: 'android.widget.Button', text: 'android.widget.TextView', alert: 'android.view.View' };
+  const types = { button: 9, text: 48, alert: 7 };
+  assert.ok(Object.hasOwn(classes, role), 'Unsupported observed native role ' + role);
+  const id = 'scenario.' + role + '.' + name;
+  if (platform === 'android') {
+    const node = androidTarget(source, id, { name: busy ? name + ', busy' : name });
+    assert.equal(node.class, classes[role], id + ' Android role');
+    if (role === 'alert') assert.equal(node.roleDescription, 'Alert', id + ' Android alert role description');
+    return;
+  }
+  assert.equal(platform, 'ios');
+  const matches = [];
+  function visit(node) {
+    if (node.identifier === id) matches.push(node);
+    for (const child of node.children ?? []) visit(child);
+  }
+  visit(source);
+  assert.equal(matches.length, 1, 'Expected a unique XCTest node for ' + id);
+  const [node] = matches;
+  assert.equal(node.label, name, id + ' iOS accessible name');
+  const roles = String(node.value ?? '').toLowerCase().split(',').map(part => part.trim());
+  assert.ok(node.elementType === types[role] || (role === 'alert' && roles.includes('alert')), id + ' iOS role');
+}
+
 // Maestro 2.4 prefixes an unfiltered iOS tree with its inspector name, "None:".
 export function parseHierarchy(output) {
   return JSON.parse(output.replace(/^\s*None:\s*/, ''));
@@ -102,7 +137,7 @@ export function inAccessibilityOrder(tree, targets, platform = 'ios') {
   });
 }
 
-export function runNativeScenarios({ root, appId, maestro, device, env, run, reports, registry, reset, platform = 'ios', readAndroidTree, readIOSElements, log = console.log }) {
+export function runNativeScenarios({ root, appId, maestro, device, env, run, reports, registry, reset, platform = 'ios', readAndroidTree, readIOSElements, readRoles, log = console.log }) {
   const scenarios = selectNativeScenarios(root, registry ? nativeReader.deviceScenarios(root, registry) : readCandidateScenarios(root));
   const directory = mkdtempSync(join(tmpdir(), 'ui-' + platform + '-scenarios-'));
   const call = (args) => run(root, maestro, ['--device', device, ...args], { env });
@@ -118,12 +153,13 @@ export function runNativeScenarios({ root, appId, maestro, device, env, run, rep
       reset?.(id);
       const evidence = [];
       const fixture = { id: resourceId('fixture.' + fixtureId, platform) };
-      let commands = [
+      const enterFixture = [
         'launchApp', { tapOn: { id: resourceId('open-scenarios', platform) } },
         { runFlow: { when: { notVisible: fixture }, commands: [
           { scrollUntilVisible: { element: fixture, direction: 'DOWN' } },
         ] } }, { assertVisible: fixture }, { tapOn: fixture },
       ];
+      let commands = [...enterFixture];
       // One Maestro session per uninterrupted sequence. Read the live tree exactly at "before".
       for (const [index, step] of scenario.steps.entries()) {
         const label = id + ' step ' + (index + 1);
@@ -142,9 +178,16 @@ export function runNativeScenarios({ root, appId, maestro, device, env, run, rep
             assert.ok(tree, 'Native ' + platform + ' role evidence requires the live accessibility tree');
             for (const target of roleTargets) evidence.push(nativeRoles.verifyNativeRole(tree, platform, target));
           }
+          const ordinary = targets.filter(target => classOrTypeRoles[platform].includes(target.role));
+          if (readRoles && ordinary.length) {
+            if (commands.length) flow(id, commands);
+            commands = [];
+            const nodes = readRoles(ordinary);
+            for (const target of ordinary) verifyNativeRole(nodes, platform, target, step.expect === 'busy');
+          }
           const checkboxes = targets.filter(target => target.role === 'checkbox');
           if (checkboxes.length) {
-            flow(id, commands);
+            if (commands.length) flow(id, commands);
             commands = [];
             const tree = platform === 'android' ? readAndroidTree() : parseHierarchy(call(['hierarchy', '--no-ansi', '--no-reinstall-driver']));
             for (const target of checkboxes) verifyNativeCheckbox(tree, platform, target.name, {
@@ -154,7 +197,7 @@ export function runNativeScenarios({ root, appId, maestro, device, env, run, rep
           }
           if (step.act === 'activate') commands.push({ tapOn: { ...roleSelector(step.target, platform), enabled: true, label } });
           if (step.expect === 'busy' && platform === 'android') {
-            flow(id, commands);
+            if (commands.length) flow(id, commands);
             commands = [];
             verifyAndroidBusyButton(readAndroidTree(), step.target.name);
           }
@@ -170,6 +213,17 @@ export function runNativeScenarios({ root, appId, maestro, device, env, run, rep
         }
       }
       if (commands.length) flow(id, commands);
+      if (fixtureId === 'button.pending-once') {
+        const repeated = id + '.double-press';
+        reset?.(repeated);
+        const save = { role: 'button', name: 'Save' };
+        flow(repeated, [...enterFixture,
+          { assertVisible: { ...selector(save, platform), enabled: true } },
+          { tapOn: { ...selector(save, platform), repeat: 2, delay: 80 } },
+          { assertVisible: selector({ role: 'text', name: 'Saved once' }, platform) },
+          { assertVisible: selector(save, platform, true) },
+        ]);
+      }
       log(platform + ' scenario passed:', id);
       // Name the evidence level of each role beyond the original four.
       for (const row of evidence) log(platform + ' role evidence:', id, row.role, row.evidence);
@@ -178,4 +232,10 @@ export function runNativeScenarios({ root, appId, maestro, device, env, run, rep
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
+}
+
+export function runQualifiedNativeScenarios(options) {
+  assert.equal(typeof options.reset, 'function', 'Qualification requires a device reset between scenarios');
+  assert.equal(typeof options.readRoles, 'function', 'Qualification requires native role observations');
+  return runNativeScenarios(options);
 }
