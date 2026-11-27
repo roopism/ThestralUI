@@ -1,0 +1,10 @@
+{
+  "active": {
+    "android-low-end": "paired-ab",
+    "mac-browser": "absolute"
+  },
+  "minPairs": 6,
+  "maxExtraPairs": 4,
+  "relativeThreshold": 0.10,
+  "absoluteThresholdMs": 2
+}

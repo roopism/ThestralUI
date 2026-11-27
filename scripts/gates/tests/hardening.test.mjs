@@ -268,9 +268,10 @@ test('landing validates the current integration base, suite roster and qualifica
     'land must expose its actual receipt predicate to this check',
   );
   const { passing, required } = await import('../../land.mjs');
-  const { root } = repo(t),
-    tree = 'a'.repeat(40),
-    base = 'b'.repeat(40);
+  const { root, git } = repo(t);
+  git('commit', '--allow-empty', '--quiet', '-m', 'Historical absolute timing');
+  const tree = git('rev-parse', 'HEAD^{tree}'), base = git('rev-parse', 'HEAD');
+  const check = revision => passing(tree, revision, root, { root });
   const receipt = {
     tree,
     base,
@@ -283,20 +284,20 @@ test('landing validates the current integration base, suite roster and qualifica
   };
   const save = (data) => writeFileSync(join(root, tree + '.json'), JSON.stringify(data));
   save(receipt);
-  assert.deepEqual(passing(tree, base, root), receipt);
-  assert.equal(passing(tree, 'c'.repeat(40), root), undefined);
+  assert.deepEqual(check(base), receipt);
+  assert.equal(check('c'.repeat(40)), undefined);
   const attempts = join(root, 'attempts');
   mkdirSync(attempts);
   const failedId = 'c5f4cabc-94bd-4264-a56e-da7c12d3888d';
   const failed = join(attempts, failedId + '.json');
   writeFileSync(failed, JSON.stringify({ id: failedId, tree, base, mode: 'qualification', status: 'failed' }));
-  assert.throws(() => passing(tree, base, root), /earlier failed qualification/i);
+  assert.throws(() => check(base), /earlier failed qualification/i);
   rmSync(failed);
 
   save({ ...receipt, suites: receipt.suites.slice(1) });
-  assert.throws(() => passing(tree, base, root));
+  assert.throws(() => check(base));
   save({ ...receipt, mode: 'hook' });
-  assert.throws(() => passing(tree, base, root));
+  assert.throws(() => check(base));
 });
 
 test('publishing a later attempt preserves the first per-tree result and both attempts', async t => {

@@ -15,8 +15,8 @@ import { androidTools, config, requireManagedEmulator, withEmulator } from '../t
 import { androidMaestro } from '../tests/android/maestro.mjs';
 import { appId, preparePackedApk } from '../tests/android/host.mjs';
 import { accessibilityNodes, bounds, target } from '../tests/android/tree.mjs';
-import { androidTree, verifyAndroidInteraction } from '../tests/android/interaction.mjs';
-import { measureFrameBudget } from '../tests/android/frame-budget.mjs';
+import { verifyAndroidInteraction } from '../tests/android/interaction.mjs';
+import { prepareTimingStrategy, measureTimingStrategy } from './gates/timing/android.mjs';
 import { requireBothProfiles, requireCompletedProfiles } from '../tests/android/qualification.mjs';
 import { joinAndroidTiming, readAndroidFunctional, recordAndroidFunctional, requireTimingDevice, runAndroidProfilePhase } from '../tests/android/split-qualification.mjs';
 import { readCandidateScenarios } from './scenarios/fixture-metadata.mjs';
@@ -80,18 +80,29 @@ function startQualification() {
   return { flows, roster, neutralIds, budgets };
 }
 
-async function measureLowEnd(apk, device, dir, budgets, emulator) {
-  const timing = await androidTiming({ apk, root, common: emulator || process.env.ULD_FRESH_ANDROID_TIMING === '1' ? undefined : process.env.ULD_ARTIFACT_COMMON, limits: budgets.limits,
+async function measureLowEnd(apk, device, dir, budgets, strategy, emulator) {
+  let strategyReport;
+  const common = process.env.ULD_ARTIFACT_COMMON;
+  const timing = await androidTiming({ apk, root, common, limits: budgets.limits, strategy: strategy.config.active['android-low-end'],
+    config: strategy.config, comparisonApp: strategy.base,
+    fresh: Boolean(emulator) || process.env.ULD_FRESH_ANDROID_TIMING === '1',
     measure: async (identity) => {
       await stopVm();
       shutdownSimulators();
-      const common=process.env.ULD_ARTIFACT_COMMON;
       const observed = observedIdentity(root, common, identity);
       if (emulator) observed.emulator = emulator;
       return measureAdmitted({reports:dir,identity:observed,common,limits:budgets.limits,
-        measure:reports=>measureFrameBudget({device,tree:()=>androidTree(device).nodes,reports})});
+        measure: async folder => {
+          const result = await measureTimingStrategy({ common, device, budgets, strategy, apk,
+            profile: config.profiles.find(p => p.id === 'low-end'), reports: folder, identity: observed });
+          if (folder === dir) strategyReport = result.report;
+          return result.frames;
+        }});
     } });
-  if(timing.result==='timing measured') timing.admission=JSON.parse(readFileSync(join(dir,'timing-admission.json'),'utf8'));
+  if (timing.result === 'timing measured') {
+    timing.admission = JSON.parse(readFileSync(join(dir, 'timing-admission.json'), 'utf8'));
+    timing.strategyReport = strategyReport;
+  }
   return timing;
 }
 
@@ -122,6 +133,7 @@ async function qualifyTiming() {
   const { flows, roster, neutralIds, budgets } = startQualification();
   const common = process.env.ULD_ARTIFACT_COMMON;
   const apk = join(reports, 'apk/app-release.apk');
+  const strategy = await prepareTimingStrategy({ root, common, tools, reports }, true);
   const part = readAndroidFunctional(common, observedIdentity(root, common, apkIdentity(apk)));
   const profile = config.profiles.find(row => row.id === 'low-end');
   const dir = join(reports, profile.id), boot = join(dir, 'timing-boot');
@@ -134,7 +146,7 @@ async function qualifyTiming() {
     const emulator = {id:profile.id, name, serial, fingerprint:hardware.fingerprint};
     let frameBudget;
     try {
-      const timing = await measureLowEnd(apk, device, dir, budgets, emulator);
+      const timing = await measureLowEnd(apk, device, dir, budgets, strategy, emulator);
       joinAndroidTiming(common, part, hardware, emulator, timing);
       recordTiming(dir, timing);
     } catch (error) {
@@ -170,6 +182,7 @@ async function qualify(phase) {
   const common = process.env.ULD_ARTIFACT_COMMON;
   const { executable: maestro, env: driverEnv } = await androidMaestro(tools.env);
   const { apk, archives, host } = await preparePackedApk(root, evidence, tools, reports);
+  const strategy = await prepareTimingStrategy({ root, common, tools, reports });
   const splitIdentity = () => observedIdentity(root, common, apkIdentity(apk));
   const identity = functional ? splitIdentity() : null;
   const profiles = [];
@@ -183,7 +196,7 @@ async function qualify(phase) {
       if (profile.id === 'low-end') {
         measure = async () => {
           try {
-            const timing = await measureLowEnd(apk, device, dir, budgets);
+            const timing = await measureLowEnd(apk, device, dir, budgets, strategy);
             frameBudget = timing.frameBudget;
             recordTiming(dir, timing);
           } catch (error) {

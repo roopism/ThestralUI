@@ -15,6 +15,7 @@ const config = join(homedir(), 'Library/Application Support/ui-lazy-dev/linux-vm
 const sshOptions = ['-F', config, '-o', 'StrictHostKeyChecking=yes', '-o', 'ForwardAgent=no', '-o', 'ClearAllForwardings=yes'];
 const exec = (bin, args, options = {}) => execFileSync(bin, args, { encoding: 'utf8', ...options });
 const state = () => exec(utm, ['status', vm]).trim();
+export { state as vmState };
 const reservationRoot = () => process.env.ULD_ARTIFACT_COMMON || process.cwd();
 
 // Internal shutdown runs under the caller's lease. Standalone callers acquire their own.

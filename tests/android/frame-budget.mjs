@@ -75,7 +75,7 @@ export function summarizeTrials(samples) {
   };
 }
 
-async function measureFrameTrial({ device, tree, reports }) {
+export async function measureFrameTrial({ device, tree, reports }) {
   for (const setting of [
     'window_animation_scale',
     'transition_animation_scale',

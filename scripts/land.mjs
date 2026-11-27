@@ -1,5 +1,5 @@
 import { verifiedDevicePlan, requireGateTimingEvidence, requireScopedEvidence } from './gates/device-verdict.mjs';
-import { timingForIdenticalApk } from './gates/android-timing-reuse.mjs';
+import { requirePairedMeasurement, timingForIdenticalApk } from './gates/android-timing-reuse.mjs';
 import { requireObservedSource } from './gates/android-host-activity.mjs';
 import { requireOriginalReceipt, verifyLandingReuse } from './gates/reuse/runner.mjs';
 import { projectStoredPasses } from './gates/reuse/store.mjs';
@@ -8,6 +8,7 @@ import { withRevisionSnapshot } from '../packages/policy/quality/staged-tree.mjs
 import { installSnapshotDependencies } from '../packages/policy/quality/snapshot-dependencies.mjs';
 import { relatedHistory, requireReviewedFailures, treeHistory } from './gates/receipt-history.mjs';
 import { reviewPolicy } from './gates/review/qualification-policy.mjs';
+import { assertTimingConfigChange, readTimingConfig } from './gates/timing/config-policy.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, appendFileSync, mkdirSync } from 'node:fs';
@@ -67,6 +68,7 @@ export function proposal(number = process.argv[2]) {
   requireGateIsolation(pr.head.ref, paths, undefined, derivedRegistrations(root, pr.base.sha, tree, pr.head.ref));
   assert.deepEqual(reviewPolicy(root, pr.base.sha, tree), []);
   assert.deepEqual(reusePolicyIssues(root, pr.base.sha, tree), []);
+  assertTimingConfigChange(root, pr.base.sha, tree);
   return { pr, merge, tree };
 }
 function ownerDecisions(base) {
@@ -130,6 +132,16 @@ export function passing(tree, base, directory = join(common, 'uld-receipts'), pr
       assert.ok(r.scope.iphone ? r.devices.iphone?.passed : !r.devices.iphone);
       assert.ok(r.suites.every(row => Number.isFinite(row.durationMs) && (row.result === 'passed' ||
         row.name === 'iPhone Simulator' && !r.scope.iphone && row.result === 'web-only')));
+      const checkout = proposal.root ?? root;
+      const config = readTimingConfig(checkout, tree);
+      if (config?.active['android-low-end'] === 'paired-ab') {
+        assert.equal(r.androidTiming?.result, 'timing measured', 'Paired timing requires measurements for both proposal trees');
+        assert.equal(r.androidHostActivityPolicy, 1);
+        const gitAt = (...args) => execFileSync('git', ['--no-replace-objects', ...args], { cwd: checkout, encoding: 'utf8' }).trim();
+        const budgets = JSON.parse(gitAt('show', tree + ':tests/android/low-end-budget.json'));
+        const low = join(directory, 'attempts', r.id + '-evidence', 'android', 'low-end');
+        requirePairedMeasurement(r.androidTiming, tree, gitAt('rev-parse', base + '^{tree}'), low, config, budgets);
+      }
       if (r.androidHostActivityPolicy===1 || spawnSync('git',['--no-replace-objects','cat-file','-e',base+':scripts/gates/android-host-activity.mjs'],
           {cwd:proposal.root??root,stdio:'ignore'}).status===0) {
         assert.equal(r.androidHostActivityPolicy,1);

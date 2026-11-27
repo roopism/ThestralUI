@@ -5,7 +5,7 @@ import { treeFiles } from './staged-tree.mjs';
 import scenarioReader from '../scenarios/read.cjs';
 import { checkFlow } from '../verify-ios-simulator.mjs';
 import { requireCompletedProfiles } from '../../tests/android/qualification.mjs';
-import { timingForIdenticalApk } from '../gates/android-timing-reuse.mjs';
+import { apkReplayForTree } from '../gates/android-timing-reuse.mjs';
 import { execFileSync } from 'node:child_process';
 import { posix } from 'node:path';
 import { readFileSync } from 'node:fs';
@@ -197,6 +197,7 @@ export function requireDailyObservation(root, receipt) {
   assert.equal(receipt.androidHostActivityPolicy, 1);
   assert.equal(receipt.androidTiming?.result, 'timing measured');
   const limits = JSON.parse(git(root, 'show', receipt.tree + ':tests/android/low-end-budget.json')).limits;
+  const timingForIdenticalApk = apkReplayForTree(root, receipt.tree);
   assert.ok(timingForIdenticalApk(receipt, receipt.tree, receipt.androidTiming.apkSha256, limits),
     'Missing passing Android timing bound to this receipt, app and tree');
   requireDailyRosters(root, receipt, limits);
