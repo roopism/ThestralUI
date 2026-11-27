@@ -142,7 +142,7 @@ function contentPredicate(guard, props, checker) {
 // same module. Only follow a direct call with the original props. Any other use
 // of the callee name (including shadowing or reassignment) makes it ambiguous.
 function returnedHost(binding, root) {
-  if (!ts.isFunctionDeclaration(binding) || !binding.body) return;
+  if (!ts.isFunctionDeclaration(binding) || binding.asteriskToken || !binding.body) return;
   const statements = binding.body.statements;
   const last = statements.at(-1);
   if (!last || !ts.isReturnStatement(last) || !statements.slice(0,-1).every(ts.isVariableStatement)) return;
@@ -159,6 +159,15 @@ function returnedHost(binding, root) {
   const helper = checker.getSymbolAtLocation(call.expression)?.valueDeclaration;
   if (!helper || !ts.isFunctionDeclaration(helper) || helper.parent !== file || !helper.body ||
       helper.modifiers?.length || helper.asteriskToken) return;
+  // The public call must keep its input and the helper's early-return flags intact.
+  function writes(node) {
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+        node.operatorToken.kind <= ts.SyntaxKind.LastAssignment) return true;
+    if (ts.isDeleteExpression(node) || ts.isPostfixUnaryExpression(node) ||
+        (ts.isPrefixUnaryExpression(node) && [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(node.operator))) return true;
+    return ts.forEachChild(node, writes);
+  }
+  if (writes(binding) || writes(helper)) return;
   const predicate = guarded && contentPredicate(resultExpr.condition, props, checker);
   if (guarded && !predicate) return;
   function ambiguous(node) {
