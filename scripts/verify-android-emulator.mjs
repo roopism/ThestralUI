@@ -10,11 +10,12 @@ import { checkFlow } from './verify-ios-simulator.mjs';
 import { selectNativeScenarios } from './selection/native-scenarios.mjs';
 import { withMaestroSession } from '../tests/simulator/maestro-session.mjs';
 import { androidWindow } from '../tests/simulator/window-ready.mjs';
-import { runNativeScenarios } from '../tests/simulator/scenarios.mjs';
+import { verifyDarkButton } from '../tests/simulator/button-pixels.mjs';
+import { classOrTypeRoles, runQualifiedNativeScenarios } from '../tests/simulator/scenarios.mjs';
 import { androidTools, config, requireManagedEmulator, withEmulator } from '../tests/android/emulator.mjs';
 import { androidMaestro } from '../tests/android/maestro.mjs';
 import { appId, preparePackedApk } from '../tests/android/host.mjs';
-import { accessibilityNodes, bounds, target } from '../tests/android/tree.mjs';
+import { accessibilityNodes, bounds, readScenarioRoles, target } from '../tests/android/tree.mjs';
 import { androidTree, verifyAndroidInteraction } from '../tests/android/interaction.mjs';
 import { measureFrameBudget } from '../tests/android/frame-budget.mjs';
 import { requireBothProfiles, requireCompletedProfiles } from '../tests/android/qualification.mjs';
@@ -202,7 +203,7 @@ async function qualify(phase) {
       await runAndroidProfilePhase(phase, measure);
       const reset = () => androidWindow(device, appId);
       reset();
-      withMaestroSession({ device: serial, platform: 'android', maestro, env, reports: dir }, (run, { androidXML }) => {
+      withMaestroSession({ device: serial, platform: 'android', maestro, env, reports: dir }, (run, { androidXML, buttonPixels }) => {
         const readAndroidTree = () => accessibilityNodes(androidXML());
         const passed = [];
         for (const appearance of ['light', 'dark']) {
@@ -278,18 +279,29 @@ async function qualify(phase) {
                 }) + '\n',
               );
             }
+            if (id === 'appearance-dark') {
+              const button = target(readAndroidTree(), 'workspace-review', { role: 'Button', name: 'Review changes', enabled: true });
+              const observed = verifyDarkButton(bounds(button), buttonPixels);
+              writeFileSync(join(dir, 'dark-button.json'), JSON.stringify(observed) + '\n');
+            }
             passed.push(id);
           }
         }
         device('shell', 'cmd', 'uimode', 'night', 'no');
         device('shell', 'settings', 'put', 'system', 'font_scale', '1.0');
-        const scenarioIds = runNativeScenarios({
+        let alertRead = 0;
+        const scenarioIds = runQualifiedNativeScenarios({
           root,
           appId,
           maestro,
           device: serial,
           platform: 'android',
           readAndroidTree,
+          readRoles: targets => readScenarioRoles(readAndroidTree(), targets, () => {
+            const dump = device('shell', 'dumpsys', 'activity', appId + '/com.helloworld.MainActivity', 'uld-alert-roles');
+            writeFileSync(join(dir, 'alert-roles-' + ++alertRead + '.txt'), dump);
+            return dump;
+          }),
           reset,
           env,
           run,
@@ -302,6 +314,7 @@ async function qualify(phase) {
           hardware,
           passed,
           scenarioIds,
+          enrolledClassOrTypeRoles: classOrTypeRoles.android,
           interaction,
           frameBudget,
         });

@@ -714,6 +714,38 @@
           ]
         }
       ]
+    },
+    {
+      "path": "packages/web/src/_shared/motion-choreography/binding.tsx",
+      "previousSha256": "d1036014b1ea641fd300a12da929354ad632280886b7c14e7c6f8e25fb6b6e82",
+      "currentSha256": "1605a45158c54d5deccd6ec6bf5e2482bee34769d79aeb870e70d24646f1b3ec",
+      "previousGroups": [
+        {
+          "owner": "UI platform",
+          "reason": "The animation uses measured element bounds and an interruptible timeline.",
+          "expires": "2027-02-18",
+          "entries": [
+            [
+              "3a639e570abced7ab1242cbbdbcf5587335fcfee119713aae037d150b651dda6",
+              "style/runtime",
+              1,
+              "play duration = duration"
+            ],
+            [
+              "f65fa171b2cb1cfd42cbe3cbe2247a766cf335e1d7dd64b2855d5d5112cfa5cb",
+              "style/runtime",
+              1,
+              "play style = frames"
+            ],
+            [
+              "fa9005d51aaad17631fc0e7c25f1389b20392d76ac53b1e836d297b851c3bc87",
+              "style/runtime",
+              1,
+              "play delay = index * Math.max(0, stagger)"
+            ]
+          ]
+        }
+      ]
     }
   ],
   "baselineAdditions": [

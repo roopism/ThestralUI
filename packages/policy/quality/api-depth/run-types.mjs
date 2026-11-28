@@ -17,9 +17,7 @@ verifyFamilies(
     .filter((f) => f.api?.length)
     .map((f) => ({ id: f.id, exports: [...f.api, ...(f.nativeApi || [])] })),
 );
-console.log(
-  'Packed current API contracts',
-  revision,
-  verifyTypes(consumer, reviewed, shippedMinimum),
-);
-console.log('Proposed API requirements', revision, verifyTypes(consumer, reviewed, cases));
+const current = verifyTypes(consumer, reviewed, shippedMinimum);
+console.log('Packed current API contracts', revision, current);
+const proposed = cases === shippedMinimum ? current : verifyTypes(consumer, reviewed, cases);
+console.log('Proposed API requirements', revision, proposed);

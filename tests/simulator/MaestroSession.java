@@ -2,6 +2,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.kotlin.KotlinModule;
+import java.awt.image.BufferedImage;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -102,10 +103,31 @@ public final class MaestroSession {
                             if (op.equals("quit")) {
                                 publish(step.resolve("reply.json"), Map.of("ok", true));
                                 return 0;
+                            } else if (op.equals("button-pixels")) {
+                                Path image = step.resolve("dark-button.png");
+                                final Method capture = method(Maestro.class, "takeScreenshot", android ? 3 : 2);
+                                if (android) {
+                                    BuildersKt.runBlocking(EmptyCoroutineContext.INSTANCE,
+                                        (scope, cont) -> invoke(capture, maestro, image.toFile(), false, cont));
+                                } else {
+                                    invoke(capture, maestro, image.toFile(), false);
+                                }
+                                var deviceInfo = maestro.getCachedDeviceInfo();
+                                var rect = fields.required("rect");
+                                var bitmap = javax.imageio.ImageIO.read(image.toFile());
+                                var counts = NativeButtonPixels.count(bitmap,
+                                    android ? bitmap.getWidth() : deviceInfo.getWidthGrid(),
+                                    android ? bitmap.getHeight() : deviceInfo.getHeightGrid(),
+                                    rect.required("x").intValue(), rect.required("y").intValue(),
+                                    rect.required("right").intValue(), rect.required("bottom").intValue(),
+                                    Integer.decode(fields.required("fill").asText()), Integer.decode(fields.required("label").asText()));
+                                publish(step.resolve("counts.json"), counts);
                             } else if (op.equals("android-xml") && android) {
                                 Files.writeString(step.resolve("nodes.xml"), androidHierarchy(maestro));
                             } else if (op.equals("ios-elements") && !android) {
                                 publish(step.resolve("elements.json"), iosElements(maestro));
+                            } else if (op.equals("ios-roles") && !android) {
+                                publish(step.resolve("roles.json"), iosElements(maestro));
                             } else if (op.equals("reconnect-ios") && !android) {
                                 // A cold simulator boot terminates its XCTest runner. Keep the CLI
                                 // and Maestro session, and reopen the same driver's transport.
@@ -147,5 +169,30 @@ public final class MaestroSession {
                 } catch (Exception failure) { failure.printStackTrace(); return 1; }
             });
         System.exit(status);
+    }
+}
+
+// The trusted phone wrapper compiles MaestroSession.java as a single source.
+final class NativeButtonPixels {
+    static Map<String, Integer> count(BufferedImage image, int gridWidth, int gridHeight,
+            int x, int y, int right, int bottom, int fill, int label) {
+        if (gridWidth <= 0 || gridHeight <= 0 || x < 0 || y < 0 || right <= x || bottom <= y
+                || right > gridWidth || bottom > gridHeight || fill == label)
+            throw new IllegalArgumentException("Invalid Button bounds, screen grid or token colors");
+        // XCTest and Android provide accessibility bounds in their own coordinate grids.
+        int leftPixel = (int) Math.ceil((double) x * image.getWidth() / gridWidth);
+        int topPixel = (int) Math.ceil((double) y * image.getHeight() / gridHeight);
+        int rightPixel = (int) Math.floor((double) right * image.getWidth() / gridWidth);
+        int bottomPixel = (int) Math.floor((double) bottom * image.getHeight() / gridHeight);
+        int fillCount = 0, labelCount = 0;
+        for (int row = topPixel; row < bottomPixel; row++) {
+            for (int col = leftPixel; col < rightPixel; col++) {
+                int rgb = image.getRGB(col, row) & 0xffffff;
+                if (rgb == fill) fillCount++;
+                if (rgb == label) labelCount++;
+            }
+        }
+        return Map.of("pixels", (rightPixel - leftPixel) * (bottomPixel - topPixel),
+                "fill", fillCount, "label", labelCount, "gridWidth", gridWidth, "gridHeight", gridHeight);
     }
 }

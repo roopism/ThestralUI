@@ -75,6 +75,9 @@ try {
   const library = join(dirname(dirname(execFileSync('realpath', [maestro], { encoding: 'utf8' }).trim())), 'lib', '*');
   const classes = join(dir, 'classes');
   execFileSync('javac', ['-cp', library, '-d', classes, join(root, 'tests/simulator/MaestroSession.java')]);
+  execFileSync('javac', ['-cp', classes, '-d', classes, join(root, 'tests/simulator/ButtonPixelControl.java')]);
+  execFileSync('java', ['-cp', classes, 'ButtonPixelControl', join(root, 'tests/simulator/button-dark-control.png')]);
+  console.log('The single-source bridge counted the PNG crop and recorded its replay grid.');
   writeFileSync(join(dir, 'ElementShape.java'), `
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
