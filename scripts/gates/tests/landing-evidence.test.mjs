@@ -221,8 +221,10 @@ test('a second diagnostic reservation or result cannot replace the first', t => 
   assert.throws(() => reserveDiagnostic(f.root, f.directory, f.fail.id), /EEXIST/);
   finishDiagnostic(f.directory, f.tree, claim.id, asJson(diagnostic));
   assert.throws(() => finishDiagnostic(f.directory, f.tree, claim.id, asJson({ ...diagnostic, end: diagnostic.end + 1 })), /second diagnostic/);
+  assert.throws(() => f.check(), /second diagnostic/);
   f.save(f.pass);
   assert.equal(f.check().id, f.pass.id);
+  assert.deepEqual(f.check().landingEvidence, [{ failed: f.fail.id }]);
 });
 
 test('a non-timing suite claiming contention is refused', t => {

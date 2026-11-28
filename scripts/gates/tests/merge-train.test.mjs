@@ -244,6 +244,10 @@ test('a failed train keeps its immutable receipt before invoking prefix diagnost
   };
   await assert.rejects(createTrain(f.context, f.numbers), /Train failed/);
   await assert.rejects(createTrain(f.context, f.numbers), /Train failed/);
+  assert.equal(run, 1);
+  const first = attempt;
+  assert.throws(() => f.context.qualify({ base: first.base, finalCommit: first.commit, finalTree: first.tree }), /Fixture suite failed/);
+  assert.notEqual(attempt.id, first.id);
   assert.equal(run, 2);
   assert.equal(diagnoses, 2);
   assert.equal(f.tip(), f.base);

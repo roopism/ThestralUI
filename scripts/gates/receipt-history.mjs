@@ -7,14 +7,16 @@ import { isDeepStrictEqual } from 'node:util';
 import { resolveFailure } from './landing-evidence.mjs';
 import { execFileSync } from 'node:child_process';
 import { existsSync, linkSync, readFileSync, readdirSync } from 'node:fs';
+import { hostname } from 'node:os';
 import { join } from 'node:path';
+import { processInfo } from '../workers/timing-reservation.mjs';
 
 const oid = /^[a-f0-9]{40}$/;
 const attemptFile = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}\.json$/i;
 const read = (path) => JSON.parse(readFileSync(path, 'utf8'));
 
 // Use the recorded merge and base, even after a proposal ref has moved or been removed.
-export function qualificationIdentity(root, base, commit, tree) {
+export function qualificationIdentity(root, base, commit, tree, recordOwner = true) {
   for (const id of [base, commit, tree]) assert.match(id, oid, 'Expected a full qualification Git object ID');
   const options = { cwd: root, encoding: 'utf8', env: { ...process.env, GIT_NO_REPLACE_OBJECTS: '1' } };
   const git = (...args) => execFileSync('git', args, options).trim();
@@ -28,7 +30,7 @@ export function qualificationIdentity(root, base, commit, tree) {
   const result = execFileSync('/bin/bash', ['-o', 'pipefail', '-c', command, 'qualification-patch', base, tree], options).trim();
   const patchId = result ? result.split(' ')[0] : null;
   if (patchId !== null) assert.match(patchId, oid, 'Unexpected Git patch identity');
-  return { head, patchId };
+  return { head, patchId, ...(recordOwner && { owner: { host: hostname(), pid: process.pid, birth: processInfo(process.pid).birth } }) };
 }
 
 // Publish the first completed attempt atomically. All later attempts keep their own files.
@@ -59,7 +61,7 @@ export function relatedHistory(directory, tree, first, root, target) {
   const identities = new Map();
   function identify(attempt) {
     const key = [attempt.base, attempt.commit, attempt.tree].join('/');
-    if (!identities.has(key)) identities.set(key, qualificationIdentity(root, attempt.base, attempt.commit, attempt.tree));
+    if (!identities.has(key)) identities.set(key, qualificationIdentity(root, attempt.base, attempt.commit, attempt.tree, false));
     const identity = identities.get(key);
     for (const field of ['head', 'patchId']) {
       if (Object.hasOwn(attempt, field)) assert.equal(attempt[field], identity[field], 'Inconsistent receipt ' + field);
@@ -134,8 +136,34 @@ export function latestAttempt(history, directory) {
     assert.ok(typeof value === 'string' && Number.isFinite(time), 'Invalid qualification timestamp');
     return time;
   }
-  let latest;
-  for (const row of history) {
+  let latest, active, processes;
+  for (let row of history) {
+    if (row.status === 'running') {
+      processes ??= execFileSync('ps', ['-ww', '-A', '-o', 'pid=,lstart=,command='], {
+        encoding: 'utf8', env: { ...process.env, LC_ALL: 'C', TZ: 'UTC' }, maxBuffer: 64 * 1024 * 1024,
+      }).trim().split('\n');
+      const owner = row.owner;
+      if (owner) assert.ok(typeof owner.host === 'string' && owner.host.length && Number.isSafeInteger(owner.pid) && owner.pid > 0 &&
+        typeof owner.birth === 'string' && Number.isFinite(Date.parse(owner.birth)), 'Invalid qualification process owner');
+      // A detached suite can outlive the launcher. Its argv carries the exact attempt UUID.
+      const suite = [row.base, row.commit, row.mode, row.id].join(' ');
+      const live = owner && owner.host !== hostname() || processes.some(line => {
+        const match = /^\s*(\d+)\s+(.*)$/.exec(line);
+        return owner && Number(match?.[1]) === owner.pid && match[2].startsWith(owner.birth + ' ') ||
+          /[\s/]scripts\/gates\/local-run\.mjs /.test(line) && (line + ' ').includes(' ' + suite + ' ') ||
+          !owner && /[\s/]scripts\/qualify\.mjs /.test(line) && (line + ' ').includes(' ' + row.commit + ' ');
+      });
+      if (live) active = row;
+      else if (attemptFile.test(row.id + '.json')) {
+        // An exiting owner may have published its verdict since history was read.
+        const path = join(directory, 'attempts', row.id + '.json');
+        if (existsSync(path)) {
+          const current = read(path);
+          assert.deepEqual([current.id, current.tree, current.base, current.commit], [row.id, row.tree, row.base, row.commit]);
+          if (current.status !== 'running') row = current;
+        }
+      }
+    }
     const started = timestamp(row.started), finished = timestamp(row.finished);
     assert.ok(started === undefined || finished === undefined || started <= finished, 'Invalid qualification time order');
     const failed = incomplete(row, directory);
@@ -144,7 +172,7 @@ export function latestAttempt(history, directory) {
     if (!latest || time > latest.time || time === latest.time && failed && !latest.failed)
       latest = { row, time, failed };
   }
-  return latest?.row;
+  return active ?? latest?.row;
 }
 
 export function reviewedEvidence(directory, tree, history, context) {
@@ -154,7 +182,7 @@ export function reviewedEvidence(directory, tree, history, context) {
         !attemptFile.test(row.id + '.json') || reviewed.has(row.id) ||
         !existsSync(join(directory, 'attempts', row.id + '-evidence', 'landing', 'manifest.json'))) continue;
     assert.ok(history.every(copy => copy.id !== row.id || isDeepStrictEqual(copy, row)), 'Inconsistent failed receipt');
-    const { diagnostic } = resolveFailure(context.root, directory, row, history, tree, context.base, context.roster);
+    const { diagnostic } = resolveFailure(context.root, directory, row, history, tree, context.base, context.roster, context.latest);
     reviewed.set(row.id, { failed: row.id, ...(diagnostic && { diagnostic }) });
   }
   return [...reviewed.values()];

@@ -83,7 +83,7 @@ export function passing(tree, base, directory = join(common, 'uld-receipts'), pr
   const candidates = exactAttempts(history, tree, base, proposal.commit);
   const raw = latestAttempt(candidates, directory);
   if (!raw) return;
-  const evidence = reviewedEvidence(directory, tree, candidates, { root: proposal.root ?? root, base, roster: required });
+  const evidence = reviewedEvidence(directory, tree, candidates, { root: proposal.root ?? root, base, roster: required, latest: raw });
   if (raw.status !== 'passed') return;
   assert.ok(!incomplete(raw, directory), 'An incomplete or earlier failed qualification prevents landing');
   requireOriginalReceipt(proposal.root ?? root, raw, base);

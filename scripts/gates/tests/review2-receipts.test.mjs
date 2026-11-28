@@ -1,11 +1,16 @@
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { once } from 'node:events';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { passing, required } from '../../land.mjs';
 import { exactTrainQualification } from '../../train.mjs';
+import { failUnfinishedAttempt, startAttempt } from '../qualification-attempt.mjs';
+import { latestAttempt } from '../receipt-history.mjs';
+import { sealReceipt } from '../reuse/runner.mjs';
 import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
 
 isolateFixtureProcess();
@@ -105,6 +110,55 @@ test('landing verifies recorded identity fields against the preserved Git object
   const f = fixture(t);
   f.save({ ...f.record(f.original), head: f.updated.commit, patchId: '0'.repeat(40) }, true);
   assert.throws(() => f.check(f.original, f.base), /inconsistent receipt/i);
+});
+
+test('solo and train wait for every live exact attempt and verify the subsequent retry', async t => {
+  const f = fixture(t);
+  const live = startAttempt(f.root, f.directory, f.base.commit, f.original.commit, f.original.tree, 'qualification');
+  const train = { finalTree: live.tree, finalCommit: live.commit, base: live.base };
+  const trainReceipt = () => exactTrainQualification(f.root, f.directory, train, passing);
+  const sealPass = () => {
+    const now = new Date().toISOString();
+    const pass = { ...f.record(f.original), reuseSchema: 1, started: now, finished: now };
+    sealReceipt(f.root, pass);
+    f.save(pass);
+    f.save(pass, true);
+    return pass;
+  };
+  const pass = sealPass();
+  assert.equal(f.check(f.original, f.base), undefined);
+  assert.throws(trainReceipt, /unfinished qualification/);
+
+  const folder = join(f.root, 'scripts/gates');
+  mkdirSync(folder, { recursive: true });
+  const script = join(folder, 'local-run.mjs');
+  writeFileSync(script, "process.send('ready'); setInterval(() => {}, 60000);");
+  const runner = spawn(process.execPath, [script, f.root, live.base, live.commit, live.mode, live.id],
+    { stdio: ['ignore', 'ignore', 'ignore', 'ipc'] });
+  t.after(() => runner.kill());
+  await once(runner, 'message');
+  // The launcher has exited and its PID now refers to a different process generation.
+  const abandoned = { ...live, owner: { ...live.owner, birth: 'Thu Jan  1 00:00:00 1970' } };
+  f.save(abandoned);
+  assert.equal(f.check(f.original, f.base), undefined);
+  assert.throws(trainReceipt, /unfinished qualification/);
+  const exited = once(runner, 'exit');
+  runner.kill();
+  await exited;
+  assert.equal(f.check(f.original, f.base).id, pass.id);
+  assert.equal(trainReceipt().id, pass.id);
+
+  failUnfinishedAttempt(f.directory, live, Error('Overlapping attempt failed'));
+  assert.equal(latestAttempt([abandoned, pass], f.directory).status, 'failed');
+  assert.equal(f.check(f.original, f.base), undefined);
+  assert.equal(trainReceipt().status, 'failed');
+  const retry = sealPass();
+  assert.equal(trainReceipt().id, retry.id);
+  const changed = { ...retry, vm: { ...retry.vm, browsers: 'edited' } };
+  f.save(changed);
+  f.save(changed, true);
+  assert.throws(() => f.check(f.original, f.base), /changed after its verdict/);
+  assert.throws(trainReceipt, /changed after its verdict/);
 });
 
 test('an unsigned decision cannot clear a failed qualification', t => {

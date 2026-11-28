@@ -219,6 +219,7 @@
   "scripts/gates/tests/review2-receipts.test.mjs | landing reads failed per-tree receipts and rejects a related attempt before any pass is published",
   "scripts/gates/tests/review2-receipts.test.mjs | landing verifies recorded identity fields against the preserved Git objects",
   "scripts/gates/tests/review2-receipts.test.mjs | related head and patch failures do not supersede an exact passing receipt",
+  "scripts/gates/tests/review2-receipts.test.mjs | solo and train wait for every live exact attempt and verify the subsequent retry",
   "scripts/gates/tests/review2-renderer-integrity.test.mjs | renderer integrity rejects dynamic constructors reached through prototypes",
   "scripts/gates/tests/review2-renderer-integrity.test.mjs | renderer integrity rejects imperative image source assignments",
   "scripts/gates/tests/review2-renderer-integrity.test.mjs | renderer integrity rejects reflective global property reads",
