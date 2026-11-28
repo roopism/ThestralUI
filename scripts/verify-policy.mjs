@@ -1,8 +1,17 @@
 import assert from 'node:assert/strict';
+import { gzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { verdictInputRoot } from './gates/verdict.mjs';
+
+export const packedGzipSize = bytes => gzipSync(bytes, { level: 9 }).length;
+
+export function packedEntrySize(label, output) {
+  const size = { entry: label, gzip: packedGzipSize(output.contents) };
+  if (label.endsWith('.css')) size.css = output.text;
+  return size;
+}
 
 export const sha256 = (data) => createHash('sha256').update(data).digest('hex');
 const releaseDigests = {

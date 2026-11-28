@@ -119,7 +119,7 @@ function checkCoverage(before, after, priorOwners, nextOwners, slug, changed) {
   return native;
 }
 
-function sheets(text, path, exported) {
+export function sheets(text, path, exported) {
   const markers = [...text.matchAll(/\/\* @uld-css-chunk ([\w-]+)(?:\.\d+)? \*\/\n/g)];
   requireScope(markers[0]?.index === 0, 'Unknown stylesheet compilation rule for ' + path);
   return markers.map(match => {

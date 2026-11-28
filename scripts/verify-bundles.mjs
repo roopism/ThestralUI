@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { join, resolve } from 'node:path';
 import { loadManifests } from './manifests/generate.mjs';
 import { pathToFileURL } from 'node:url';
-import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
+import { brotliCompressSync, constants } from 'node:zlib';
 import { build } from 'esbuild';
 import { readJson, root, saveJson } from './verify-artifacts.mjs';
-import { assertCoverage, enforceBudget } from './verify-policy.mjs';
+import { assertCoverage, enforceBudget, packedEntrySize } from './verify-policy.mjs';
 
 // Map each JavaScript subpath to a representative independent import.
 const policies = {
@@ -86,6 +86,31 @@ export function bundleImports() {
   return registeredBundleImports(families, shared, packages, baseline);
 }
 
+export { packedGzipSize } from './verify-policy.mjs';
+
+export function buildPackedImport(cwd, name, entry, symbol) {
+  const css = entry.endsWith('.css');
+  const all = entry.endsWith('.json') ? '{ default }' : '*';
+  const selection = symbol ? '{ ' + symbol + ' }' : all;
+  const contents = css
+    ? '@import ' + JSON.stringify(name) + ';'
+    : 'export ' + selection + ' from ' + JSON.stringify(name) + ';';
+  return build({
+    absWorkingDir: cwd,
+    bundle: true,
+    write: false,
+    minify: true,
+    treeShaking: true,
+    platform: 'browser',
+    target: 'es2022',
+    format: 'esm',
+    metafile: true,
+    external: ['react', 'react-dom'],
+    define: { 'process.env.NODE_ENV': '"production"' },
+    stdin: { contents, resolveDir: cwd, loader: css ? 'css' : 'js' },
+  });
+}
+
 export async function measureBundles(cwd, { diagnostics = false, selectedEntries } = {}) {
   const results = [];
   for (const [pkg, entries] of bundleImports()) {
@@ -94,32 +119,14 @@ export async function measureBundles(cwd, { diagnostics = false, selectedEntries
     for (const [entry, symbols] of entries) {
       if (diagnostics && !Object.hasOwn(manifest.exports, entry)) continue;
       const name = pkg + (entry === '.' ? '' : entry.slice(1));
-      const css = entry.endsWith('.css');
-      const all = entry.endsWith('.json') ? '{ default }' : '*';
       for (const symbol of [null, ...symbols]) {
-        const selection = symbol ? '{ ' + symbol + ' }' : all;
         const label = name + (symbol ? '#' + symbol : '');
         if (selectedEntries && !selectedEntries.includes(label)) continue;
-        const contents = css
-          ? '@import "' + name + '";'
-          : 'export ' + selection + ' from "' + name + '";';
-        const result = await build({
-          absWorkingDir: cwd,
-          bundle: true,
-          write: false,
-          minify: true,
-          treeShaking: true,
-          platform: 'browser',
-          target: 'es2022',
-          format: 'esm',
-          metafile: true,
-          external: ['react', 'react-dom'],
-          define: { 'process.env.NODE_ENV': '"production"' },
-          stdin: { contents, resolveDir: cwd, loader: css ? 'css' : 'js' },
-        });
+        const result = await buildPackedImport(cwd, name, entry, symbol);
         assert.equal(result.outputFiles.length, 1, 'Additional assets require a budget: ' + name);
         const bytes = result.outputFiles[0].contents;
-        const gzip = gzipSync(bytes, { level: 9 }).length;
+        const measurement = packedEntrySize(label, result.outputFiles[0]);
+        const { gzip } = measurement;
         const brotli = brotliCompressSync(bytes, {
           params: { [constants.BROTLI_PARAM_QUALITY]: 9 },
         }).length;
@@ -153,9 +160,8 @@ export async function measureBundles(cwd, { diagnostics = false, selectedEntries
           );
         }
         results.push({
-          entry: label,
+          ...measurement,
           minified: bytes.length,
-          gzip,
           brotli,
           referenceGzip: reference,
           deltaGzip: gzip - reference,
