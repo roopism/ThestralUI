@@ -125,7 +125,7 @@ None. Consumers currently query the accessible roles and names described in the 
 
 **Variants.** First step has no Back action. Intermediate steps advance; the final step submits. Supply translated back/next/finish labels. Hidden step controls remain mounted to preserve uncontrolled values.
 
-**Keyboard and pointer.** Tab moves through only the active fieldset. Enter submits if allowed. After changing activeId the heading receives focus. Pointer activation of Back or Next requests the same controlled transition.
+**Keyboard and pointer.** Tab moves through only the active fieldset. Enter submits if allowed. After changing activeId the heading receives focus. When the wizard becomes busy with focus inside the active fieldset, focus moves to the submit button if enabled and to the current step heading if disabled. Pointer activation of Back or Next requests the same controlled transition.
 
 **Accessibility.** Each mounted step has an accessible label, with only the active fieldset available for interaction. Busy disables fieldsets; errors use a role=alert. Keep headings short enough to reflow and use clear translated navigation labels. The action stylesheet sets a minimum target height. Step changes move focus to the active heading without animation. Check disabled and error treatments in forced colors and translated action order in RTL.
 

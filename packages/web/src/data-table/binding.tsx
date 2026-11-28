@@ -22,10 +22,11 @@ export const english = {
   selected: (count: number) => count + ' selected',
 };
 export type DataTableLabels = typeof english;
+type DataTableLabelOverrides = Partial<Omit<DataTableLabels, 'viewport'>> & { viewport?: string | undefined };
 export interface DataTableProps<R extends { id: string }> extends UseDataTableOptions<R>, Omit<ComponentPropsWithRef<'section'>, 'children'> {
   label: string;
   getRowLabel: (row: R) => string;
-  labels?: Partial<DataTableLabels>;
+  labels?: DataTableLabelOverrides;
   /** Returned promises lock the action until they settle; existing synchronous callbacks keep their return contract. */
   bulkAction?: { label: string; onApply: (rowIds: string[]) => void };
   unstyled?: boolean;
@@ -161,7 +162,7 @@ export function DataTable<R extends { id: string }>({
   const model = useDataTable({ rows, columns, locale, pageSize, defaultSort, server, selectedIds,
     defaultSelectedIds, onSelectionChange, onSearchChange, onSortChange, onPageChange });
   const { state, visible, pages, selected } = model;
-  const labels = { ...english, ...overrides };
+  const labels = { ...english, ...overrides, viewport: overrides?.viewport ?? english.viewport };
   const id = useId();
   const applying = useRef(false);
   const saves = useCellSaves();

@@ -38,7 +38,11 @@ export function Wizard({
     if (busy === fieldsBusy) return;
     // Disabling a focused fieldset can blur its input before focus can be recovered.
     const fields = activeFields.current;
-    if (busy && fields?.contains(fields.ownerDocument.activeElement)) submit.current?.focus();
+    if (busy && fields?.contains(fields.ownerDocument.activeElement)) {
+      const button = submit.current;
+      const target = button && !button.disabled ? button : heading.current;
+      target?.focus();
+    }
     setFieldsBusy(busy);
   }, [busy, fieldsBusy]);
   useEffect(() => {

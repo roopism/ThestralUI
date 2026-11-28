@@ -32,10 +32,27 @@ for (const theme of ['enterprise', 'editorial'] as const) {
     await sheet.getByRole('button', { name: 'Remove After Hours' }).click();
     await alert.getByRole('button', { name: 'Remove title' }).click();
     await expect(sheet).toContainText('No saved publications.');
+    await expect(sheet.getByRole('heading', { name: 'Reading list' })).toBeFocused();
     await sheet.getByRole('button', { name: 'Close list' }).click();
     await expect(page.getByRole('button', { name: 'Reading list (0)' })).toBeFocused();
   });
 }
+
+test('removing a saved publication moves focus to the next title', async ({ page }) => {
+  await openGallery(page, 'enterprise');
+  await page.getByRole('button', { name: 'Read details' }).click();
+  await page.getByRole('button', { name: 'Save Currents' }).click();
+  await page.getByRole('button', { name: 'Next title' }).click();
+  await page.getByRole('button', { name: 'Read details' }).click();
+  await page.getByRole('button', { name: 'Save After Hours' }).click();
+  await page.getByRole('button', { name: 'Reading list (2)' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Reading list' });
+  await sheet.getByRole('button', { name: 'Remove Currents' }).click();
+  const confirm = page.getByRole('alertdialog', { name: 'Remove Currents?' });
+  await confirm.getByRole('button', { name: 'Remove title' }).click();
+  await expect(sheet.getByRole('button', { name: 'Remove Currents' })).toHaveCount(0);
+  await expect(sheet.getByRole('button', { name: 'Remove After Hours' })).toBeFocused();
+});
 
 test('native scroll, RTL keys and reduced-motion disclosures work without horizontal page overflow', async ({
   page,

@@ -56,6 +56,7 @@
       "tests/motion-overlays.test.tsx | nested cancellation dismisses the active alert and leaves its parent mounted"
     ],
     "browser": [
+      "browser/motion.spec.ts | removing a saved publication moves focus to the next title",
       "browser/motion.spec.ts | save and remove a publication in the editorial theme",
       "browser/motion.spec.ts | save and remove a publication in the enterprise theme"
     ]

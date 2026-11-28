@@ -139,7 +139,7 @@ The existing regressions exercise the following bindings. The linked test identi
 | Collapsed | Render or close | Button has aria-expanded false and details are hidden | Disclosure button | Button and other visible controls | [motion-media.test.tsx L31](../../tests/expanding-media-card/motion-media.test.tsx#L9) |
 | Expanded | Open disclosure | Button has aria-expanded true and details become visible | Disclosure and detail actions | Button and visible detail controls | [motion-media.test.tsx L31](../../tests/expanding-media-card/motion-media.test.tsx#L9) |
 | Expanded | Control the card or start it open at heading level 3 | Requests are reported; the shown state follows the owner; outline level kept | Disclosure and detail actions | Button and visible detail controls | [Controlled and default-open cards](../../tests/expanding-media-card/motion-media.test.tsx) |
-| Interrupted | Toggle again during size transition | Latest expanded state remains authoritative | Disclosure remains operable | Focused toggle survives reversals | [motion.spec.ts L104](../../tests/browser/motion.spec.ts#L79) |
+| Interrupted | Toggle again during size transition | Latest expanded state remains authoritative | Disclosure remains operable | Focused toggle survives reversals | [motion.spec.ts L96](../../tests/browser/motion.spec.ts#L96) |
 
 #### Performance
 
@@ -149,7 +149,7 @@ The production named-import measurement is 1,746 B gzip for `ExpandableMediaCard
 
 - Collapsed. [motion-media.test.tsx L31](../../tests/expanding-media-card/motion-media.test.tsx#L9)
 - Expanded. [motion-media.test.tsx L31](../../tests/expanding-media-card/motion-media.test.tsx#L9) and [controlled and default-open cards](../../tests/expanding-media-card/motion-media.test.tsx).
-- Interrupted. [motion.spec.ts L104](../../tests/browser/motion.spec.ts#L79)
+- Interrupted. [motion.spec.ts L96](../../tests/browser/motion.spec.ts#L96)
 - Browser coverage. [quality.spec.ts L227](../../tests/expanding-media-card/quality.spec.ts#L3)
 - Visual coverage. [motion.visual.ts](../../tests/browser/motion.visual.ts)
 - Simulator coverage awaits a native export.

@@ -132,7 +132,7 @@ The existing regressions exercise the following bindings. The linked test identi
 | State | Observed trigger | Current binding behavior | Activation | Focus | Existing regression |
 | --- | --- | --- | --- | --- | --- |
 | Open | Mount drawer with title | Named modal dialog | Close or slotted actions | Modal descendants | [motion-overlays.test.tsx L105](../../tests/drawer/motion-overlays.test.tsx#L26) |
-| Dismissed | Press Escape or close | Dialog leaves accessibility tree | Invoker available | Explicit connected invoker | [motion.spec.ts L104](../../tests/browser/motion.spec.ts#L79) |
+| Dismissed | Press Escape or close | Dialog leaves accessibility tree | Invoker available | Explicit connected invoker | [motion.spec.ts L96](../../tests/browser/motion.spec.ts#L96) |
 
 #### Performance
 
@@ -141,7 +141,7 @@ The production named-import measurement is 1,169 B gzip for `Drawer`. The option
 #### Tests
 
 - Open. [motion-overlays.test.tsx L105](../../tests/drawer/motion-overlays.test.tsx#L26)
-- Dismissed. [motion.spec.ts L104](../../tests/browser/motion.spec.ts#L79)
+- Dismissed. [motion.spec.ts L96](../../tests/browser/motion.spec.ts#L96)
 - Browser coverage. [motion.spec.ts](../../tests/browser/motion.spec.ts)
 - A dedicated visual baseline for this family remains open.
 - Simulator coverage awaits a native export.

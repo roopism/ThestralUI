@@ -231,7 +231,8 @@
       "tests/data-table/collections.test.tsx | reports sort, page, search and selection changes and honors an initial sort",
       "tests/data-table/collections.test.tsx | paging preserves an in-flight save for only its row and column",
       "tests/data-table/collections.test.tsx | a save that resolves leaves focus in the search field",
-      "tests/data-table/collections.test.tsx | a save that rejects leaves focus in the search field"
+      "tests/data-table/collections.test.tsx | a save that rejects leaves focus in the search field",
+      "tests/data-table/collections.test.tsx | legacy label dictionaries retain the viewport name with an undefined override"
     ],
     "browser": [
       "data-table/data-table.spec.ts | server paging, edits and cross-page bulk actions complete the same desktop and phone workflow",

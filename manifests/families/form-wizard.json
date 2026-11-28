@@ -53,7 +53,8 @@
   "cases": {
     "vitest": [
       "tests/form-wizard/workflow-commands.test.tsx | an invalid step cannot advance and pending submissions are disabled",
-      "tests/form-wizard/workflow-commands.test.tsx | retains draft controls across steps and focuses the new step heading"
+      "tests/form-wizard/workflow-commands.test.tsx | retains draft controls across steps and focuses the new step heading",
+      "tests/form-wizard/workflow-commands.test.tsx | moves focus to the current heading when an invalid step becomes busy"
     ],
     "browser": [
       "browser/enterprise-workspace.spec.ts | restores a saved workflow after reload and retries interrupted batch items",

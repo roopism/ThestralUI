@@ -153,7 +153,7 @@ The production named-import measurement is 1,701 B gzip for `playMotionSequence`
 - Reversed to the start. [motion-choreography.test.tsx L81](../../tests/motion-sequence/motion-choreography.test.tsx#L81)
 - Center order and right-to-left slides. [motion-choreography.test.tsx L99](../../tests/motion-sequence/motion-choreography.test.tsx#L99)
 - Reverse order, per-step delay and shake rest position. [motion-choreography.test.tsx L117](../../tests/motion-sequence/motion-choreography.test.tsx#L117)
-- Browser coverage. [motion.spec.ts L152](../../tests/browser/motion.spec.ts#L127)
+- Browser coverage. [motion.spec.ts L144](../../tests/browser/motion.spec.ts#L144)
 - A dedicated visual baseline for this family remains open.
 - Simulator coverage awaits a native export.
 

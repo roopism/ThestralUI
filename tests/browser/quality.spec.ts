@@ -46,15 +46,22 @@ test('failed saves retain input and stale or unmounted submissions cannot replac
   await page.getByRole('button', { name: 'Cancel save' }).click();
   await field.fill('Published revision');
   await save.click();
+  async function settleLateRequest(id: number) {
+    const resolve = page.getByRole('button', { name: 'Resolve request ' + id });
+    await resolve.click();
+    await expect(resolve).toHaveCount(0);
+    await page.evaluate(() => new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
+  }
   await page.getByRole('button', { name: 'Resolve request 3' }).click();
-  await page.getByRole('button', { name: 'Resolve request 2' }).click();
+  await expect(page.getByRole('status', { name: 'Last saved title' })).toHaveText('Published revision');
+  await settleLateRequest(2);
   await expect(page.getByRole('status', { name: 'Last saved title' })).toHaveText(
     'Published revision',
   );
   await field.fill('Unmounted draft');
   await save.click();
   await page.getByRole('button', { name: 'Close editor' }).click();
-  await page.getByRole('button', { name: 'Resolve request 4' }).click();
+  await settleLateRequest(4);
   await page.getByRole('button', { name: 'Open editor' }).click();
   await expect(page.getByRole('status', { name: 'Last saved title' })).toHaveText(
     'Published revision',
