@@ -1,22 +1,15 @@
-import type { Ref } from 'react';
+import type { ComponentPropsWithRef } from 'react';
 
-interface TableFieldProps {
-  mode: 'search' | 'edit';
-  label: string;
+type TableFieldProps = Omit<ComponentPropsWithRef<'input'>, 'onChange'> & {
+  type: 'search' | 'text';
+  'aria-label': string;
   value: string;
   onValueChange: (value: string) => void;
-  controls?: string;
-  disabled?: boolean;
-  readOnly?: boolean;
-  ref?: Ref<HTMLInputElement>;
-}
+};
 
 /** Search and in-place edits retain native text selection, composition and form submission. */
-export function TableField({ mode, label, value, onValueChange, controls, disabled, readOnly, ref }: TableFieldProps) {
-  return <input ref={ref} type={mode === 'search' ? 'search' : 'text'}
-    data-part={mode === 'search' ? 'search' : undefined} aria-label={label} aria-controls={controls}
-    autoFocus={mode === 'edit'} disabled={disabled} readOnly={readOnly}
-    value={value} onChange={event => onValueChange(event.currentTarget.value)} />;
+export function TableField({ onValueChange, ...props }: TableFieldProps) {
+  return <input {...props} onChange={event => onValueChange(event.currentTarget.value)} />;
 }
 
 interface SelectionCheckboxProps {

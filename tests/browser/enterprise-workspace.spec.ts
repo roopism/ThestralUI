@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
 import axe from 'axe-core';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { SplitView } from '@ui-lazy-dev/ui-web/workflows';
 const story = (id: string) => '/iframe.html?id=enterprise-workspace--' + id + '&viewMode=story';
 
 test('a review retains its draft, focus, selection and list scroll when resized mid-task', async ({
@@ -92,4 +95,22 @@ test('restores a saved workflow after reload and retries interrupted batch items
   await expect(
     page.getByRole('region', { name: 'Deliverables' }).getByText('2 of 2 finished'),
   ).toBeVisible();
+});
+
+test('split pane and divider focus rings stay visible independently of the indicator stroke', async ({ page }) => {
+  await page.setContent(renderToStaticMarkup(createElement(SplitView, {
+    listLabel: 'Positions', detailLabel: 'Review', resizeLabel: 'Resize', list: 'List', detail: 'Detail',
+  })));
+  await page.addStyleTag({ path: 'packages/web/dist/workflows.css' });
+  await page.addStyleTag({ content: ':root { --uld-indicator-stroke: 0px }' });
+  const targets = [page.getByRole('separator'), page.getByRole('region', { name: 'Review' })];
+  await page.keyboard.press('Tab');
+  for (const width of ['3px', '5px']) {
+    if (width === '5px') await page.addStyleTag({ content: ':root { --uld-focus-width: 5px }' });
+    for (const target of targets) {
+      await target.focus();
+      await expect(target).toBeFocused();
+      expect(await target.evaluate(el => getComputedStyle(el).outlineWidth)).toBe(width);
+    }
+  }
 });

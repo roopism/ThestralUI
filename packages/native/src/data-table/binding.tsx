@@ -1,4 +1,4 @@
-import { Children, Fragment, isValidElement, useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentRef, type ReactNode, type Ref } from 'react';
+import { Children, Fragment, isValidElement, useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState, type ComponentRef, type ReactNode, type Ref } from 'react';
 import { AccessibilityInfo, Platform, type Pressable, ScrollView, Text, View, useColorScheme, useWindowDimensions,
   type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { tokens } from '@ui-lazy-dev/tokens';
@@ -69,7 +69,8 @@ interface ActionProps {
   onBlur?: () => void;
 }
 function TableAction({ name, children, testID, checked, busy, expanded, hint, disabled, onPress, style, textStyle, targetRef, onFocus, onBlur }: ActionProps) {
-  if (checked === undefined && expanded === undefined && children === undefined) {
+  const action = checked === undefined && expanded === undefined && children === undefined;
+  if (action && !onFocus && !onBlur) {
     return <Button unstyled ref={targetRef} testID={testID} label={name} onPress={onPress}
       accessibilityHint={hint} busy={busy} disabled={!busy && disabled} pressableStyle={style} labelStyle={textStyle} />;
   }
@@ -79,24 +80,31 @@ function TableAction({ name, children, testID, checked, busy, expanded, hint, di
     : { accessibilityRole: 'checkbox' as const, accessibilityState: { ...state, checked } };
   return <NativePressTarget ref={targetRef} testID={testID} accessible {...semantics} onFocus={onFocus} onBlur={onBlur}
     accessibilityLabel={name} accessibilityHint={hint}
-    disabled={disabled} onPress={onPress} style={style}>
-    {children ?? <Text style={textStyle}>{checked === undefined ? '' : checked === 'mixed' ? '− ' : checked ? '☑ ' : '☐ '}{name}</Text>}
+    focusable={action ? busy || !disabled : undefined} disabled={action && busy ? undefined : disabled}
+    onPress={action && busy ? undefined : onPress} style={style}>
+    {children ?? <Text testID={action ? testID + '.label' : undefined} style={textStyle}>{checked === undefined ? '' : checked === 'mixed' ? '− ' : checked ? '☑ ' : '☐ '}{name}</Text>}
   </NativePressTarget>;
 }
 
-function useCellSaves() {
-  const [pending, setPending] = useState(() => new Set<string>());
-  const latest = useRef(pending);
-  function mark(key: string, saving: boolean) {
-    if (latest.current.has(key) === saving) return false;
-    const next = new Set(latest.current);
-    if (saving) next.add(key);
-    else next.delete(key);
-    latest.current = next;
-    setPending(next);
-    return true;
+function useCellSaves(rows?: readonly { id: string }[]) {
+  type Save = { id: string; draft: string | null };
+  const [cells] = useState(() => new Map<string, Save>());
+  const [, refresh] = useReducer((revision: number) => revision + 1, 0);
+  const focusedCell = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    if (!rows || !cells.size) return;
+    const ids = new Set(rows.map(row => row.id));
+    for (const [key, save] of cells) if (!ids.has(save.id)) cells.delete(key);
+  }, [rows, cells]);
+
+  function begin(key: string, id: string) {
+    if (cells.get(key)?.draft === null) return;
+    const save: Save = { id, draft: null };
+    cells.set(key, save);
+    refresh();
+    return save;
   }
-  return { pending, mark, isSaving: (key: string) => latest.current.has(key) };
+  return { cells, begin, refresh, focusedCell };
 }
 
 interface CellProps<R> {
@@ -120,51 +128,59 @@ function CellEditor<R extends { id: string }>({ row, column, saves, name, labels
   actionStyle, inputStyle, textStyle, disabled }: CellProps<R>) {
   const [draft, setDraft] = useState<string | null>(null);
   const key = JSON.stringify([row.id, column.id]);
-  const pending = saves.pending.has(key);
-  const [failed, setFailed] = useState(false);
+  const rejectedDraft = saves.cells.get(key)?.draft;
+  const pending = rejectedDraft === null;
   const restoreFocus = useRef(false);
-  const ownsFocus = useRef(false);
-  const onFocus = () => { ownsFocus.current = true; };
-  const onBlur = () => { ownsFocus.current = false; };
-  useLayoutEffect(() => () => { if (ownsFocus.current) focusViewport(); }, [focusViewport]);
+  const { focusedCell } = saves;
+  const onFocus = () => { focusedCell.current = key; };
+  const onBlur = () => { if (focusedCell.current === key) focusedCell.current = null; };
+  useLayoutEffect(() => () => {
+    if (focusedCell.current === key) {
+      focusedCell.current = null;
+      focusViewport();
+    }
+  }, [focusViewport, focusedCell, key]);
   const trigger = useRef<ComponentRef<typeof Pressable>>(null);
   useEffect(() => {
     if (draft !== null || !restoreFocus.current) return;
     restoreFocus.current = false;
     const frame = requestAnimationFrame(() => {
-      if (trigger.current) {
+      if (trigger.current && focusedCell.current === key) {
         trigger.current.focus();
         AccessibilityInfo.sendAccessibilityEvent(trigger.current, 'focus');
       }
     });
     return () => cancelAnimationFrame(frame);
-  }, [draft]);
+  }, [draft, focusedCell, key]);
   function finish() {
-    restoreFocus.current = true;
+    restoreFocus.current = focusedCell.current === key;
+    saves.cells.delete(key);
     setDraft(null);
   }
   async function save() {
-    if (disabled || draft === null || !column.onEdit || !saves.mark(key, true)) return;
-    setFailed(false);
-    try { await column.onEdit(row, draft); finish(); }
-    catch { setFailed(true); }
-    finally { saves.mark(key, false); }
+    if (disabled || draft === null || !column.onEdit) return;
+    const save = saves.begin(key, row.id);
+    if (!save) return;
+    try { await column.onEdit(row, draft); if (saves.cells.get(key) === save) finish(); }
+    catch { save.draft = draft; }
+    saves.refresh();
   }
+  const error = typeof rejectedDraft === 'string' && <Text testID={failureID} accessibilityRole="alert" accessibilityLiveRegion="assertive" style={textStyle}>{labels.saveFailed}</Text>;
   if (draft === null) {
-    const content = column.render ? column.render(row) : column.value(row);
-    return <TableAction name={name} disabled={disabled || pending} busy={pending} targetRef={trigger} testID={cellID} onFocus={onFocus} onBlur={onBlur}
-      onPress={() => { setFailed(false); setDraft(String(column.value(row))); }} style={actionStyle} textStyle={textStyle}>
+    const content = rejectedDraft ?? (column.render ? column.render(row) : column.value(row));
+    return <><TableAction name={name} disabled={disabled || pending} busy={pending} targetRef={trigger} testID={cellID} onFocus={onFocus} onBlur={onBlur}
+      onPress={() => setDraft(rejectedDraft ?? String(column.value(row)))} style={actionStyle} textStyle={textStyle}>
       {typeof content === 'number' || typeof content === 'string' ? <Text style={textStyle}>{content}</Text> : content}
-    </TableAction>;
+    </TableAction>{error}</>;
   }
   return <View>
     <NativeFieldControl testID={editorID} autoFocus submitBehavior="submit" onFocus={onFocus} onBlur={onBlur} accessibilityLabel={name} value={draft} editable={!pending && !disabled}
-      accessibilityState={{ busy: pending }} onChangeText={value => { if (!saves.isSaving(key)) setDraft(value); }}
+      accessibilityState={{ busy: pending }} onChangeText={value => { if (saves.cells.get(key)?.draft !== null) setDraft(value); }}
       onSubmitEditing={() => { void save(); }} returnKeyType="done" style={inputStyle} />
-    <TableAction testID={saveID} name={labels.save} busy={pending} disabled={pending || disabled} onPress={() => { void save(); }} style={actionStyle} textStyle={textStyle} />
-    <TableAction testID={cancelID} name={labels.cancel} disabled={pending || disabled} onPress={() => { if (!saves.isSaving(key)) finish(); }}
+    <TableAction testID={saveID} onFocus={onFocus} onBlur={onBlur} name={labels.save} busy={pending} disabled={pending || disabled} onPress={() => { void save(); }} style={actionStyle} textStyle={textStyle} />
+    <TableAction testID={cancelID} onFocus={onFocus} onBlur={onBlur} name={labels.cancel} disabled={pending || disabled} onPress={() => { if (saves.cells.get(key)?.draft !== null) finish(); }}
       style={actionStyle} textStyle={textStyle} />
-    {failed && <Text testID={failureID} accessibilityRole="alert" accessibilityLiveRegion="assertive" style={textStyle}>{labels.saveFailed}</Text>}
+    {error}
   </View>;
 }
 
@@ -174,7 +190,7 @@ function hasContent(content: ReactNode): boolean {
 }
 
 export function DataTable<R extends { id: string }>(props: DataTableProps<R>) {
-  const saves = useCellSaves();
+  const saves = useCellSaves(props.server ? undefined : props.rows);
   const viewport = useRef<ComponentRef<typeof View>>(null);
   const [restoreViewport, setRestoreViewport] = useState(false);
   const focusViewport = useCallback(() => setRestoreViewport(true), []);
@@ -231,11 +247,18 @@ export function DataTable<R extends { id: string }>(props: DataTableProps<R>) {
   }
 
   const hasError = hasContent(props.error);
-  const slot = (content: ReactNode) => typeof content === 'string' || typeof content === 'number' ? <Text style={textStyle}>{content}</Text> : content;
+  function slot(content: ReactNode): ReactNode {
+    return Children.map(content, child => {
+      if (isValidElement<{ children?: ReactNode }>(child) && child.type === Fragment)
+        return <Fragment>{slot(child.props.children)}</Fragment>;
+      return typeof child === 'string' || typeof child === 'number' || typeof child === 'bigint'
+        ? <Text style={textStyle}>{String(child)}</Text> : child;
+    });
+  }
   return <View ref={props.ref} testID={id('root')} style={[unstyled ? {} : { backgroundColor: colors.surface }, partStyles?.root, props.style]}>
     <Text accessibilityRole="header" style={textStyle}>{label}</Text>
     <View testID={id('toolbar')} style={partStyles?.toolbar}>
-      <NativeFieldControl testID={id('search')} editable={!props.disabled} accessibilityState={{ disabled: props.disabled }} accessibilityLabel={labels.search} placeholder={labels.search}
+      <NativeFieldControl testID={id('search')} onFocus={() => { saves.focusedCell.current = null; }} editable={!props.disabled} accessibilityState={{ disabled: props.disabled }} accessibilityLabel={labels.search} placeholder={labels.search}
         placeholderTextColor={unstyled ? undefined : colors.text} value={table.state.query} onChangeText={table.search} returnKeyType="search"
         style={[input, partStyles?.search]} />
       {selectable && <View style={line}>

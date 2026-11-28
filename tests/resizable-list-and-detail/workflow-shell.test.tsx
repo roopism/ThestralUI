@@ -107,3 +107,19 @@ test('right-to-left content reverses the arrow keys and ignores modified F6', ()
   fireEvent.keyDown(action, { key: 'F6', ctrlKey: true });
   expect(document.activeElement).toBe(action);
 });
+
+test('F6 switches to the pane when its remembered control becomes disabled', () => {
+  const split = (disabled: boolean) => <Split detail={<button disabled={disabled}>Review action</button>} />;
+  const view = render(split(false));
+  const action = screen.getByRole('button', { name: 'Review action' });
+  const list = screen.getByRole('region', { name: 'Positions' });
+  const detail = screen.getByRole('region', { name: 'Review' });
+  action.focus();
+  fireEvent.keyDown(action, { key: 'F6' });
+  expect(document.activeElement).toBe(list);
+  view.rerender(split(true));
+  fireEvent.keyDown(list, { key: 'F6' });
+  expect(document.activeElement).toBe(detail);
+  fireEvent.keyDown(detail, { key: 'F6' });
+  expect(document.activeElement).toBe(list);
+});

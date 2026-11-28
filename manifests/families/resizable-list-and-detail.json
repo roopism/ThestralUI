@@ -54,10 +54,12 @@
       "tests/resizable-list-and-detail/workflow-shell.test.tsx | the handle is a named vertical separator that reports its range and controls the list",
       "tests/resizable-list-and-detail/workflow-shell.test.tsx | Enter collapses the list to its minimum and a second Enter restores the previous size",
       "tests/resizable-list-and-detail/workflow-shell.test.tsx | a controlled size follows the owner and only reports requested changes",
-      "tests/resizable-list-and-detail/workflow-shell.test.tsx | right-to-left content reverses the arrow keys and ignores modified F6"
+      "tests/resizable-list-and-detail/workflow-shell.test.tsx | right-to-left content reverses the arrow keys and ignores modified F6",
+      "tests/resizable-list-and-detail/workflow-shell.test.tsx | F6 switches to the pane when its remembered control becomes disabled"
     ],
     "browser": [
-      "browser/enterprise-workspace.spec.ts | a review retains its draft, focus, selection and list scroll when resized mid-task"
+      "browser/enterprise-workspace.spec.ts | a review retains its draft, focus, selection and list scroll when resized mid-task",
+      "browser/enterprise-workspace.spec.ts | split pane and divider focus rings stay visible independently of the indicator stroke"
     ]
   }
 }

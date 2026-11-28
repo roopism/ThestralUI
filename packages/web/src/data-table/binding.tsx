@@ -1,5 +1,5 @@
 'use client';
-import { useId, useLayoutEffect, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useReducer, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { ButtonTarget, useButton } from '../button/binding.js';
 import { SelectionCheckbox, TableField } from './controls.js';
 import { useDataTable, type DataColumn, type UseDataTableOptions } from './state.js';
@@ -43,26 +43,29 @@ function TableAction({ busy, ...props }: ComponentPropsWithRef<'button'> & { bus
   return <ButtonTarget {...props} behavior={useButton({ ...props, busy })} />;
 }
 
-function useCellSaves() {
-  const [pending, setPending] = useState(() => new Set<string>());
-  const latest = useRef(pending);
-  function mark(key: string, saving: boolean) {
-    if (latest.current.has(key) === saving) return false;
-    const next = new Set(latest.current);
-    if (saving) next.add(key);
-    else next.delete(key);
-    latest.current = next;
-    setPending(next);
-    return true;
-  }
-  return { pending, mark, isSaving: (key: string) => latest.current.has(key) };
+function focusWithoutScrolling(element: HTMLElement | null | undefined) {
+  element?.focus({ preventScroll: true });
+}
+
+type Save = { id: string; draft: string | null };
+function useCellSaves(rows?: readonly { id: string }[]) {
+  const [cells] = useState(() => new Map<string, Save>());
+  const [, refresh] = useReducer((revision: number) => revision + 1, 0);
+
+  useLayoutEffect(() => {
+    if (!rows || !cells.size) return;
+    const ids = new Set(rows.map(row => row.id));
+    for (const [key, save] of cells) if (!ids.has(save.id)) cells.delete(key);
+  }, [rows, cells]);
+
+  return { cells, refresh };
 }
 
 export function EditableCell<R extends { id: string }>({
   row,
   column,
   name,
-  labels, disabled, busy, unstyled, saves,
+  labels, disabled, busy, unstyled, saves: { cells, refresh },
 }: {
   row: R;
   column: DataColumn<R>;
@@ -75,33 +78,37 @@ export function EditableCell<R extends { id: string }>({
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const key = JSON.stringify([row.id, column.id]);
-  const pending = saves.pending.has(key);
-  const [failed, setFailed] = useState(false);
+  const rejectedDraft = cells.get(key)?.draft;
+  const pending = rejectedDraft === null;
+  const locked = disabled || busy;
   const trigger = useRef<HTMLButtonElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const restoreFocus = useRef(false);
-  const ownsFocus = () => input.current?.form?.contains(input.current.ownerDocument.activeElement) === true;
+  const ownsFocus = (control: HTMLElement | null | undefined = input.current?.form) =>
+    control?.contains(control.ownerDocument.activeElement) === true;
   useLayoutEffect(() => () => {
     const control = trigger.current ?? input.current?.form;
-    if (control?.contains(control.ownerDocument.activeElement)) {
-      control.closest<HTMLElement>('[data-part="viewport"]')?.focus({ preventScroll: true });
+    if (control && ownsFocus(control)) {
+      focusWithoutScrolling(control.closest<HTMLElement>('[data-part="viewport"]'));
     }
   }, []);
   useLayoutEffect(() => {
     if (draft === null && restoreFocus.current) {
       const button = trigger.current;
-      if (button && button.ownerDocument.activeElement === button.ownerDocument.body) button.focus({ preventScroll: true });
+      if (button && button.ownerDocument.activeElement === button.ownerDocument.body) focusWithoutScrolling(button);
       restoreFocus.current = false;
     }
   }, [draft]);
   const finish = () => {
     restoreFocus.current = ownsFocus();
+    cells.delete(key);
     setDraft(null);
   };
   const accessibleName = labels.edit(column.label, name);
+  const error = rejectedDraft != null && <span role="alert" aria-label={labels.saveFailed}>{labels.saveFailed}</span>;
   if (draft === null)
     return (
-      <TableAction
+      <><TableAction
         ref={trigger}
         aria-label={accessibleName}
         disabled={disabled}
@@ -109,46 +116,46 @@ export function EditableCell<R extends { id: string }>({
         data-part="edit"
         className={unstyled ? undefined : "uld-cell-edit"}
         onClick={() => {
-          setFailed(false);
-          setDraft(String(column.value(row)));
+          setDraft(rejectedDraft ?? String(column.value(row)));
         }}
       >
-        {column.render ? column.render(row) : column.value(row)}
-      </TableAction>
+        {rejectedDraft ?? (column.render ? column.render(row) : column.value(row))}
+      </TableAction>{error}</>
     );
   return (
     <form data-part="editor"
       onSubmit={async (event) => {
         event.preventDefault();
-        if (disabled || busy || !saves.mark(key, true)) return;
-        setFailed(false);
+        if (locked || cells.get(key)?.draft === null) return;
+        const save: Save = { id: row.id, draft: null };
+        cells.set(key, save);
+        refresh();
         try {
           await column.onEdit!(row, draft);
-          finish();
+          if (cells.get(key) === save) finish();
         } catch {
-          setFailed(true);
-          if (ownsFocus()) input.current?.focus({ preventScroll: true });
-        } finally {
-          saves.mark(key, false);
+          save.draft = draft;
+          if (ownsFocus()) focusWithoutScrolling(input.current);
         }
+        refresh();
       }}
       onKeyDown={(event) => {
-        if (event.key === 'Escape' && !saves.isSaving(key)) {
+        if (event.key === 'Escape' && cells.get(key)?.draft !== null) {
           event.preventDefault();
           event.stopPropagation();
           finish();
         }
       }}
     >
-      <TableField ref={input} mode="edit" label={accessibleName} value={draft}
-        readOnly={pending || disabled || busy} onValueChange={setDraft} />
-      <TableAction type="submit" disabled={disabled || busy} busy={pending}>
+      <TableField ref={input} type="text" autoFocus aria-label={accessibleName} value={draft}
+        readOnly={pending || locked} onValueChange={setDraft} />
+      <TableAction type="submit" disabled={locked} busy={pending}>
         {labels.save}
       </TableAction>
-      <TableAction disabled={pending || disabled || busy} onClick={finish}>
+      <TableAction disabled={pending || locked} onClick={finish}>
         {labels.cancel}
       </TableAction>
-      {failed && <span role="alert" aria-label={labels.saveFailed}>{labels.saveFailed}</span>}
+      {error}
     </form>
   );
 }
@@ -164,7 +171,7 @@ export function DataTable<R extends { id: string }>(props: DataTableProps<R>) {
   const labels = { ...english, ...overrides };
   const id = useId();
   const applying = useRef(false);
-  const saves = useCellSaves();
+  const saves = useCellSaves(server ? undefined : rows);
   const [pending, setPending] = useState(false);
   const [bulkFailed, setBulkFailed] = useState(false);
   const locked = disabled || loading || pending;
@@ -189,7 +196,7 @@ export function DataTable<R extends { id: string }>(props: DataTableProps<R>) {
     className={[classes('uld-data'), className].filter(Boolean).join(' ') || undefined}>
     <div data-part="toolbar" className={classes('uld-data-tools')}>
       <label>{labels.search}
-        <TableField mode="search" label={labels.search} value={state.query} controls={id}
+        <TableField type="search" data-part="search" aria-label={labels.search} value={state.query} aria-controls={id}
           disabled={disabled} onValueChange={model.search} />
       </label>
       {selectRows && <output data-part="selection">{labels.selected(selected.size)}</output>}
@@ -203,7 +210,7 @@ export function DataTable<R extends { id: string }>(props: DataTableProps<R>) {
         <thead data-part="header" role="rowgroup"><tr role="row">
           {selectRows && <th role="columnheader" scope="col">
             <SelectionCheckbox label={labels.selectPage} disabled={locked || !visible.length}
-              checked={model.somePage && !model.allPage ? 'mixed' : model.allPage}
+              checked={model.allPage || (model.somePage && 'mixed')}
               onChange={checked => model.select(visible.map(row => row.id), checked)} />
           </th>}
           {columns.map(column => <th key={column.id} role="columnheader" scope="col"

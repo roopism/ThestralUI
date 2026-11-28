@@ -32,7 +32,9 @@
       "tests/spinner/foundation-specs.test.tsx"
     ],
     "nativeUnit": [],
-    "browser": [],
+    "browser": [
+      "tests/spinner/spinner.spec.ts"
+    ],
     "visual": [],
     "story": [],
     "scenario": [],
@@ -47,6 +49,9 @@
       "tests/spinner/foundation-specs.test.tsx | without a label the ring is decorative inside an already named busy region",
       "tests/spinner/foundation-specs.test.tsx | adding a label turns the same ring into one named status",
       "tests/spinner/foundation-specs.test.tsx | a decorative spinner inside a busy action leaves the action name unchanged"
+    ],
+    "browser": [
+      "spinner/spinner.spec.ts | the standalone primitives sheet paints the spinner and honors the stroke token"
     ]
   }
 }

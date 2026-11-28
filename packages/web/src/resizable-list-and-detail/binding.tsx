@@ -67,7 +67,8 @@ export function SplitView({
           const pane = fromList ? end.current : start.current;
           const last = fromList ? lastDetail.current : lastList.current;
           event.preventDefault();
-          (last && pane?.contains(last) ? last : pane)?.focus({ preventScroll: true });
+          if (last && pane?.contains(last)) last.focus({ preventScroll: true });
+          if (pane && !pane.matches(':focus-within')) pane.focus({ preventScroll: true });
         }}
       >
         <section

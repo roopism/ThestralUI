@@ -109,7 +109,7 @@ export function Carousel({
     );
     if (visible === shown.current) return;
     shown.current = visible;
-    if (items[visible] && visible !== index) choose(visible);
+    if (items[visible]) choose(visible);
   }
 
   if (!items.length) return null;

@@ -217,3 +217,121 @@ test('native headless table falls back on a malformed locale while sorting and s
   await act(() => result.current.search('GAMMA'));
   expect(result.current.visible.map(record => record.title)).toEqual(['Gamma']);
 });
+
+test('returning to a rejected native cell restores the submitted title for retry', async () => {
+  let reject;
+  const onEdit = jest.fn().mockImplementationOnce(() => new Promise((_, fail) => { reject = fail; }));
+  const s = await render(h(DataTable, { ...options, pageSize: 1, columns: [{ ...columns[0], onEdit }] }));
+  const click = name => press(s, 'button', name);
+  const name = 'Edit Name, Gamma';
+  await click(name);
+  await fireEvent.changeText(s.getByDisplayValue('Gamma'), 'Revised title');
+  await click('Save');
+  await click('Next page');
+  await act(async () => reject(Error('offline')));
+  expect(s.queryByRole('alert')).toBeNull();
+  await click('Previous page');
+  expect(s.getByRole('alert')).toHaveTextContent('Could not save changes. Try again.');
+  expect(s.getByRole('button', { name })).toHaveTextContent('Revised title');
+  await click(name);
+  expect(s.getByDisplayValue('Revised title')).toBeVisible();
+  await click('Save');
+  expect(onEdit.mock.calls).toEqual([[records[0], 'Revised title'], [records[0], 'Revised title']]);
+  expect(s.queryByRole('alert')).toBeNull();
+});
+
+test('native error fragments and arrays put each primitive inside a text host', async () => {
+  const error = h(React.Fragment, null, 'Offline', [42, h(RN.Text, { key:'detail', testID:'detail' }, 'Retry')]);
+  const s = await render(h(DataTable, { ...options, error }));
+  const alert = s.getByRole('alert');
+  expect(alert.children.map(child => child.type)).toEqual(['Text', 'Text', 'Text']);
+  expect(alert.children.map(child => child.children)).toEqual([['Offline'], ['42'], ['Retry']]);
+  expect(s.getByTestId('detail')).toHaveTextContent('Retry');
+});
+
+test('a native save restores editor focus only while its input or action owns it', async () => {
+  const send = jest.spyOn(RN.AccessibilityInfo, 'sendAccessibilityEvent').mockImplementation(() => {});
+  const frames = [];
+  jest.spyOn(global, 'requestAnimationFrame').mockImplementation(callback => frames.push(callback));
+  for (const owner of ['search', 'input', 'save']) {
+    let resolve;
+    const onEdit = () => new Promise(done => { resolve = done; });
+    const s = await render(h(DataTable, { ...options, columns: [{ ...columns[0], onEdit }] }));
+    const name = 'Edit Name, Gamma';
+    await press(s, 'button', name);
+    const input = s.getByDisplayValue('Gamma');
+    const save = s.getByRole('button', { name: 'Save' });
+    await fireEvent(input, 'focus');
+    if (owner === 'save') {
+      await fireEvent(input, 'blur');
+      await fireEvent(save, 'focus');
+    }
+    await fireEvent.press(save);
+    const pendingSave = s.getByRole('button', { name: 'Save' });
+    expect(pendingSave.props.accessibilityState).toMatchObject({ busy: true, disabled: true });
+    expect(pendingSave.props.focusable).toBe(true);
+    if (owner === 'search') {
+      await fireEvent(input, 'blur');
+      await fireEvent(s.getByLabelText('Search records'), 'focus');
+    }
+    send.mockClear();
+    await act(async () => resolve());
+    await act(() => frames.splice(0).forEach(callback => callback(0)));
+    expect(s.getByRole('button', { name })).toBeVisible();
+    expect({ owner, calls: send.mock.calls.length }).toEqual({ owner, calls: owner === 'search' ? 0 : 1 });
+    if (owner === 'search') expect(send).not.toHaveBeenCalled();
+    else expect(send).toHaveBeenCalledWith(expect.objectContaining({ props: expect.objectContaining({ accessibilityLabel: name }) }), 'focus');
+    await s.unmount();
+  }
+});
+
+test.each(['before', 'after'])('a rejected save %s native local row deletion leaves its replacement editable', async when => {
+  let reject;
+  const onEdit = jest.fn().mockImplementationOnce(() => new Promise((_, fail) => { reject = () => fail(Error('offline')); }));
+  const editable = [{ ...columns[0], onEdit }];
+  const table = rows => h(DataTable, { ...options, rows, columns: editable });
+  const s = await render(table(records));
+  const click = name => press(s, 'button', name);
+  await click('Edit Name, Gamma');
+  await fireEvent.changeText(s.getByDisplayValue('Gamma'), 'Deleted draft');
+  await click('Save');
+  if (when === 'before') await act(async () => reject());
+  await s.rerender(table(records.slice(1)));
+  const replacement = { ...records[0], title: 'Replacement' };
+  await s.rerender(table([replacement, ...records.slice(1)]));
+  if (when === 'after') await act(async () => reject());
+  const name = 'Edit Name, Replacement';
+  expect(s.getByRole('button', { name })).toHaveTextContent('Replacement');
+  expect(s.queryByRole('alert')).toBeNull();
+  await click(name);
+  expect(s.getByDisplayValue('Replacement')).toBeVisible();
+  await click('Save');
+  expect(onEdit.mock.calls).toEqual([[records[0], 'Deleted draft'], [replacement, 'Replacement']]);
+});
+
+test('a late success for a deleted native local row preserves its replacement’s failed edit', async () => {
+  let resolve;
+  const onEdit = jest.fn().mockImplementationOnce(() => new Promise(done => { resolve = done; }))
+    .mockRejectedValueOnce(Error('offline'));
+  const editable = [{ ...columns[0], onEdit }];
+  const table = rows => h(DataTable, { ...options, rows, columns: editable, pageSize: 1 });
+  const s = await render(table(records));
+  const click = name => press(s, 'button', name);
+  await click('Edit Name, Gamma');
+  await click('Save');
+  await s.rerender(table(records.slice(1)));
+  const replacement = { ...records[0], title: 'Replacement' };
+  await s.rerender(table([replacement, ...records.slice(1)]));
+  const name = 'Edit Name, Replacement';
+  expect(s.getByRole('button', { name })).toBeEnabled();
+  await click(name);
+  await fireEvent.changeText(s.getByDisplayValue('Replacement'), 'New draft');
+  await click('Save');
+  await click('Next page');
+  await act(async () => resolve());
+  await click('Previous page');
+  expect(s.getByRole('alert')).toHaveTextContent('Could not save changes. Try again.');
+  await click(name);
+  await click('Save');
+  expect(onEdit.mock.calls).toEqual([[records[0], 'Gamma'], [replacement, 'New draft'], [replacement, 'New draft']]);
+});

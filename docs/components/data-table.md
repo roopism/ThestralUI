@@ -100,7 +100,7 @@ A filtered list with no rows shows an empty message. Loading and request errors 
 
 ### Localization
 
-Default messages are mapped to `dataTable.search`, `dataTable.viewport`, `dataTable.selectPage`, `dataTable.previousPage`, `dataTable.nextPage`, `dataTable.empty`, `dataTable.cancel`, `dataTable.save`, `dataTable.saveFailed`, `dataTable.select`, `dataTable.edit`, `dataTable.page`, `dataTable.selected`, `dataTable.loading`, `dataTable.bulkFailed`, `dataTable.details`, `dataTable.ascending` and `dataTable.descending`. Pass translated strings and formatters through `labels`. Values and column headings belong to the caller. [Message inventory](../library-strings.md)
+Default messages are mapped to `dataTable.search`, `dataTable.viewport`, `dataTable.selectPage`, `dataTable.previousPage`, `dataTable.nextPage`, `dataTable.empty`, `dataTable.cancel`, `dataTable.save`, `dataTable.saveFailed`, `dataTable.select`, `dataTable.edit`, `dataTable.page`, `dataTable.selected`, `dataTable.loading`, `dataTable.bulkFailed`, `dataTable.details`, `dataTable.ascending` and `dataTable.descending`. Pass translated strings and formatters through `labels`. Web dictionaries may omit `viewport`. The scrollable group then uses “Table contents”. Values and column headings belong to the caller. [Message inventory](../library-strings.md)
 
 The ten checked-in dictionaries supply message templates. The application selects one and passes its strings and callbacks through `labels`. On web, `labels={{ viewport: messages['dataTable.viewport'] }}` names the keyboard-focusable group while `label` names the table. Omitting `viewport` or passing `undefined` keeps the default “Table contents” name. The public `DataTableLabels` type describes the resolved dictionary, so reading `viewport` returns a string. An Arabic right-to-left consumer used the row name عائشة in its checkbox and edit actions and `Intl.NumberFormat('ar-EG')` for selected counts and pagination. It announced `عدد العناصر المحددة: ١` after selection and `الصفحة ٢ من ١٢` on the second page. Automatic dictionary selection through a shared locale provider remains open for 1.0. [Arabic messages](../../packages/messages/locales/ar.json)
 
@@ -116,7 +116,7 @@ For local collections, supply the complete array. For a server-fed table, supply
 
 ### API
 
-The caller owns record data, column definitions and persistence. The table owns local query, sort and page. Supply `server` to own those values, and `selectedIds` plus `onSelectionChange` to own selection independently. `bulkAction.onApply` receives selected IDs across pages. A cell keeps its draft while an asynchronous edit is pending or after an error. Web host props and ref reach the outer section.
+The caller owns record data, column definitions and persistence. The table owns local query, sort and page. Supply `server` to own those values, and `selectedIds` plus `onSelectionChange` to own selection independently. `bulkAction.onApply` receives selected IDs across pages. A cell keeps its draft while an asynchronous edit is pending or after an error. Paging and filtering preserve the draft. Removing the row from the complete local collection discards its edit state. A later save result belongs to the removed row, even if another row reuses its ID. Web host props and ref reach the outer section.
 
 | Export | Prop | Type | Default | Ownership | Ref target |
 | --- | --- | --- | --- | --- | --- |

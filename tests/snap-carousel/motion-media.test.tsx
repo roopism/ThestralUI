@@ -111,3 +111,24 @@ test('a settled swipe aligns the viewport with the controlled selection', () => 
   expect(screen.getByRole('button', { name: 'Save B' })).toBeTruthy();
   expect(screen.getByRole('status').textContent).toBe('2 of 3');
 });
+
+test('reversing a swipe updates the pending request of a delayed carousel owner', () => {
+  const changed = vi.fn();
+  const slides = (id: string) =>
+    <Carousel label="Routes" labels={labels} items={items} selectedId={id} onSelectionChange={changed} />;
+  const view = render(slides('A'));
+  const viewport = screen.getByRole('group', { name: 'Routes' });
+  Object.defineProperty(viewport, 'clientWidth', { value: 320 });
+  viewport.scrollLeft = 320;
+  fireEvent.scroll(viewport);
+  viewport.scrollLeft = 0;
+  fireEvent.scroll(viewport);
+  expect(changed.mock.calls).toEqual([['B'], ['A']]);
+
+  view.rerender(slides(changed.mock.lastCall![0]));
+  expect(screen.getByRole('button', { name: 'Save A' })).toBeTruthy();
+  view.rerender(slides('C'));
+  fireEvent.scroll(viewport);
+  expect(viewport.scrollLeft).toBe(640);
+  expect(changed.mock.calls).toEqual([['B'], ['A']]);
+});

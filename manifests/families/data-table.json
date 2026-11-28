@@ -234,7 +234,11 @@
       "tests/data-table/collections.test.tsx | a save that rejects leaves focus in the search field",
       "tests/data-table/collections.test.tsx | legacy label dictionaries retain the viewport name with an undefined override",
       "tests/data-table/collections.test.tsx | an invalid table locale falls back for labels, sorting and search",
-      "tests/data-table/collections.test.tsx | all ten catalogs cover the table, command palette and batch keys including their placeholders"
+      "tests/data-table/collections.test.tsx | all ten catalogs cover the table, command palette and batch keys including their placeholders",
+      "tests/data-table/collections.test.tsx | returning to a rejected cell restores the submitted title for retry",
+      "tests/data-table/collections.test.tsx | a rejected save before local row deletion leaves its replacement editable",
+      "tests/data-table/collections.test.tsx | a rejected save after local row deletion leaves its replacement editable",
+      "tests/data-table/collections.test.tsx | a late success for a deleted local row preserves its replacement’s failed edit"
     ],
     "browser": [
       "data-table/data-table.spec.ts | server paging, edits and cross-page bulk actions complete the same desktop and phone workflow",
@@ -266,7 +270,13 @@
       "tests/native/catalog-presentation.test.cjs | the native work queue announces one archived record and retains plural results",
       "tests/data-table/native.test.cjs | removing the focused native cell returns focus to the stable table viewport",
       "tests/data-table/native.test.cjs | paging keeps a native cell locked until its previous save settles",
-      "tests/data-table/native.test.cjs | native headless table falls back on a malformed locale while sorting and searching"
+      "tests/data-table/native.test.cjs | native headless table falls back on a malformed locale while sorting and searching",
+      "tests/data-table/native.test.cjs | returning to a rejected native cell restores the submitted title for retry",
+      "tests/data-table/native.test.cjs | native error fragments and arrays put each primitive inside a text host",
+      "tests/data-table/native.test.cjs | a native save restores editor focus only while its input or action owns it",
+      "tests/data-table/native.test.cjs | a rejected save before native local row deletion leaves its replacement editable",
+      "tests/data-table/native.test.cjs | a rejected save after native local row deletion leaves its replacement editable",
+      "tests/data-table/native.test.cjs | a late success for a deleted native local row preserves its replacement’s failed edit"
     ],
     "visual": [
       "data-table/data-table.visual.ts | data table audit queue light phone",
