@@ -84,7 +84,10 @@ test('sorts numbers by value, pages safely after data changes, and provides an e
   expect(viewport.contains(screen.getByRole('table', { name: props.label }))).toBe(true);
 
   const { viewport: defaultViewport, ...olderDictionary } = english;
-  const legacyLabels: CollectionProps<(typeof rows)[number]>['labels'] & DataTableProps<(typeof rows)[number]>['labels'] = olderDictionary;
+  expectTypeOf<CollectionLabels['viewport']>().toEqualTypeOf<string>();
+  expectTypeOf<DataTableLabels['viewport']>().toEqualTypeOf<string>();
+  type Row = (typeof rows)[number];
+  const legacyLabels: CollectionProps<Row>['labels'] & DataTableProps<Row>['labels'] = olderDictionary;
   rerender(<DataTable {...props} labels={legacyLabels} />);
   expect(screen.getByRole('group', { name: defaultViewport })).toBe(viewport);
   rerender(<DataTable {...props} labels={{ ...legacyLabels, viewport: undefined }} />);
