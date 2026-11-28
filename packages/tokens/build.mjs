@@ -1,11 +1,15 @@
 import { cssName, forcedColors, tokenLayer } from './modes/compile.mjs';
 import { modeOutputs } from './modes/outputs.mjs';
+import { readModeSystem } from './modes/resolve.mjs';
 import { resolveValue } from './resolve-value.mjs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { nativeOnlyToken } from './resolve-value.mjs';
 
 const domainNames = ['color', 'space', 'density', 'shape', 'motion', 'type', 'elevation', 'layer', 'chart'];
 // Preserve the order published by v0.2 consumers, including the three legacy size aliases.
 const groupsInPublicOrder = ['palette', 'light', 'dark', 'size', 'motion', 'space', 'density', 'type', 'shape', 'elevation'];
+// Native-only leaves stay out of tokens.json, the web token object, the modes and every sheet.
+const native = new Map();
 const source = new Map();
 for (const domain of domainNames) {
   const path = new URL('./domains/' + domain + '.json', import.meta.url);
@@ -14,10 +18,12 @@ for (const domain of domainNames) {
     typeof value === 'number' ? JSON.rawJSON(context.source) : value,
   );
   for (const [group, leaves] of Object.entries(domainSource)) {
-    if (!source.has(group)) source.set(group, {});
-    const target = source.get(group);
     for (const [name, token] of Object.entries(leaves)) {
-      if (Object.hasOwn(target, name)) throw Error('Duplicate token: ' + group + '.' + name);
+      const channel = nativeOnlyToken(token, group + '.' + name) ? native : source;
+      if (!channel.has(group)) channel.set(group, {});
+      const target = channel.get(group);
+      if (Object.hasOwn(target, name) || Object.hasOwn(source.get(group) ?? {}, name) || Object.hasOwn(native.get(group) ?? {}, name))
+        throw Error('Duplicate token: ' + group + '.' + name);
       target[name] = token;
     }
   }
@@ -36,6 +42,108 @@ else if (await readFile(rawPath, 'utf8') !== rawJson)
 
 const tokenAt = path => path.split('.').reduce((group, key) => group?.[key], tokens);
 const resolve = path => resolveValue(tokenAt, path);
+// A native token may alias any token. A web token may not alias a native-only token.
+const nativeRaw = JSON.parse(JSON.stringify(Object.fromEntries([...native].sort(([a], [b]) => a < b ? -1 : 1))));
+const nativePath = path => Object.hasOwn(nativeRaw[path.split('.')[0]] ?? {}, path.split('.').slice(1).join('.'));
+const anyAt = path => nativePath(path) ? path.split('.').reduce((group, key) => group?.[key], nativeRaw) : tokenAt(path);
+for (const [name, leaves] of Object.entries(tokens)) for (const [key, token] of Object.entries(leaves)) {
+  if (nativeOnlyToken(token, name + '.' + key)) throw Error('Native-only token in the web token object: ' + name + '.' + key);
+  if (token.$type === 'fontFamily') throw Error('A font family token is native-only: ' + name + '.' + key);
+  for (let target = token.$value, seen = 0; typeof target === 'string' && /^\{[^{}]+\}$/.test(target) && seen < 64; seen++) {
+    if (nativePath(target.slice(1, -1))) throw Error('A web token cannot alias the native-only token ' + target + ': ' + name + '.' + key);
+    target = tokenAt(target.slice(1, -1))?.$value;
+  }
+}
+// A scaled native dimension is a web dimension times a web number, such as a type size times
+// the body leading. The native theme recomputes it for every resolved brand, scheme, density,
+// motion and context, so it follows the same source as the web sheet.
+const scaleKey = 'ui-lazy-dev.scale';
+const aliasPath = value => typeof value === 'string' ? /^\{([^{}]+)\}$/.exec(value)?.[1] : undefined;
+const scaled = {};
+for (const [name, leaves] of Object.entries(nativeRaw)) for (const [key, token] of Object.entries(leaves)) {
+  const scale = token.$extensions?.[scaleKey];
+  if (scale === undefined) continue;
+  const base = aliasPath(token.$value), factor = aliasPath(scale);
+  if (token.$type !== 'dimension' || tokenAt(base ?? '')?.$type !== 'dimension' || tokenAt(factor ?? '')?.$type !== 'number')
+    throw Error('A scaled native token multiplies a web dimension alias by a web number: ' + name + '.' + key);
+  scaled[name + '.' + key] = [base, factor];
+}
+const modeSystem = readModeSystem();
+const defaultValues = modeSystem.resolveModes().values;
+const aliases = [];
+function webOperand(path) {
+  const [group, key] = path.split('.');
+  // Private source groups such as palette are absent from resolved themes.
+  return Object.hasOwn(defaultValues[group] ?? {}, key) ? [group, key] : resolve(path);
+}
+function nativeOperands(path) {
+  if (scaled[path]) return scaled[path].map(webOperand);
+  const target = aliasPath(anyAt(path).$value);
+  if (!target) return [];
+  return nativePath(target) ? nativeOperands(target) : [webOperand(target)];
+}
+function nativeAliasValue(tokens, target, factor) {
+  const read = operand => Array.isArray(operand) ? tokens[operand[0]][operand[1]] : operand;
+  const value = read(target);
+  return factor === undefined ? value : Math.round(value * read(factor) * 100) / 100;
+}
+const nativeGroups = Object.fromEntries(Object.entries(nativeRaw).map(([name, leaves]) => [name,
+  Object.fromEntries(Object.keys(leaves).sort().map(key => {
+    const path = name + '.' + key;
+    const value = resolveValue(anyAt, path);
+    const operands = nativeOperands(path);
+    if (!operands.length) return [key, value];
+    aliases.push([name, key, ...operands]);
+    return [key, nativeAliasValue(defaultValues, ...operands)];
+  }))]));
+// Fail when a native-only token reaches any web output, under any published spelling:
+// a sheet variable (leaf or path), a flat mode path or a nested token object member.
+const kebab = text => text.replace(/[A-Z]/g, (letter) => '-' + letter.toLowerCase());
+const literal = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const leaks = Object.entries(nativeGroups).flatMap(([name, leaves]) => Object.keys(leaves).map(key => {
+  const variables = ['--uld-' + kebab(key), cssName(name + '.' + key), '--uld-' + kebab(name + '-' + key)];
+  return { path: name + '.' + key, sheet: new RegExp('(?:' + variables.map(literal).join('|') + ')(?![\\w-])'),
+    script: new RegExp(literal('"' + name + '.' + key + '"') + '|' + literal('"' + name + '"') +
+      '\\s*:\\s*\\{[^{}]*' + literal('"' + key + '"') + '\\s*:') };
+}));
+function assertWebOutput(file, contents) {
+  for (const { path, sheet, script } of leaks)
+    if ((file.endsWith('.css') ? sheet : script).test(contents))
+      throw Error('Native-only token ' + path + ' leaked into the web output ' + file);
+}
+// The native entry is the only output that carries native-only tokens.
+const nativeManifest = JSON.stringify(nativeGroups, null, 2);
+const nativeShape = '{ ' + Object.entries(nativeGroups).map(([name, leaves]) => JSON.stringify(name) + ': { ' +
+  Object.entries(leaves).map(([key, value]) => JSON.stringify(key) + ': ' + typeof value).join('; ') + ' }').join('; ') + ' }';
+const nativeOutputs = {
+  'native.js': [
+    "import { createTheme } from './modes/index.js';",
+    'export const nativeTokens = ' + nativeManifest + ';',
+    'const aliases = ' + JSON.stringify(aliases) + ';',
+    nativeAliasValue.toString(),
+    'export function withNativeTokens(tokens) {',
+    '  const result = { ...tokens };',
+    '  for (const [group, leaves] of Object.entries(nativeTokens)) result[group] = { ...tokens[group], ...leaves };',
+    '  for (const [group, key, target, factor] of aliases) result[group][key] = nativeAliasValue(tokens, target, factor);',
+    '  return result;',
+    '}',
+    'export function createNativeTheme(options) {',
+    '  const theme = createTheme(options);',
+    '  return Object.freeze({ resolve(selection) { const { mode, tokens } = theme.resolve(selection); return { mode, tokens: withNativeTokens(tokens) }; } });',
+    '}',
+    '',
+  ].join('\n'),
+  'native.d.ts': [
+    "import type { BrandDefinition, ContextDefinition, Mode, ModeSelection, ResolvedTokens } from './modes/index.js';",
+    'export declare const nativeTokens: ' + nativeManifest + ';',
+    'export type NativeResolvedTokens = ResolvedTokens & ' + nativeShape + ';',
+    'export declare function withNativeTokens(tokens: ResolvedTokens): NativeResolvedTokens;',
+    'export declare function createNativeTheme(options?: { brands?: readonly BrandDefinition[]; modes?: readonly ContextDefinition[] }): {',
+    '  resolve(selection?: ModeSelection): { mode: Mode; tokens: NativeResolvedTokens };',
+    '};',
+    '',
+  ].join('\n'),
+};
 function group(name) {
   return Object.fromEntries(
     Object.keys(tokens[name]).map((key) => [key, resolve(name + '.' + key)]),
@@ -88,9 +196,10 @@ const outputs = {
   'index.js': 'export const tokens = ' + manifest + ';\n',
   'index.d.ts': 'export declare const tokens: ' + manifest + ';\n',
   'styles.css': styles,
-  ...modeOutputs(),
+  ...modeOutputs(modeSystem),
 };
 for (const [file, contents] of Object.entries(outputs)) {
+  assertWebOutput(file, contents);
   const path = new URL(file, dir);
   if (process.argv.includes('--check')) {
     if ((await readFile(path, 'utf8')) !== contents)
@@ -99,4 +208,10 @@ for (const [file, contents] of Object.entries(outputs)) {
     await mkdir(new URL('./', path), { recursive: true });
     await writeFile(path, contents);
   }
+}
+for (const [file, contents] of Object.entries(nativeOutputs)) {
+  const path = new URL(file, dir);
+  if (process.argv.includes('--check')) {
+    if ((await readFile(path, 'utf8')) !== contents) throw new Error('Stale token artifact: ' + file);
+  } else await writeFile(path, contents);
 }

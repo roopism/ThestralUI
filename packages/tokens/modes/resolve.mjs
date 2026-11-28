@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { resolveValue } from '../resolve-value.mjs';
+import { nativeOnlyToken, resolveValue } from '../resolve-value.mjs';
 
 const defaultDocument = new URL('./system.resolver.json', import.meta.url);
 const privateGroups = new Set(['palette', 'light', 'dark', 'highContrast']);
@@ -9,6 +9,8 @@ function collect(group, tokens, path = '', inheritedType) {
   const type = group.$type ?? inheritedType;
   if (Object.hasOwn(group, '$value')) {
     if (!path || !type) throw Error('A token requires a name and type: ' + path);
+    // Native-only tokens belong to the native entry, not to any mode, brand or sheet.
+    if (nativeOnlyToken(group, path)) return;
     tokens.set(path, { $type: type, $value: group.$value });
     return;
   }
