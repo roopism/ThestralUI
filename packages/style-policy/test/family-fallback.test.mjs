@@ -1,38 +1,8 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync} from 'node:fs';
-import {dirname,join} from 'node:path';
-import {tmpdir} from 'node:os';
-import {registeredFallback} from '../family-fallback.mjs';
-import {inspectSource} from '../policy.mjs';
-
-const path='packages/web/src/probe-family/styles.css';
-const entry='packages/web/src/probe-family/index.tsx';
-const header='/* @uld-css-chunk probe-family */\n';
-const valid='.uld-probe-family { gap: var(--uld-gap, 8px); }';
-const tokens={
-  size:{gap:{$type:'dimension',$value:{value:8,unit:'px'}},control:{$type:'dimension',$value:{value:44,unit:'px'}}},
-  type:{bodySize:{$type:'dimension',$value:{value:8,unit:'px'}}},
-  density:{compactTarget:{$type:'dimension',$value:{value:32,unit:'px'}},largeTarget:{$type:'dimension',$value:{value:56,unit:'px'}},coarseTarget:{$type:'dimension',$value:{value:48,unit:'px'}}},
-  space:{spaceSm:{$type:'dimension',$value:{value:8,unit:'px'}}},
-  palette:{manufactured:{$type:'dimension',$value:{value:8,unit:'px'}}}
-};
-function fixture(run) {
-  const root=mkdtempSync(join(tmpdir(),'uld-style-fallback-'));
-  const put=(name,value)=>{const out=join(root,name);mkdirSync(dirname(out),{recursive:true});writeFileSync(out,typeof value==='string'?value:JSON.stringify(value));};
-  const routes={js:{types:'./dist/probe-family/index.d.ts',default:'./dist/probe-family/index.js'},css:'./dist/probe-family.css'};
-  const manifest={id:'Probe family',inventory:{api:['probe-family:Probe']},files:{source:[entry],style:[path]},entries:[{pkg:'web',path:'./probe-family',target:routes.js},{pkg:'web',path:'./probe-family.css',target:routes.css}]};
-  const pkg={name:'@ui-lazy-dev/ui-web',exports:{'./probe-family':routes.js,'./probe-family.css':routes.css}};
-  put('packages/tokens/package.json',{name:'@ui-lazy-dev/tokens',exports:{'./tokens.json':'./tokens.json','./styles.css':'./dist/styles.css'}});
-  put(entry,'export const Probe = () => <div className="uld-probe-family uld-probe-family-root" data-uld-probe-family data-part="action"><span data-part="foreign"/></div>;');put(path,header+valid);
-  put('manifests/families/probe-family.json',manifest);put('packages/web/package.json',pkg);
-  put('docs/components/probe-family.md','### Tokens\n\nUse `size.gap`, `size.control`, and `type.bodySize`.\n\n### Other\n`space.spaceSm`');
-  const find=(source,pathOverride=path,tokenOverride=tokens)=>inspectSource(pathOverride,source,{
-    component:true,scopes:['uld-'],variables:['--uld-gap','--uld-control','--uld-body-size','--uld-space-sm','--uld-manufactured','--local','--uld-compact-target','--uld-large-target','--uld-coarse-target'],tokenPaths:[],
-    familyFallback:registeredFallback(root,pathOverride,tokenOverride),
-  }).filter(f=>f.rule==='style/token');
-  try{run({root,put,find,manifest,pkg});}finally{rmSync(root,{recursive:true,force:true});}
-}
+import {rmSync,symlinkSync} from 'node:fs';
+import {join} from 'node:path';
+import {entry, fixture, header, inlineFile, path, primitivesFile, tokens, valid, webSource} from './family-fallback-fixture.mjs';
 
 test('canonical scope, published token role, documented token and CSS length all agree',()=>fixture(({find})=>{
   for(const selector of ['.uld-probe-family','.uld-probe-family-root','[data-uld-probe-family][data-part="action"]',':where(.uld-probe-family:not([hidden]))',':is(.uld-probe-family,[data-uld-probe-family])','.parent .uld-probe-family']){
@@ -71,13 +41,70 @@ test('ambiguous equal-valued spacings and swapped control variants cannot qualif
   assert.ok(find(header+coarse.replace(":not([data-size='lg'])", "[data-size='lg']")).length);
 }));
 
-test('the target element and every selector branch are family-owned within the actual standalone chunk',()=>fixture(({find})=>{
+test('the target element and every selector branch are family-owned within the actual standalone chunk',()=>fixture(({put,find})=>{
   for(const selector of ['.uld-foreign', '.uld-probe-family[data-p\\61rt="missing"]', '[data-uld-probe-family][data-part="missing"]', '[data-uld-probe-family][data-part="foreign"]', '[data-part="action"] [data-uld-probe-family]', '[uld-probe-family]', '.data-uld-probe-family', '.uld-probe-family-like', '.uld-probe-family .uld-foreign', '.uld-probe-family > [data-part="root"]', '.uld-probe-family + .other', ':not(.uld-probe-family)', ':has(.uld-probe-family)', '.uld-probe-family, .uld-foreign', ':is(.uld-probe-family,.other)', '[data-uld-probe-familyish]', '.uld-probe-family::before']) {
     assert.ok(find(header+valid.replace('.uld-probe-family',selector)).length,selector);
   }
   for(const source of [valid,'/* @uld-css-chunk primitives.005 */\n'+valid,header+'/* @uld-css-chunk primitives */\n'+valid,header+header+valid,
     '@media print {\n'+header+valid+'}',header+'@layer uld.reset {'+valid+'}',header+'@keyframes test {from{gap:var(--uld-gap,8px)}}',header+'.x {'+valid+'}'])assert.ok(find(source).length,source);
   assert.ok(find(header+valid,'packages/web/src/foreign/other.css').length);
+
+  const binding = `import { Children, isValidElement } from 'react';
+  function hasContent(children) {
+    return Children.toArray(children).some(child => {
+      if (isValidElement(child)) return !child.props.hidden;
+      return typeof child !== 'string' || Boolean(child.trim());
+    });
+  }
+  export function Probe(props) {
+    return hasContent(props.children) ? renderGroup(props) : null;
+  }`;
+  const helper = `function renderGroup({ unstyled, className, ...host }) {
+    const classes = [unstyled ? 'bare' : 'uld-probe-family', className].filter(Boolean).join(' ');
+    if (unstyled) return <div {...host} />;
+    return <div {...host} className={classes} />;
+  }`;
+  const ownsGap = (source, css = valid) => {
+    put(entry, source);
+    return find(header + css).length === 0;
+  };
+  const source = binding + helper;
+  assert.ok(ownsGap(source));
+  const inline = source.replace('return <div {...host} className={classes}', 'return <Layout {...host} className={classes}');
+  const layoutImport = "import { Inline as Layout } from '../inline/binding.js';";
+  put(inlineFile, webSource(inlineFile));
+  put(primitivesFile, webSource(primitivesFile));
+  assert.ok(ownsGap(layoutImport + inline));
+  assert.ok(ownsGap(source.replace('hasContent(props.children) ? renderGroup(props) : null', 'renderGroup(props)')));
+  assert.ok(!ownsGap(source, valid.replace('8px', '9px')));
+  assert.ok(!ownsGap(source, valid.replace('.uld-probe-family', '.uld-foreign')));
+  for (const decoy of [
+    binding.replace('renderGroup(props)', 'null') + helper,
+    binding.replace('hasContent(props.children)', 'false') + helper,
+    binding.replace('renderGroup(props)', 'renderGroup({ unstyled: true })') + helper,
+    binding.replace('export function Probe', 'export function* Probe') + helper,
+    binding.replace('return hasContent', 'const forced = (props.unstyled = true); return hasContent') + helper,
+    binding + helper.replace('const classes =', 'const forced = (unstyled = true); const classes ='),
+    binding.replace('return hasContent', 'const renderGroup = () => null; return hasContent') + helper,
+    source + 'renderGroup = () => null;',
+    binding + helper.replace('if (unstyled)', 'if (unstyled) return <div className="uld-probe-family"/>; return null; if (unstyled)'),
+    source.replace('className={classes} />','className={classes} {...host} />'),
+    source.replace("unstyled ? 'bare' : 'uld-probe-family'", "unstyled ? 'uld-probe-family' : 'bare'"),
+    source.replace("'uld-probe-family', className", "'uld-probe-family' + '-foreign', className"),
+    source.replace("className={classes}", "className={discard(classes)}"),
+    inline.replace('function renderGroup', 'function Layout() { return null; } function renderGroup'),
+    layoutImport.replace('../inline/binding.js', './foreign.js') + inline,
+    layoutImport + inline.replace('const classes =', 'const Layout = () => null; const classes ='),
+    'const Boolean = () => false;' + source,
+    binding + "import { renderGroup } from './other.js';",
+  ]) assert.ok(!ownsGap(decoy), decoy);
+  for (const decoy of [
+    source.replace('return Children.toArray', 'return false && Children.toArray'),
+    source.replace("from 'react'", "from './unverified.js'"),
+    source.replace('hasContent(props.children)', 'hasContent(props.unstyled)'),
+    source.replace('export function Probe(props) {', 'export function Probe(props) { const hasContent = () => false;'),
+    source + 'hasContent = () => false;',
+  ]) assert.ok(!ownsGap(decoy), decoy);
 }));
 
 test('manifest, exported target, family-owned source and nonsymlinked provenance are required',()=>fixture(({root,put,find,manifest,pkg})=>{
