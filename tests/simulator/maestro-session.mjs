@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
 import { closeSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync,
   realpathSync, renameSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { delimiter, dirname, join, resolve } from 'node:path';
 
 const timer = new Int32Array(new SharedArrayBuffer(4));
@@ -20,7 +21,7 @@ export function withMaestroSession({ platform, device, maestro, env, reports }, 
   const library = join(dirname(dirname(executable)), 'lib', '*');
   mkdirSync(reports, { recursive: true });
   const folder = mkdtempSync(join(reports, 'maestro-session-'));
-  execFileSync('javac', ['-cp', library, '-d', folder, resolve('tests/simulator/MaestroSession.java')], { env });
+  execFileSync('javac', ['-cp', library, '-d', folder, fileURLToPath(new URL('./MaestroSession.java', import.meta.url))], { env });
   const log = openSync(join(folder, 'driver.log'), 'wx');
   let driver;
   try {

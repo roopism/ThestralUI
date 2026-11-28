@@ -1,6 +1,6 @@
 // Cheap checks that must pass on the exact commit before a qualification run starts.
 // Usage: node scripts/verify-preflight.mjs [<commit>] --branch <proposal branch> [--base <integration commit>]
-import { withPreflightActivity } from './workers/resource-guard.mjs';
+import { withPreflightActivity as withPreflightCommand } from './workers/resource-guard.mjs';
 import { gateGroup, observePreflightStage, typedGroup } from './gates/reuse/preflight.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
@@ -10,12 +10,14 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
+import { withTimingReservation } from './workers/timing-reservation.mjs';
 import { withRevisionSnapshot } from '../packages/policy/quality/staged-tree.mjs';
 import { installSnapshotDependencies } from '../packages/policy/quality/snapshot-dependencies.mjs';
 import { preflightChecks, preflightRunner, publishPreflightVerdict } from './gates/preflight-receipt.mjs';
 
 const integration = 'feat/enterprise-ui';
-const proposalBranch = /^(?:family|gates|docs)\/[a-z0-9][a-z0-9-]*$/;
+const proposalPattern = /^(?:family|gates|docs)\/[a-z0-9][a-z0-9-]*$/;
+const integrationPattern = /^feat\/enterprise-ui$/;
 const git = (root, ...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 128 << 20 }).trim();
 const fromTrusted = (ctx, path) => import(pathToFileURL(join(ctx.trusted, path)).href);
 const short = id => id.slice(0, 12);
@@ -49,6 +51,9 @@ export async function gateIsolation(ctx) {
   const { requireGateIsolation } = await fromTrusted(ctx, 'scripts/gates/landing-policy.mjs');
   const paths = stagedDiff(ctx.root, { parent: ctx.base, tree: ctx.tree }).changes.map(change => change.path);
   const issues = [];
+  const integrationSelf = ctx.branch === integration && ctx.commit === ctx.base && paths.length === 0 &&
+    git(ctx.root, '--no-replace-objects', 'show', '-s', '--format=%H %T', 'refs/remotes/origin/' + integration) === ctx.commit + ' ' + ctx.tree;
+  const proposalBranch = integrationSelf ? integrationPattern : proposalPattern;
   if (!proposalBranch.test(ctx.branch)) issues.push('Branch ' + ctx.branch + ' is not a family/, gates/ or docs/ proposal branch');
   try {
     const registrationGate = 'scripts/gates/registrations.mjs';
@@ -217,11 +222,13 @@ export async function firstAdoption(ctx) {
 }
 
 // 6c. The remainder of the hook's No weakening stage, using the integration's controls.
-export async function hookControls(ctx) {
+export async function hookControls(ctx, phase = {}) {
   const gate = file => join(ctx.trusted, 'scripts/gates', file);
+  phase.stage = 'canaries';
   await node(ctx, [gate('canaries.mjs'), ctx.tree]);
   await node(ctx, [gate('device-scope-canaries.mjs'), ctx.tree]);
   await node(ctx, [gate('maestro-canary.mjs'), '--offline']);
+  phase.stage = gateGroup;
   const tests = globSync('*.test.mjs', { cwd: gate('tests') }).sort();
   assert.ok(tests.includes('hardening.test.mjs'), 'The trusted gate tests are missing');
   await observePreflightStage(ctx, gateGroup,
@@ -284,7 +291,7 @@ async function runPhase(ctx, phase, checks) {
   const entry = { name: phase.name, result: 'passed' };
   try {
     const parentFindings = [];
-    const issues = await phase.operation(ctx, parentFindings);
+    const issues = await phase.operation(ctx, phase.operation === commitHooks ? parentFindings : entry);
     const judge = phase.check === 'No weakening' || phase.check === 'Qualification policy review';
     if (judge) assert.ok(Array.isArray(issues) && issues.every(issue => typeof issue === 'string' && issue.length));
     if (issues.length) {
@@ -324,7 +331,11 @@ export async function runPreflight(ctx, snapshotted, selected = phases) {
   return checks;
 }
 
-async function main() {
+export function withPreflightActivity(root, run) {
+  return withTimingReservation(root, 'activity', 'Verify preflight', run);
+}
+
+async function main(env) {
   const { values, positionals } = parseArgs({ allowPositionals: true, options: {
     branch: { type: 'string' }, base: { type: 'string' }, 'train-plan': { type: 'string' }, 'train-id': { type: 'string' },
   } });
@@ -344,7 +355,6 @@ async function main() {
   const own = fileURLToPath(import.meta.url);
   const ownBlob = git(root, 'hash-object', '--', own);
   const cache = join(common, 'uld-dependencies');
-  const env = process.env;
   const withTrusted = check => {
     const reused = env.ULD_PREFLIGHT_TRUSTED;
     if (reused && existsSync(join(reused, 'scripts/verify-preflight.mjs')) &&
@@ -355,14 +365,14 @@ async function main() {
     return withRevisionSnapshot(root, base, (trusted, _tree, trustedEnv) => {
       installSnapshotDependencies(trusted, cache, trustedEnv);
       return check(trusted);
-    });
+    }, env);
   };
   const candidate = check => withRevisionSnapshot(root, commit, (snapshot, actual, childEnv) => {
     assert.equal(actual, tree);
     installSnapshotDependencies(snapshot, cache, childEnv);
     prepareSnapshot(snapshot, base);
     return check({ snapshot, env: { ...childEnv, ULD_ARTIFACT_COMMON: common } });
-  });
+  }, env);
   return withTrusted(async trusted => {
     if (ownBlob !== runner.blob || runner.source === 'integration' && own !== realpathSync(join(trusted, 'scripts/verify-preflight.mjs'))) {
       // Only the exact integration copy, or before adoption the candidate's committed copy, may judge.
@@ -405,4 +415,4 @@ async function main() {
   });
 }
 
-if (import.meta.main) await withPreflightActivity('Member preflight', main);
+if (import.meta.main) await withPreflightCommand('Member preflight', () => main(process.env));

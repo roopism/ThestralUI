@@ -1,6 +1,7 @@
 import { isDeepStrictEqual } from 'node:util';
 import { timingSuites, verifiedTimingSkip } from './proposal-timing.mjs';
 import { apkIdentity } from './android-timing-reuse.mjs';
+import { retainDeviceEvidence } from './device-evidence.mjs';
 import { collectObservation, registerObservation } from '../selection/device-observations.mjs';
 import { deviceInputs } from '../selection/device-inputs.mjs';
 import { checkDeviceCompleteness } from './device-completeness.mjs';
@@ -156,15 +157,7 @@ async function runDevice(script, reports, platform, phase, env = process.env) {
     const root = join('test-results', reports);
     const versions = globSync(['device.json', '*/device.json'], { cwd: root }).map(file => read(join(root, file)));
     receipt.devices[platform] = platform === 'iphone' ? versions[0] ?? null : versions;
-    const patterns = ['final-budget-failure.json', 'device.json', '*/device.json', 'maestro-session-*/ready.json', '*/maestro-session-*/ready.json',
-      '{maestro-session-*,*/maestro-session-*}/*/{request.json,reply.json,suite.json,junit.xml,nodes.xml}',
-      '*/timing-source.json', '*/timing-admission.json', '*/timing-diagnostic/**/*.txt',
-      '*/timing-diagnostic/*.json', '*/timing-diagnostic-error.txt', '*/frame-trial-*/*.txt', '*/frame-measurements.json', '*/motion-target.json', '*/ripple.json'];
-    for (const file of globSync(patterns, { cwd: root })) {
-      const target = join(directory, 'attempts', id + '-evidence', platform, file);
-      mkdirSync(dirname(target), { recursive: true });
-      copyFileSync(join(root, file), target);
-    }
+    retainDeviceEvidence(root, join(directory, 'attempts', id + '-evidence', platform));
     const timing = join(root, 'low-end/timing-source.json');
     if (platform === 'android' && existsSync(timing)) receipt.androidTiming = read(timing);
   }

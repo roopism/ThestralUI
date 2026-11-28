@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -98,4 +99,23 @@ test('timing stops all booted iOS simulators and requires a fresh empty readback
   );
   assert.match(source('scripts/gates/local-run.mjs'), /shutdownSimulators\(/);
   assert.match(source('scripts/verify-android-emulator.mjs'), /shutdownSimulators\(/);
+});
+
+test('preflight holds the shared activity reservation while preparing and running snapshots', async t => {
+  const root = scratch(t);
+  const env = { ...process.env };
+  delete env.ULD_TIMING_RESERVATION;
+  const { withPreflightActivity } = await import('../../verify-preflight.mjs');
+  const lease = process.env.ULD_TIMING_RESERVATION;
+  delete process.env.ULD_TIMING_RESERVATION;
+  t.after(() => { if (lease !== undefined) process.env.ULD_TIMING_RESERVATION = lease; });
+  await withPreflightActivity(root, async reserved => {
+    assert.match(reserved.ULD_TIMING_RESERVATION, /^[a-f0-9-]{36}$/);
+    const script = 'import {withTimingReservation} from ' +
+      JSON.stringify(new URL('../../workers/timing-reservation.mjs', import.meta.url).href) +
+      ';await withTimingReservation(process.cwd(),"measurement","fixture",()=>{}, {timeoutMs:100})';
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], { cwd: root, env, encoding: 'utf8' });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Timed out/);
+  });
 });

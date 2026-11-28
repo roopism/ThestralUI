@@ -241,3 +241,35 @@ test('per-commit judge findings allow evidence only when every other hook contro
     assert.equal(snapshots, missingLock ? 0 : 1);
   }
 });
+
+test('daily integration preflight accepts only the exact tracked integration tip', async t => {
+  const root = mkdtempSync(join(tmpdir(), 'uld-integration-preflight-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const local = (...args) => fixtureGit(root, args);
+  local('init', '--quiet', '--template=', '-b', 'feat/enterprise-ui');
+  local('commit', '--quiet', '--allow-empty', '-m', 'fixture');
+  const tip = local('rev-parse', 'HEAD'), tree = local('rev-parse', 'HEAD^{tree}');
+  local('update-ref', 'refs/remotes/origin/feat/enterprise-ui', tip);
+  const daily = { root, trusted: source, branch: 'feat/enterprise-ui', base: tip, commit: tip, tree };
+  assert.deepEqual(await gateIsolation(daily), []);
+  assert.deepEqual(await gateIsolation({ ...daily, branch: 'gates/normal-proposal' }), []);
+  writeFileSync(join(root, 'input.md'), 'different tree');
+  local('add', 'input.md');
+  assert.ok((await gateIsolation({ ...daily, tree: local('write-tree') })).length);
+  local('commit', '--quiet', '--allow-empty', '-m', 'next fixture');
+  const next = local('rev-parse', 'HEAD');
+  assert.ok((await gateIsolation({ ...daily, commit: next })).length);
+  const nextTree = local('rev-parse', next + '^{tree}');
+  assert.ok((await gateIsolation({ ...daily, commit: next, base: next, tree: nextTree })).length);
+  assert.ok((await gateIsolation({ ...daily, branch: 'main' })).length);
+});
+
+test('planted commits and receipt seals stay outside the trusted checkout', () => {
+  const unique = plant({ 'docs/preflight-control.md': randomUUID() });
+  const receipt = { id: randomUUID(), kind: 'preflight' };
+  sealReceipt(context(unique).root, receipt);
+  for (const object of [unique, 'refs/uld-archive/preflight-receipts/' + receipt.id]) {
+    git(['cat-file', '-e', object]);
+    assert.throws(() => fixtureGit(source, ['cat-file', '-e', object]), error => Number.isInteger(error.status) && error.status !== 0);
+  }
+});

@@ -76,7 +76,7 @@ export function decideRow(context,name,identity,retainedRecord) {
   let record;
   if (preflightGroup(name) && context.preflightId !== undefined) {
     try {
-      if (cleanPreflightInputs(context)) record = preflightSource(directory,context,context.preflightId,name,fingerprint).record;
+      if (cleanPreflightInputs(context)) record = preflightSource(directory,context,context.preflightId,name,fingerprint,true).record;
     } catch {}
   } else record = retainedRecord ?? readRecord(directory,name,fingerprint);
   const history = freshHistory(directory,name,attemptId);

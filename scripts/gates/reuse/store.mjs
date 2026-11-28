@@ -108,6 +108,7 @@ export function verifiedSource(directory,record,context) {
   if (record.sourceKind === 'preflight') {
     const pass = preflightSource(directory,context,record.sourceAttempt,record.groupId,record.fingerprint);
     assert.deepEqual(record,pass.record);
+    assert.equal(pass.record.retries,0);
     return pass;
   }
   return validate(directory,record,record.groupId,record.fingerprint);
