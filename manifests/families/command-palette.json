@@ -73,6 +73,7 @@
       "tests/command-palette/workflow-commands.test.tsx | the server renders the palette labels before hydration in each independent locale"
     ],
     "node": [
+      "tests/packaging/command-palette-locales.test.mjs | an unavailable browser catalog preserves the palette label fallback on reopen",
       "tests/packaging/command-palette-locales.test.mjs | shared nativeSource registers packages/native/src/_shared/messages/locale.ts",
       "tests/packaging/command-palette-locales.test.mjs | shared source registers packages/messages/locale.ts",
       "tests/packaging/command-palette-locales.test.mjs | shared source registers packages/messages/renderer.mjs",

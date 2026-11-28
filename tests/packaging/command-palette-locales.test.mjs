@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 import test from 'node:test';
 import { build } from 'esbuild';
@@ -56,4 +58,15 @@ test('the English palette entry excludes every other command catalog from its in
     assert.ok(!seenChunks.has(chunks[0].path), locale + ' shares a chunk with another language');
     seenChunks.add(chunks[0].path);
   }
+});
+
+test('an unavailable browser catalog preserves the palette label fallback on reopen', async t => {
+  const folder = mkdtempSync(resolve(tmpdir(), 'palette-catalog-'));
+  t.after(() => rmSync(folder, { recursive: true, force: true }));
+  for (const file of ['browser.mjs', 'imports.mjs'])
+    copyFileSync(resolve('packages/web/src/command-palette/catalogs', file), resolve(folder, file));
+  const { loadCatalog } = await import(pathToFileURL(resolve(folder, 'browser.mjs')).href);
+  const first = loadCatalog('fr');
+  assert.equal(await first, undefined);
+  assert.equal(loadCatalog('fr'), first);
 });

@@ -404,6 +404,7 @@
     "tests/packaging/artifact-cache.test.mjs | packed inputs include generated files, executable modes and tool inputs",
     "tests/packaging/catalog-headers.test.mjs | the catalog disables access to the camera, microphone and location",
     "tests/packaging/catalog-headers.test.mjs | the catalog restricts scripts, connections, embedding and document base URLs",
+    "tests/packaging/command-palette-locales.test.mjs | an unavailable browser catalog preserves the palette label fallback on reopen",
     "tests/packaging/command-palette-locales.test.mjs | shared nativeSource registers packages/native/src/_shared/messages/locale.ts",
     "tests/packaging/command-palette-locales.test.mjs | shared source registers packages/messages/locale.ts",
     "tests/packaging/command-palette-locales.test.mjs | shared source registers packages/messages/renderer.mjs",
