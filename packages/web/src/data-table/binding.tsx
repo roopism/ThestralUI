@@ -43,8 +43,12 @@ function TableAction({ busy, ...props }: ComponentPropsWithRef<'button'> & { bus
   return <ButtonTarget {...props} behavior={useButton({ ...props, busy })} />;
 }
 
+function focusWithoutScrolling(element: HTMLElement | null | undefined) {
+  element?.focus({ preventScroll: true });
+}
+
+type Save = { id: string; draft: string | null };
 function useCellSaves(rows?: readonly { id: string }[]) {
-  type Save = { id: string; draft: string | null };
   const [cells] = useState(() => new Map<string, Save>());
   const [, refresh] = useReducer((revision: number) => revision + 1, 0);
 
@@ -54,21 +58,14 @@ function useCellSaves(rows?: readonly { id: string }[]) {
     for (const [key, save] of cells) if (!ids.has(save.id)) cells.delete(key);
   }, [rows, cells]);
 
-  function begin(key: string, id: string) {
-    if (cells.get(key)?.draft === null) return;
-    const save: Save = { id, draft: null };
-    cells.set(key, save);
-    refresh();
-    return save;
-  }
-  return { cells, begin, refresh };
+  return { cells, refresh };
 }
 
 export function EditableCell<R extends { id: string }>({
   row,
   column,
   name,
-  labels, disabled, busy, unstyled, saves,
+  labels, disabled, busy, unstyled, saves: { cells, refresh },
 }: {
   row: R;
   column: DataColumn<R>;
@@ -81,7 +78,7 @@ export function EditableCell<R extends { id: string }>({
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const key = JSON.stringify([row.id, column.id]);
-  const rejectedDraft = saves.cells.get(key)?.draft;
+  const rejectedDraft = cells.get(key)?.draft;
   const pending = rejectedDraft === null;
   const locked = disabled || busy;
   const trigger = useRef<HTMLButtonElement>(null);
@@ -92,23 +89,23 @@ export function EditableCell<R extends { id: string }>({
   useLayoutEffect(() => () => {
     const control = trigger.current ?? input.current?.form;
     if (control && ownsFocus(control)) {
-      control.closest<HTMLElement>('[data-part="viewport"]')?.focus({ preventScroll: true });
+      focusWithoutScrolling(control.closest<HTMLElement>('[data-part="viewport"]'));
     }
   }, []);
   useLayoutEffect(() => {
     if (draft === null && restoreFocus.current) {
       const button = trigger.current;
-      if (button && button.ownerDocument.activeElement === button.ownerDocument.body) button.focus({ preventScroll: true });
+      if (button && button.ownerDocument.activeElement === button.ownerDocument.body) focusWithoutScrolling(button);
       restoreFocus.current = false;
     }
   }, [draft]);
   const finish = () => {
     restoreFocus.current = ownsFocus();
-    saves.cells.delete(key);
+    cells.delete(key);
     setDraft(null);
   };
   const accessibleName = labels.edit(column.label, name);
-  const error = typeof rejectedDraft === 'string' && <span role="alert" aria-label={labels.saveFailed}>{labels.saveFailed}</span>;
+  const error = rejectedDraft != null && <span role="alert" aria-label={labels.saveFailed}>{labels.saveFailed}</span>;
   if (draft === null)
     return (
       <><TableAction
@@ -129,20 +126,21 @@ export function EditableCell<R extends { id: string }>({
     <form data-part="editor"
       onSubmit={async (event) => {
         event.preventDefault();
-        if (locked) return;
-        const save = saves.begin(key, row.id);
-        if (!save) return;
+        if (locked || cells.get(key)?.draft === null) return;
+        const save: Save = { id: row.id, draft: null };
+        cells.set(key, save);
+        refresh();
         try {
           await column.onEdit!(row, draft);
-          if (saves.cells.get(key) === save) finish();
+          if (cells.get(key) === save) finish();
         } catch {
           save.draft = draft;
-          if (ownsFocus()) input.current?.focus({ preventScroll: true });
+          if (ownsFocus()) focusWithoutScrolling(input.current);
         }
-        saves.refresh();
+        refresh();
       }}
       onKeyDown={(event) => {
-        if (event.key === 'Escape' && saves.cells.get(key)?.draft !== null) {
+        if (event.key === 'Escape' && cells.get(key)?.draft !== null) {
           event.preventDefault();
           event.stopPropagation();
           finish();
@@ -212,7 +210,7 @@ export function DataTable<R extends { id: string }>(props: DataTableProps<R>) {
         <thead data-part="header" role="rowgroup"><tr role="row">
           {selectRows && <th role="columnheader" scope="col">
             <SelectionCheckbox label={labels.selectPage} disabled={locked || !visible.length}
-              checked={model.somePage && !model.allPage ? 'mixed' : model.allPage}
+              checked={model.allPage || (model.somePage && 'mixed')}
               onChange={checked => model.select(visible.map(row => row.id), checked)} />
           </th>}
           {columns.map(column => <th key={column.id} role="columnheader" scope="col"
