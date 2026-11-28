@@ -29,7 +29,21 @@
   },
   "files": {
     "source": [
-      "packages/web/src/command-palette/binding.tsx"
+      "packages/web/src/command-palette/binding.tsx",
+      "packages/web/src/command-palette/messages.ts",
+      "packages/web/src/command-palette/catalogs/ar.mjs",
+      "packages/web/src/command-palette/catalogs/browser.mjs",
+      "packages/web/src/command-palette/catalogs/catalog.d.mts",
+      "packages/web/src/command-palette/catalogs/de.mjs",
+      "packages/web/src/command-palette/catalogs/es.mjs",
+      "packages/web/src/command-palette/catalogs/fr.mjs",
+      "packages/web/src/command-palette/catalogs/he.mjs",
+      "packages/web/src/command-palette/catalogs/hi.mjs",
+      "packages/web/src/command-palette/catalogs/imports.mjs",
+      "packages/web/src/command-palette/catalogs/ja.mjs",
+      "packages/web/src/command-palette/catalogs/pt-BR.mjs",
+      "packages/web/src/command-palette/catalogs/server.cjs",
+      "packages/web/src/command-palette/catalogs/zh-Hans.mjs"
     ],
     "nativeSource": [],
     "unit": [
@@ -53,7 +67,18 @@
       "browser/enterprise-workspace.spec.ts | command dialog supports keyboard activation and returns focus on dismissal"
     ],
     "vitest": [
-      "tests/command-palette/workflow-commands.test.tsx | searches labels and keywords, skips disabled commands and respects composing text"
+      "tests/command-palette/workflow-commands.test.tsx | searches labels and keywords, skips disabled commands and respects composing text",
+      "tests/command-palette/workflow-commands.test.tsx | command search accepts malformed locale tags and keeps supported case folding",
+      "tests/command-palette/workflow-commands.test.tsx | the command palette uses its locale for defaults and falls back on malformed tags",
+      "tests/command-palette/workflow-commands.test.tsx | the server renders the palette labels before hydration in each independent locale"
+    ],
+    "node": [
+      "tests/packaging/command-palette-locales.test.mjs | an unavailable browser catalog preserves the palette label fallback on reopen",
+      "tests/packaging/command-palette-locales.test.mjs | shared nativeSource registers packages/native/src/_shared/messages/locale.ts",
+      "tests/packaging/command-palette-locales.test.mjs | shared source registers packages/messages/locale.ts",
+      "tests/packaging/command-palette-locales.test.mjs | shared source registers packages/messages/renderer.mjs",
+      "tests/packaging/command-palette-locales.test.mjs | shared source registers packages/web/src/_shared/messages/locale.ts",
+      "tests/packaging/command-palette-locales.test.mjs | the English palette entry excludes every other command catalog from its initial imports"
     ]
   }
 }

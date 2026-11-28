@@ -67,7 +67,7 @@ export function EditableCell<R extends { id: string }>({
   row: R;
   column: DataColumn<R>;
   name: string;
-  labels: DataTableLabels;
+  labels: Pick<DataTableLabels, 'edit' | 'save' | 'cancel' | 'saveFailed'>;
   saves: ReturnType<typeof useCellSaves>;
   disabled?: boolean;
   busy?: boolean;
@@ -103,7 +103,6 @@ export function EditableCell<R extends { id: string }>({
     return (
       <TableAction
         ref={trigger}
-        type="button"
         aria-label={accessibleName}
         disabled={disabled}
         busy={busy || pending}
@@ -146,7 +145,7 @@ export function EditableCell<R extends { id: string }>({
       <TableAction type="submit" disabled={disabled || busy} busy={pending}>
         {labels.save}
       </TableAction>
-      <TableAction type="button" disabled={pending || disabled || busy} onClick={finish}>
+      <TableAction disabled={pending || disabled || busy} onClick={finish}>
         {labels.cancel}
       </TableAction>
       {failed && <span role="alert" aria-label={labels.saveFailed}>{labels.saveFailed}</span>}
@@ -154,15 +153,15 @@ export function EditableCell<R extends { id: string }>({
   );
 }
 /** A semantic table with local collection processing or explicit server-owned pages. */
-export function DataTable<R extends { id: string }>({
-  label, rows, columns, getRowLabel, locale, labels: overrides, pageSize, bulkAction,
-  defaultSort, server, selectedIds, defaultSelectedIds, onSelectionChange, onSearchChange, onSortChange, onPageChange,
-  unstyled, layout = 'table', size, loading, error, toolbar, emptyState, readOnly, disabled, className, ...host
-}: DataTableProps<R>) {
-  const model = useDataTable({ rows, columns, locale, pageSize, defaultSort, server, selectedIds,
-    defaultSelectedIds, onSelectionChange, onSearchChange, onSortChange, onPageChange });
+export function DataTable<R extends { id: string }>(props: DataTableProps<R>) {
+  const model = useDataTable(props);
+  const {
+    label, rows, columns, getRowLabel, locale, labels: overrides, pageSize, bulkAction,
+    defaultSort, server, selectedIds, defaultSelectedIds, onSelectionChange, onSearchChange, onSortChange, onPageChange,
+    unstyled, layout = 'table', size, loading, error, toolbar, emptyState, readOnly, disabled, className, ...host
+  } = props;
   const { state, visible, pages, selected } = model;
-  const labels = { ...english, ...overrides, viewport: overrides?.viewport ?? english.viewport };
+  const labels = { ...english, ...overrides };
   const id = useId();
   const applying = useRef(false);
   const saves = useCellSaves();
@@ -194,11 +193,11 @@ export function DataTable<R extends { id: string }>({
           disabled={disabled} onValueChange={model.search} />
       </label>
       {selectRows && <output data-part="selection">{labels.selected(selected.size)}</output>}
-      {bulkAction && <TableAction data-part="bulk-action" type="button" disabled={locked || readOnly || !selected.size} onClick={apply}>{bulkAction.label}</TableAction>}
+      {bulkAction && <TableAction data-part="bulk-action" disabled={locked || readOnly || !selected.size} onClick={apply}>{bulkAction.label}</TableAction>}
       {toolbar}
     </div>
     {(error || bulkFailed) && <div data-part="status" role="alert">{error || labels.bulkFailed}</div>}
-    <div data-part="viewport" className={classes('uld-data-scroll')} role="group" aria-label={labels.viewport} tabIndex={0}>
+    <div data-part="viewport" className={classes('uld-data-scroll')} role="group" aria-label={overrides?.viewport ?? english.viewport} tabIndex={0}>
       {loading && <span data-part="status" role="status">{labels.loading}</span>}
       <table data-part="table" id={id} role="table" aria-label={label} aria-busy={loading || undefined}>
         <thead data-part="header" role="rowgroup"><tr role="row">
@@ -209,7 +208,7 @@ export function DataTable<R extends { id: string }>({
           </th>}
           {columns.map(column => <th key={column.id} role="columnheader" scope="col"
             aria-sort={state.sort?.column === column.id ? (state.sort.ascending ? 'ascending' : 'descending') : undefined}>
-            <TableAction data-part="sort" type="button" disabled={disabled} onClick={() => model.sortBy(column.id)}>{column.label}
+            <TableAction data-part="sort" disabled={disabled} onClick={() => model.sortBy(column.id)}>{column.label}
               <span aria-hidden="true">{state.sort?.column === column.id ? (state.sort.ascending ? ' ↑' : ' ↓') : ' ↕'}</span>
             </TableAction>
           </th>)}
@@ -228,9 +227,9 @@ export function DataTable<R extends { id: string }>({
       </table>
     </div>
     <div data-part="pagination" className={classes('uld-data-pages')}>
-      <TableAction type="button" disabled={disabled || state.page <= 0} onClick={() => model.goToPage(state.page - 1)}>{labels.previous}</TableAction>
+      <TableAction disabled={disabled || state.page <= 0} onClick={() => model.goToPage(state.page - 1)}>{labels.previous}</TableAction>
       <output>{labels.page(state.page + 1, pages)}</output>
-      <TableAction type="button" disabled={disabled || state.page >= pages - 1} onClick={() => model.goToPage(state.page + 1)}>{labels.next}</TableAction>
+      <TableAction disabled={disabled || state.page >= pages - 1} onClick={() => model.goToPage(state.page + 1)}>{labels.next}</TableAction>
     </div>
   </section>;
 }

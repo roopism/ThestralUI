@@ -210,3 +210,10 @@ test('removing the focused native cell returns focus to the stable table viewpor
     }
   }
 });
+
+test('native headless table falls back on a malformed locale while sorting and searching', async () => {
+  const { result } = await renderHook(() => useDataTable({ ...options, locale: 'en_US', defaultSort: { column: 'title', ascending: true } }));
+  expect(result.current.visible.map(record => record.title)).toEqual(['Alpha', 'Beta']);
+  await act(() => result.current.search('GAMMA'));
+  expect(result.current.visible.map(record => record.title)).toEqual(['Gamma']);
+});

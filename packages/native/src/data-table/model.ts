@@ -1,3 +1,4 @@
+import { canonicalLocale } from '../_shared/messages/locale.js';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 export interface DataColumn<R> {
@@ -44,9 +45,10 @@ export interface DataTableBehavior<R> {
 
 /** Remote rows already represent one server page. Only local collections are filtered, sorted, sliced or pruned. */
 export function useDataTable<R extends { id: string }>({
-  rows, columns, locale, pageSize = 25, defaultSort, server, selectedIds: controlled,
+  rows, columns, locale: localeTag, pageSize = 25, defaultSort, server, selectedIds: controlled,
   defaultSelectedIds, onSelectionChange, onSearchChange, onSortChange, onPageChange,
 }: UseDataTableOptions<R>): DataTableBehavior<R> {
+  const locale = canonicalLocale(localeTag);
   const [local, setLocal] = useState<DataTableState>(() => ({ query: '', sort: defaultSort ?? null, page: 0 }));
   const [localIds, setLocalIds] = useState<readonly string[]>(() => defaultSelectedIds ?? []);
   const pendingIds = useRef(localIds);

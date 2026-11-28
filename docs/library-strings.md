@@ -1,6 +1,6 @@
 # Library-owned messages
 
-The following inventory covers visible and accessibility copy in the web and native component sources at `e11f3e5`. Each key identifies one complete translatable message. Existing per-component label overrides take precedence when these messages are connected to the locale provider.
+The following inventory covers visible and accessibility copy in the web and native component sources at `e11f3e5`. Each key identifies one complete translatable message. Command Palette uses the catalog matching its locale. Explicit component labels take precedence. Data Table and Batch Progress accept caller-supplied labels.
 
 | Message key | English message | Binding source |
 | --- | --- | --- |
@@ -46,7 +46,7 @@ The following inventory covers visible and accessibility copy in the web and nat
 
 The table’s page-selection checkbox selects every visible record on the current page. The batch summary counts each terminal outcome, including failed and denied operations. Translations preserve those distinctions.
 
-The native bindings take their labels, hints and error messages from the caller. The web bindings also accept caller-owned titles, field labels, dismiss actions and formatted values. Decorative sort arrows, the tree chevron and the checkbox check mark carry their meaning through state semantics. The CodeField argument error is a developer diagnostic. None of these supply a translatable default message.
+Native Data Table accepts caller overrides for built-in English labels. Other native bindings take their labels, hints and errors from the caller. The web bindings also accept caller-owned titles, field labels, dismiss actions and formatted values. Decorative sort arrows, the tree chevron and the checkbox check mark carry their meaning through state semantics. The CodeField argument error is a developer diagnostic. None of these supply a translatable default message.
 
 ### Catalogs
 
@@ -55,14 +55,14 @@ Each JSON file contains only messages keyed by their stable IDs. The locale inde
 | Locale | Key coverage | Translation status |
 | --- | --- | --- |
 | [en](../packages/messages/locales/en.json) | 38 / 38 (100%) | English source |
-| [ar](../packages/messages/locales/ar.json) | 38 / 38 (100%) | Draft, language review pending |
-| [he](../packages/messages/locales/he.json) | 38 / 38 (100%) | Draft, language review pending |
-| [ja](../packages/messages/locales/ja.json) | 38 / 38 (100%) | Draft, language review pending |
-| [zh-Hans](../packages/messages/locales/zh-Hans.json) | 38 / 38 (100%) | Draft, language review pending |
-| [hi](../packages/messages/locales/hi.json) | 38 / 38 (100%) | Draft, language review pending |
-| [de](../packages/messages/locales/de.json) | 38 / 38 (100%) | Draft, language review pending |
-| [fr](../packages/messages/locales/fr.json) | 38 / 38 (100%) | Draft, language review pending |
-| [es](../packages/messages/locales/es.json) | 38 / 38 (100%) | Draft, language review pending |
-| [pt-BR](../packages/messages/locales/pt-BR.json) | 38 / 38 (100%) | Draft, language review pending |
+| [ar](../packages/messages/locales/ar.json) | 38 / 38 (100%) | Draft translation, awaiting language review |
+| [he](../packages/messages/locales/he.json) | 38 / 38 (100%) | Draft translation, awaiting language review |
+| [ja](../packages/messages/locales/ja.json) | 38 / 38 (100%) | Draft translation, awaiting language review |
+| [zh-Hans](../packages/messages/locales/zh-Hans.json) | 38 / 38 (100%) | Draft translation, awaiting language review |
+| [hi](../packages/messages/locales/hi.json) | 38 / 38 (100%) | Draft translation, awaiting language review |
+| [de](../packages/messages/locales/de.json) | 38 / 38 (100%) | Draft translation, awaiting language review |
+| [fr](../packages/messages/locales/fr.json) | 38 / 38 (100%) | Draft translation, awaiting language review |
+| [es](../packages/messages/locales/es.json) | 38 / 38 (100%) | Draft translation, awaiting language review |
+| [pt-BR](../packages/messages/locales/pt-BR.json) | 38 / 38 (100%) | Draft translation, awaiting language review |
 
-Coverage measures keys and required placeholders against the English source. Each locale loads independently. Components continue to use their current defaults until the localization provider lands.
+Coverage measures keys and required placeholders against the English source. Command Palette renders the selected catalog synchronously on Node. In a browser ESM build with code splitting, English is available immediately and each other language loads on first use. If its chunk cannot load, the palette uses caller labels or English for the rest of that page session. A single-file browser build embeds the catalogs. After editing a catalog, run `node packages/messages/renderer.mjs --write`. The catalog coverage test checks both renderers against the generated source. Data Table uses its locale for searching and sorting on web and native. It accepts translated labels through its `labels` prop. Batch Progress also accepts explicit label and formatting callbacks. A missing or malformed locale falls back to English.

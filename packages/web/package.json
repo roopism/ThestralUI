@@ -7,9 +7,15 @@
     "**/*.css"
   ],
   "files": [
-    "dist"
+    "dist",
+    "src/command-palette/catalogs"
   ],
   "imports": {
+    "#command-palette-catalog": {
+      "types": "./src/command-palette/catalogs/catalog.d.mts",
+      "node": "./src/command-palette/catalogs/server.cjs",
+      "default": "./src/command-palette/catalogs/browser.mjs"
+    },
     "#uld-jsx/jsx-runtime": "./dist/_shared/jsx-runtime.js",
     "#uld-jsx/jsx-dev-runtime": "./dist/_shared/jsx-dev-runtime.js"
   },
