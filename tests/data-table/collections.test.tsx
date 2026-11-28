@@ -49,6 +49,10 @@ test('legacy label dictionaries retain the viewport name with an undefined overr
   rerender(<DataTable {...props} labels={{ ...tableLabels, viewport: undefined }} />);
   expect(viewport().contains(screen.getByRole('table', { name: props.label }))).toBe(true);
   expect(screen.getByRole('searchbox', { name: legacy.search })).toBeTruthy();
+  const name = frenchMessages['dataTable.viewport'];
+  const translated = Object.defineProperty({ ...legacy }, 'viewport', { value: name });
+  rerender(<DataTable {...props} labels={translated} />);
+  expect(screen.getByRole('group', { name }).contains(screen.getByRole('table', { name: props.label }))).toBe(true);
 });
 
 test('retains selected IDs across search and pages and excludes removed records', () => {
