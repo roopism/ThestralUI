@@ -13,7 +13,7 @@ export const Overview: StoryObj<typeof meta> = {
         <code>@ui-lazy-dev / v{webPackage.version}</code>
         <h1>Component library</h1>
         <p>
-          Accessible web components used by Elevate. Explore their forms, interaction states and
+          Accessible web components from ThestralUI. Explore their forms, interaction states and
           keyboard behavior.
         </p>
         <Button tone="secondary" aria-pressed={dark} onClick={() => setDark(!dark)}>

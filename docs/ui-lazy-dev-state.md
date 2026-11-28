@@ -198,6 +198,8 @@ The low-end emulator used the original system image, fingerprint, GPU and profil
 
 ## Local qualification results
 
+- **Public PR #11, 25 November 2026.** The merged commit `29b55c8e4a2ea805c919b625db43e880da396e30` has tree `cf912205489225cccd8d3e1e9fb406df63a260dc`. Its full receipt `44ef679f-3f19-47e4-9641-bb269ecafab6` records 17 of 18 stages passing. Low-end Android press frame p95 was 17.191640, 22.945705 and 26.307537 ms against the 21.841480 ms limit. The separate timing diagnostic recorded 17.139664 ms. All original trials and the failed verdict remain in the full receipt.
+
 **Motion interruption.** The test holds the running animation tracks across the driver round trip, confirms the Playing state and restores their speed before the real Cancel handler. Chromium, Firefox and WebKit passed the focused case. With the same deliberate 1.5-second gap before Cancel, the old Firefox case reported finished and the revised case reported cancelled. The full qualification took 19 min 39 s. GitHub merged `18abc6492` with the qualified tree `9ffb6a500c396993fb12e4f3ff56081c43407394`. The earlier failed docs receipt remains under Owner decisions. Motion test PR (private archive PR #22)
 
 **PR #19 landed at `f9cc4410f5d03f5ff3b45bfc21f278af45bcb318`.** GitHub merged the exact qualified tree `02e2ebf118079048e22d486b21d99b5353ca7ccd`. Its one full run took 32 min 40 s. All 18 stages passed, including 240 browser cases on Linux, the iPhone, and 11 functional scenarios on each Android profile. Linux took 227 s, iPhone 557 s and Android 713 s. The source proposal was archived before branch deletion. GitHub declined the optional commit status and accepted the receipt comment and merge. Pipeline PR (private archive PR #19)
