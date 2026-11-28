@@ -290,7 +290,7 @@ test('landing validates the current integration base, suite roster and qualifica
   const failedId = 'c5f4cabc-94bd-4264-a56e-da7c12d3888d';
   const failed = join(attempts, failedId + '.json');
   writeFileSync(failed, JSON.stringify({ id: failedId, tree, base, mode: 'qualification', status: 'failed' }));
-  assert.throws(() => passing(tree, base, root), /earlier failed qualification/i);
+  assert.equal(passing(tree, base, root), undefined);
   rmSync(failed);
 
   save({ ...receipt, suites: receipt.suites.slice(1) });

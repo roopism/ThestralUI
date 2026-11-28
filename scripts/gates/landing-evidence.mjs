@@ -237,7 +237,7 @@ function budgetErrors(report, limits) {
   return errors;
 }
 
-export function resolveFailure(root, directory, failed, history, tree, base, roster) {
+export function resolveFailure(root, directory, failed, history, tree, base, roster, latest) {
   assert.match(failed.id, uuid);
   const dir = folder(directory, failed.id);
   const manifest = signedManifest(root, base, dir);
@@ -245,7 +245,8 @@ export function resolveFailure(root, directory, failed, history, tree, base, ros
   assert.deepEqual(recorded.row, failed);
   assert.deepEqual(manifest.failed, recorded.ref);
   assert.deepEqual([manifest.schema, manifest.tree, manifest.base, failed.tree, failed.base], [1, tree, base, tree, base]);
-  assert.ok(!existsSync(join(claimFolder(directory, tree), 'duplicate-result')), 'A second diagnostic result bars landing');
+  if (latest?.status !== 'passed')
+    assert.ok(!existsSync(join(claimFolder(directory, tree), 'duplicate-result')), 'A second diagnostic result bars landing');
   const runnerTree = sourceTree(root, failed);
   assert.equal(manifest.runnerTree, runnerTree);
   assert.ok(Object.hasOwn(artifacts, manifest.kind));
@@ -384,6 +385,7 @@ export function resolveFailure(root, directory, failed, history, tree, base, ros
   // This view is only used by landing. Never publish it as a qualification or timing reuse source.
   const verdict = pass ?? { ...failed, status: 'passed', suites: failed.suites.map(s => s.name === suite ?
     { ...s, result: 'passed', reason: 'Timing diagnostic ' + claim.id, durationMs: s.durationMs + diagnostic.end - diagnostic.begin } : s) };
+  if (existsSync(join(claimFolder(directory, tree), 'duplicate-result'))) return { timingFailure };
   return { pass: verdict, diagnostic: claim.id, timingFailure };
 }
 

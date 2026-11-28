@@ -1,4 +1,7 @@
+import { randomUUID } from 'node:crypto';
+import { withLock } from '../../workers/lock.mjs';
 import { recordScopeFailure } from '../../selection/device-observations.mjs';
+import { incomplete, latestAttempt } from '../receipt-history.mjs';
 import { reuseRows } from './preflight.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -94,7 +97,7 @@ export function compareFullRun(directory, fresh, history, disable = disableGroup
 
 function checkDailyReport(root,directory,commit,tree,fresh,path,requireOriginalReceipt) {
   if (!path || !existsSync(path)) return;
-  requireOriginalReceipt(root,fresh,commit);
+  if (fresh.status === 'passed') requireOriginalReceipt(root,fresh,commit);
   assert.deepEqual(fresh.scope,{iphone:true,families:null});
   const groups=Object.keys(readJson(join(root,'tests/acceptance/suite-inputs.json')).groups);
   assert.deepEqual(fresh.suites.map(row=>row.name).sort(),groups.sort());
@@ -107,9 +110,14 @@ function checkDailyReport(root,directory,commit,tree,fresh,path,requireOriginalR
   const expected={commit,tree,attempt:fresh.id,status:fresh.status,comparisons,finished:fresh.finished,
     durationMs:Date.parse(fresh.finished)-Date.parse(fresh.started)};
   assert.deepEqual(readJson(path),expected,'Stored daily report differs from sealed receipt history');
+  return expected;
 }
 
 export async function manualFullRun(root = process.cwd()) {
+  return withLock(root, 'landing', 'Daily full qualification', () => runDaily(root));
+}
+
+async function runDaily(root) {
   const { requireOriginalReceipt } = await import('./runner.mjs');
   const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
   git('fetch', '--no-tags', 'origin', '+refs/heads/feat/enterprise-ui:refs/remotes/origin/feat/enterprise-ui');
@@ -120,40 +128,40 @@ export async function manualFullRun(root = process.cwd()) {
   const directory = join(git('rev-parse', '--path-format=absolute', '--git-common-dir'), 'uld-receipts');
   const before = attempts(directory), oldIds = new Set(before.map(attempt => attempt.id));
   const today = new Date().toDateString();
-  const previous = before.find(row => row.mode === 'qualification' && row.noReuse &&
-    row.base === commit && row.commit === commit && new Date(row.started).toDateString() === today);
-  const existingReport = previous && join(directory,'reuse-shadow',previous.id + '.json');
-  checkDailyReport(root,directory,commit,tree,previous,existingReport,requireOriginalReceipt);
-  if (existingReport && existsSync(existingReport)) {
-    const report = readJson(existingReport);
-    assert.equal(report.attempt,previous.id);
-    assert.equal(report.commit,commit);
-    assert.equal(report.tree,tree);
-    assert.equal(report.status,'passed','Earlier manual full qualification failed');
-    assert.ok(report.comparisons.every(row=>row.agrees),'Earlier manual qualification found a disagreement');
-    console.log('The manual full run for this integration commit is already recorded in ' + existingReport);
-    return report;
+  const folder = join(directory, 'reuse-shadow');
+  const daily = before.filter(row => {
+    if (row.mode !== 'qualification' || !row.noReuse || row.base !== commit || row.commit !== commit) return false;
+    assert.equal(row.tree, tree, 'Inconsistent daily qualification tree');
+    assert.ok(typeof row.started === 'string' && Number.isFinite(Date.parse(row.started)), 'Invalid daily qualification start time');
+    return new Date(row.started).toDateString() === today;
+  });
+  const latest = latestAttempt(daily, directory);
+  let previousReport;
+  for (const previous of daily) {
+    const report = checkDailyReport(root, directory, commit, tree, previous, join(folder, previous.id + '.json'), requireOriginalReceipt);
+    if (previous === latest) previousReport = report;
   }
-  const folder = join(directory,'reuse-shadow');
-  const requests = join(folder,'requests');
-  mkdirSync(requests,{recursive:true,mode:0o700});
-  if (!previous) {
-    const started=new Date();
-    const day=[started.getFullYear(),started.getMonth()+1,started.getDate()].join('-');
-    const path=join(requests,day+'-'+commit+'.json');
-    try { writeFileSync(path,JSON.stringify({commit,tree,started:started.toISOString()})+'\n',{flag:'wx',mode:0o600}); }
-    catch (error) {
-      if (error.code !== 'EEXIST') throw error;
-      throw Error('A daily full run already started for this commit. Inspect its retained attempts in '+directory);
-    }
+  assert.notEqual(latest?.status, 'running', 'The daily qualification has not finished');
+  let fresh = latest?.status === 'passed' ? latest : undefined;
+  let run;
+  if (fresh) assert.ok(!incomplete(fresh, directory), 'Incomplete passing daily qualification');
+  if (fresh && previousReport) {
+    assert.ok(previousReport.comparisons.every(row => row.agrees), 'Earlier manual qualification found a disagreement');
+    return previousReport;
   }
-  // Qualification owns the normal simulator, timing and integration reservations.
-  const run = previous ? null : spawnSync('npm', ['run', 'qualify', '--', '--no-reuse', commit], { cwd: root, stdio: 'inherit' });
-  const after = attempts(directory);
-  const matches = previous ? [previous] : after.filter(row => !oldIds.has(row.id) && row.base === commit && row.commit === commit &&
-    row.tree === tree && row.mode === 'qualification' && row.noReuse);
-  assert.equal(matches.length, 1, 'Could not identify the exact full qualification attempt');
-  const fresh = matches[0];
+  if (!fresh) {
+    const requests = join(folder, 'requests');
+    mkdirSync(requests, { recursive: true, mode: 0o700 });
+    writeFileSync(join(requests, randomUUID() + '.json'), JSON.stringify({ commit, tree, started: new Date().toISOString() }) + '\n',
+      { flag: 'wx', mode: 0o600 });
+    // Qualification owns the normal simulator, timing and integration reservations.
+    run = spawnSync('npm', ['run', 'qualify', '--', '--no-reuse', commit], { cwd: root, stdio: 'inherit' });
+    if (run.error) throw run.error;
+    const matches = attempts(directory).filter(row => !oldIds.has(row.id) && row.base === commit && row.commit === commit &&
+      row.tree === tree && row.mode === 'qualification' && row.noReuse);
+    assert.equal(matches.length, 1, 'Could not identify the exact full qualification attempt');
+    fresh = matches[0];
+  }
   assert.deepEqual(fresh.scope,{iphone:true,families:null},'Daily qualification must include the full device roster');
   const groups=Object.keys(readJson(join(root,'tests/acceptance/suite-inputs.json')).groups);
   assert.deepEqual(fresh.suites.map(row=>row.name).sort(),groups.sort());
@@ -164,9 +172,9 @@ export async function manualFullRun(root = process.cwd()) {
   const comparisons=compareFullRun(directory,fresh,earlier);
   const report={commit,tree,attempt:fresh.id,status:fresh.status,comparisons,finished:fresh.finished,
     durationMs:Date.parse(fresh.finished)-Date.parse(fresh.started)};
+  mkdirSync(folder, { recursive: true, mode: 0o700 });
   writeFileSync(join(folder,fresh.id+'.json'),JSON.stringify(report,null,2)+'\n',{flag:'wx',mode:0o600});
   console.log(JSON.stringify(report, null, 2));
-  if (run?.error) throw run.error;
   if (run) assert.equal(run.status, 0, 'Daily full qualification failed');
   assert.equal(fresh.status, 'passed');
   assert.ok(comparisons.every(row => row.agrees), 'Fresh and reused qualifications disagree');

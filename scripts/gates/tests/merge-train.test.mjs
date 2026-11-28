@@ -164,7 +164,7 @@ test('the publication readback rejects a moved head before the atomic integratio
   assert.equal(git(f.server, 'rev-parse', 'refs/heads/' + f.members[0].branch), f.members[0].head);
 });
 
-test('an earlier failed solo qualification bars a train member before the final run', async t => {
+test('an earlier failed solo qualification stays recorded while the train qualifies', async t => {
   const f = fixture(t);
   const m = f.members[1];
   const { root } = f.context;
@@ -179,8 +179,9 @@ test('an earlier failed solo qualification bars a train member before the final 
   const initial = startAttempt(root, f.context.directory, oldBase, oldMerge, tree, 'qualification');
   failUnfinishedAttempt(f.context.directory, initial, Error('Fixture check failed'));
   f.context.history = (tree, base, commit) => requireProposalHistory(tree, base, f.context.directory, { root: f.context.root, commit });
-  await assert.rejects(createTrain(f.context, f.numbers), /earlier failed qualification/);
-  assert.equal(f.calls().full, 0);
+  assert.equal((await createTrain(f.context, f.numbers)).status, 'passed');
+  assert.equal(f.calls().full, 1);
+  assert.equal(JSON.parse(readFileSync(join(f.context.directory, 'attempts', initial.id + '.json'))).status, 'failed');
   assert.equal(f.tip(), f.base);
 });
 
@@ -244,6 +245,10 @@ test('a failed train keeps its immutable receipt before invoking prefix diagnost
   await assert.rejects(createTrain(f.context, f.numbers), /Train failed/);
   await assert.rejects(createTrain(f.context, f.numbers), /Train failed/);
   assert.equal(run, 1);
+  const first = attempt;
+  assert.throws(() => f.context.qualify({ base: first.base, finalCommit: first.commit, finalTree: first.tree }), /Fixture suite failed/);
+  assert.notEqual(attempt.id, first.id);
+  assert.equal(run, 2);
   assert.equal(diagnoses, 2);
   assert.equal(f.tip(), f.base);
 });

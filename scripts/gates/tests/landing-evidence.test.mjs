@@ -5,6 +5,7 @@ import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'no
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { passing, required } from '../../land.mjs';
+import { exactTrainQualification } from '../../train.mjs';
 import { evidenceManifest, finishDiagnostic, reserveDiagnostic } from '../landing-evidence.mjs';
 import { summarizeTrials } from '../../../tests/android/frame-budget.mjs';
 
@@ -195,12 +196,16 @@ test('base failure without an unchanged-base receipt is refused', t => {
   assert.throws(() => f.check(), /ENOENT/);
 });
 
-test('contention with one quiet timing-only rerun can land while the receipt stays failed', t => {
+test('a quiet timing diagnostic preserves the failure and still needs a full pass', t => {
   const f = fixture(t, android);
   const { claim } = f.contention();
+  assert.equal(f.check(), undefined);
+  f.save(f.pass);
   const r = f.check();
   assert.equal(r.status, 'passed');
   assert.equal(r.landingEvidence[0].diagnostic, claim.id);
+  const train = { finalTree: f.tree, finalCommit: f.commit, base: f.base };
+  assert.deepEqual(exactTrainQualification(f.root, f.directory, train, passing), r);
   assert.equal(JSON.parse(readFileSync(join(f.directory, f.tree + '.json'))).status, 'failed');
 });
 
@@ -217,6 +222,9 @@ test('a second diagnostic reservation or result cannot replace the first', t => 
   finishDiagnostic(f.directory, f.tree, claim.id, asJson(diagnostic));
   assert.throws(() => finishDiagnostic(f.directory, f.tree, claim.id, asJson({ ...diagnostic, end: diagnostic.end + 1 })), /second diagnostic/);
   assert.throws(() => f.check(), /second diagnostic/);
+  f.save(f.pass);
+  assert.equal(f.check().id, f.pass.id);
+  assert.deepEqual(f.check().landingEvidence, [{ failed: f.fail.id }]);
 });
 
 test('a non-timing suite claiming contention is refused', t => {
@@ -246,13 +254,14 @@ test('a changed timing limit in a signed rerun is refused', t => {
   assert.throws(() => f.check());
 });
 
-test('an ordinary failure still blocks a later passing receipt', t => {
+test('a later passing qualification lands and the original failure stays in history', t => {
   const f = fixture(t);
   f.save(f.pass);
-  assert.throws(() => f.check(), /earlier failed qualification/);
+  assert.deepEqual(f.check(), f.pass);
+  assert.deepEqual(JSON.parse(readFileSync(join(f.directory, 'attempts', f.fail.id + '.json'))), f.fail);
 });
 
-test('a second timing failure in the same tree permanently bars a full pass', t => {
+test('a later full pass supersedes both recorded timing failures', t => {
   const f = fixture(t, android);
   f.contention();
   const second = { ...f.fail, id: randomUUID() };
@@ -264,7 +273,8 @@ test('a second timing failure in the same tree permanently bars a full pass', t 
   for (const name of ['failed-errors.json', 'base-errors.json'])
     copyFileSync(join(f.artifactDir, 'failed-errors.json'), join(dir, name));
   f.sign('base', [f.reference.id, f.pass.id], f.key, {}, second.id);
-  assert.throws(() => f.check(), /second timing failure/);
+  assert.equal(f.check().id, f.pass.id);
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, '..', '..', second.id + '.json'))), second);
 });
 
 test('signed evidence cannot cross trees, bases, runner versions or receipt IDs', t => {
@@ -295,6 +305,8 @@ test('missing Android functional coverage cannot be repaired by a timing rerun',
 test('the Mac timing suite can recover only a numeric timing violation', t => {
   const f = fixture(t, mac);
   f.contention();
+  assert.equal(f.check(), undefined);
+  f.save(f.pass);
   assert.equal(f.check().status, 'passed');
 });
 
@@ -404,4 +416,19 @@ test('signed failure review accepts the original verified device scope and requi
   f.save(f.fail, true);
   f.baseEvidence();
   assert.throws(() => f.check(), /verified device scope/);
+});
+
+test('a latest failed qualification blocks landing an earlier complete pass', t => {
+  const f = fixture(t);
+  f.save(f.pass, true);
+  f.save({ ...f.fail, started: f.pass.finished, finished: iso(Date.parse(f.pass.finished) + 1) });
+  assert.equal(f.check(), undefined);
+  f.save({ ...f.fail, finished: f.pass.finished });
+  assert.equal(f.check(), undefined);
+  f.save({ ...f.fail, started: undefined, finished: undefined });
+  assert.equal(f.check(), undefined);
+  f.save({ ...f.fail, finished: 'unknown' });
+  assert.throws(() => f.check(), /qualification timestamp/);
+  f.save({ ...f.fail, started: f.pass.finished, finished: f.fail.finished });
+  assert.throws(() => f.check(), /qualification time order/);
 });

@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { assertAuditResult, disabledGroups, disableGroup, selectAudit } from '../reuse/audit.mjs';
-import { compareFullRun, sealedClaims } from '../reuse/full-run.mjs';
+import { compareFullRun, manualFullRun, sealedClaims } from '../reuse/full-run.mjs';
+import { sealReceipt } from '../reuse/runner.mjs';
 import { reusePolicyIssues } from '../reuse/strength.mjs';
 import { fixtureGit, isolateFixtureProcess } from './fixtures/hermetic-git.mjs';
 
@@ -47,7 +49,7 @@ test('a disagreeing audit disables its group and preserves the evidence for the 
   assert.throws(() => disabledGroups(dir),/Damaged disagreement/);
 });
 
-test('a manual full run compares prior reused fingerprints across trees and records each disagreement', t => {
+test('a manual full run compares prior reused fingerprints across trees and records each disagreement', async t => {
   const dir = join(scratch(t),'uld-receipts'), match = '0a'.repeat(32), other = '00'.repeat(32);
   const claim = {id:'prior',mode:'qualification',status:'passed',suites:[
     {name:'Catalog build',fingerprint:match,result:'reused',reusedFrom:'source'},
@@ -71,6 +73,28 @@ test('a manual full run compares prior reused fingerprints across trees and reco
   assert.deepEqual(disabledGroups(dir),['Catalog build']);
   assert.throws(() => compareFullRun(dir,{...fresh,noReuse:false},[claim]));
   assert.throws(() => compareFullRun(dir,{...fresh,suites:claim.suites},[claim]),/reused suite/);
+
+  const checkout = scratch(t);
+  const dailyGit = (...args) => fixtureGit(checkout, args);
+  dailyGit('init', '--quiet', '--template=', '-b', 'feat/enterprise-ui');
+  mkdirSync(join(checkout, 'tests/acceptance'), { recursive: true });
+  writeFileSync(join(checkout, 'tests/acceptance/suite-inputs.json'), JSON.stringify({ groups: { 'Catalog build': {} } }));
+  dailyGit('add', 'tests');
+  dailyGit('commit', '--quiet', '-m', 'Daily fixture');
+  dailyGit('remote', 'add', 'origin', '.');
+  const commit = dailyGit('rev-parse', 'HEAD'), tree = dailyGit('rev-parse', 'HEAD^{tree}');
+  const now = new Date().toISOString();
+  const receipt = { schema: 1, reuseSchema: 1, id: randomUUID(), commit, base: commit, tree, started: now, finished: now,
+    noReuse: true, mode: 'qualification', status: 'passed', scope: { iphone: true, families: null },
+    suites: [{ name: 'Catalog build', result: 'passed' }], androidTiming: { result: 'timing measured' } };
+  const directory = join(checkout, '.git/uld-receipts');
+  mkdirSync(join(directory, 'attempts'), { recursive: true });
+  sealReceipt(checkout, receipt);
+  writeFileSync(join(directory, 'attempts', receipt.id + '.json'), JSON.stringify(receipt));
+  const report = await manualFullRun(checkout);
+  assert.equal(report.attempt, receipt.id);
+  assert.deepEqual(await manualFullRun(checkout), report);
+  assert.equal(existsSync(join(directory, 'reuse-shadow/requests')), false);
 });
 
 test('trusted reuse guardrails reject relaxed limits, removed facts and disabled sandbox or canary code', t => {

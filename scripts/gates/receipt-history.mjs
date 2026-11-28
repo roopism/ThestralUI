@@ -7,14 +7,16 @@ import { isDeepStrictEqual } from 'node:util';
 import { resolveFailure } from './landing-evidence.mjs';
 import { execFileSync } from 'node:child_process';
 import { existsSync, linkSync, readFileSync, readdirSync } from 'node:fs';
+import { hostname } from 'node:os';
 import { join } from 'node:path';
+import { processInfo } from '../workers/timing-reservation.mjs';
 
 const oid = /^[a-f0-9]{40}$/;
 const attemptFile = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}\.json$/i;
 const read = (path) => JSON.parse(readFileSync(path, 'utf8'));
 
 // Use the recorded merge and base, even after a proposal ref has moved or been removed.
-export function qualificationIdentity(root, base, commit, tree) {
+export function qualificationIdentity(root, base, commit, tree, recordOwner = true) {
   for (const id of [base, commit, tree]) assert.match(id, oid, 'Expected a full qualification Git object ID');
   const options = { cwd: root, encoding: 'utf8', env: { ...process.env, GIT_NO_REPLACE_OBJECTS: '1' } };
   const git = (...args) => execFileSync('git', args, options).trim();
@@ -28,7 +30,7 @@ export function qualificationIdentity(root, base, commit, tree) {
   const result = execFileSync('/bin/bash', ['-o', 'pipefail', '-c', command, 'qualification-patch', base, tree], options).trim();
   const patchId = result ? result.split(' ')[0] : null;
   if (patchId !== null) assert.match(patchId, oid, 'Unexpected Git patch identity');
-  return { head, patchId };
+  return { head, patchId, ...(recordOwner && { owner: { host: hostname(), pid: process.pid, birth: processInfo(process.pid).birth } }) };
 }
 
 // Publish the first completed attempt atomically. All later attempts keep their own files.
@@ -42,7 +44,7 @@ export function publishFirstReceipt(directory, tree, id) {
   }
 }
 
-function incomplete(attempt, directory) {
+export function incomplete(attempt, directory) {
   if (Array.isArray(attempt.suites) && reuseRows(attempt).some(row => row?.result === 'reused')) {
     try { attempt = projectStoredPasses(directory, attempt); }
     catch { return true; }
@@ -59,7 +61,7 @@ export function relatedHistory(directory, tree, first, root, target) {
   const identities = new Map();
   function identify(attempt) {
     const key = [attempt.base, attempt.commit, attempt.tree].join('/');
-    if (!identities.has(key)) identities.set(key, qualificationIdentity(root, attempt.base, attempt.commit, attempt.tree));
+    if (!identities.has(key)) identities.set(key, qualificationIdentity(root, attempt.base, attempt.commit, attempt.tree, false));
     const identity = identities.get(key);
     for (const field of ['head', 'patchId']) {
       if (Object.hasOwn(attempt, field)) assert.equal(attempt[field], identity[field], 'Inconsistent receipt ' + field);
@@ -69,7 +71,7 @@ export function relatedHistory(directory, tree, first, root, target) {
   const proposed = target && identify(target);
   function include(attempt) {
     if (attempt.tree === tree) {
-      if (proposed && !incomplete(attempt, directory)) identify(attempt);
+      if (proposed && (attempt.base === target.base || !incomplete(attempt, directory))) identify(attempt);
       records.push(attempt);
     } else if (proposed && incomplete(attempt, directory)) {
       const earlier = identify(attempt);
@@ -78,7 +80,7 @@ export function relatedHistory(directory, tree, first, root, target) {
   }
   if (first) {
     assert.equal(first.tree, tree, 'Inconsistent published qualification tree');
-    if (proposed && !incomplete(first, directory)) identify(first);
+    if (proposed && (first.base === target.base || !incomplete(first, directory))) identify(first);
   }
   if (!existsSync(directory)) return records;
   for (const name of readdirSync(directory).filter(name => /^[a-f0-9]{40}\.json$/.test(name) && name !== tree + '.json')) {
@@ -112,71 +114,76 @@ export function treeHistory(directory, tree, first) {
   return records;
 }
 
-function requireReviewedFailures(directory, tree, history, trustedLedger) {
-  const failed = history.filter((attempt) => attempt.status === 'failed');
-  for (const attempt of failed) {
-    const id = attempt.id;
-    const filename = id + '.json';
-    const decision = join(directory, '..', 'uld-delivery', 'owner-decisions', 'failed-attempts', filename);
-    if (attemptFile.test(filename) && existsSync(decision)) {
-      const record = read(decision);
-      const statement = 'Owner permits landing tree ' + tree + ' after failed qualification ' + id + '.';
-      if (
-        record.tree === tree &&
-        record.attempt === id &&
-        record.decision === statement &&
-        trustedLedger()
-          .split('\n')
-          .includes('- ' + statement)
-      )
-        continue;
+export function exactAttempts(history, tree, base, commit) {
+  const copies = new Map();
+  return history.filter(row => {
+    if (row.id && copies.has(row.id)) {
+      assert.deepEqual(row, copies.get(row.id), 'Conflicting copies of a qualification attempt');
+      return false;
     }
-    throw Error('An earlier failed qualification for this tree requires a named owner decision: ' + id);
+    copies.set(row.id, row);
+    if (row.tree !== tree || row.base !== base) return false;
+    if (commit === undefined) return true;
+    assert.match(row.commit, oid, 'Missing qualification commit');
+    return row.commit === commit;
+  });
+}
+
+export function latestAttempt(history, directory) {
+  function timestamp(value) {
+    if (value === undefined) return;
+    const time = Date.parse(value);
+    assert.ok(typeof value === 'string' && Number.isFinite(time), 'Invalid qualification timestamp');
+    return time;
   }
+  let latest, active, processes;
+  for (let row of history) {
+    if (row.status === 'running') {
+      processes ??= execFileSync('ps', ['-ww', '-A', '-o', 'pid=,lstart=,command='], {
+        encoding: 'utf8', env: { ...process.env, LC_ALL: 'C', TZ: 'UTC' }, maxBuffer: 64 * 1024 * 1024,
+      }).trim().split('\n');
+      const owner = row.owner;
+      if (owner) assert.ok(typeof owner.host === 'string' && owner.host.length && Number.isSafeInteger(owner.pid) && owner.pid > 0 &&
+        typeof owner.birth === 'string' && Number.isFinite(Date.parse(owner.birth)), 'Invalid qualification process owner');
+      // A detached suite can outlive the launcher. Its argv carries the exact attempt UUID.
+      const suite = [row.base, row.commit, row.mode, row.id].join(' ');
+      const live = owner && owner.host !== hostname() || processes.some(line => {
+        const match = /^\s*(\d+)\s+(.*)$/.exec(line);
+        return owner && Number(match?.[1]) === owner.pid && match[2].startsWith(owner.birth + ' ') ||
+          /[\s/]scripts\/gates\/local-run\.mjs /.test(line) && (line + ' ').includes(' ' + suite + ' ') ||
+          !owner && /[\s/]scripts\/qualify\.mjs /.test(line) && (line + ' ').includes(' ' + row.commit + ' ');
+      });
+      if (live) active = row;
+      else if (attemptFile.test(row.id + '.json')) {
+        // An exiting owner may have published its verdict since history was read.
+        const path = join(directory, 'attempts', row.id + '.json');
+        if (existsSync(path)) {
+          const current = read(path);
+          assert.deepEqual([current.id, current.tree, current.base, current.commit], [row.id, row.tree, row.base, row.commit]);
+          if (current.status !== 'running') row = current;
+        }
+      }
+    }
+    const started = timestamp(row.started), finished = timestamp(row.finished);
+    assert.ok(started === undefined || finished === undefined || started <= finished, 'Invalid qualification time order');
+    const failed = incomplete(row, directory);
+    // An undated legacy pass cannot clear a failure. An undated failure cannot be superseded.
+    const time = finished ?? started ?? (failed ? Infinity : -Infinity);
+    if (!latest || time > latest.time || time === latest.time && failed && !latest.failed)
+      latest = { row, time, failed };
+  }
+  return active ?? latest?.row;
 }
 
-function rejectIncompleteAttempts(directory, tree, history) {
-  const failed = history.find(attempt => incomplete(attempt, directory));
-  if (failed) throw Error('An earlier failed qualification for this tree, PR head or patch prevents landing ' + tree +
-    '. See ' + join(directory, 'attempts', failed.id + '.json'));
-}
-
-// A published first receipt may also appear in attempts. Conflicting copies are never
-// interchangeable. Keep the existing rejection and historical decision diagnostics for
-// every attempt without an exact, independently authenticated resolution.
-function requireEligibleHistory(directory, tree, history, trustedLedger, context) {
-  const unresolved = [];
+export function reviewedEvidence(directory, tree, history, context) {
   const reviewed = new Map();
-  let timingFailures = 0;
-  for (const row of history.filter(row => incomplete(row, directory))) {
-    if (reviewed.has(row.id)) {
-      assert.deepEqual(row, reviewed.get(row.id).failed, 'Conflicting copies of a qualification attempt');
-      continue;
-    }
-    if (!context || row.status !== 'failed' || row.tree !== tree || row.base !== context.base ||
-        !attemptFile.test(row.id + '.json') ||
-        !existsSync(join(directory, 'attempts', row.id + '-evidence', 'landing', 'manifest.json'))) {
-      unresolved.push(row);
-      continue;
-    }
-    const result = resolveFailure(context.root, directory, row, history, tree, context.base, context.roster);
+  for (const row of history) {
+    if (row.status !== 'failed' || row.tree !== tree || row.base !== context.base ||
+        !attemptFile.test(row.id + '.json') || reviewed.has(row.id) ||
+        !existsSync(join(directory, 'attempts', row.id + '-evidence', 'landing', 'manifest.json'))) continue;
     assert.ok(history.every(copy => copy.id !== row.id || isDeepStrictEqual(copy, row)), 'Inconsistent failed receipt');
-    if (result.timingFailure) timingFailures++;
-    reviewed.set(row.id, { ...result, failed: row });
+    const { diagnostic } = resolveFailure(context.root, directory, row, history, tree, context.base, context.roster, context.latest);
+    reviewed.set(row.id, { failed: row.id, ...(diagnostic && { diagnostic }) });
   }
-  assert.ok(timingFailures <= 1, 'A second timing failure permanently prevents landing this tree');
-  try {
-    requireReviewedFailures(directory, tree, unresolved, trustedLedger);
-  } finally {
-    rejectIncompleteAttempts(directory, tree, unresolved);
-  }
-  if (!reviewed.size) return history.filter(item => item.status === 'passed').map(receipt => ({ receipt }));
-  const evidence = [...reviewed.values()].map(({ failed, diagnostic }) =>
-    ({ failed: failed.id, ...(diagnostic && { diagnostic }) }));
-  return [...reviewed.values()].map(({ pass, failed }) => ({
-    receipt: pass.id === failed.id ? failed : pass,
-    verdict: pass,
-    evidence,
-  }));
+  return [...reviewed.values()];
 }
-export { requireEligibleHistory as requireReviewedFailures };

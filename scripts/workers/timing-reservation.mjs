@@ -10,7 +10,7 @@ const scope = new AsyncLocalStorage();
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const modes = ['activity', 'measurement'];
 
-function processInfo(pid) {
+export function processInfo(pid) {
   const raw = execFileSync('ps', ['-p', String(pid), '-o', 'ppid=,pgid=,lstart='], {
     encoding: 'utf8', env: { ...process.env, LC_ALL: 'C', TZ: 'UTC' },
   }).trim();
