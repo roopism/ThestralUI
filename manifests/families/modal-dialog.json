@@ -273,7 +273,8 @@
       "tests/modal-dialog/native.test.cjs | the theme supplies native modal colors, spacing and corners without changing its behavior",
       "tests/modal-dialog/native.test.cjs | Android restores nested windows in order and dismisses the keyboard before the dialog",
       "tests/modal-dialog/native.test.cjs | a newer presentation cancels a pending accessibility focus return from the previous close",
-      "tests/native/catalog-presentation.test.cjs | gallery surfaces and readbacks pair semantic colors, preserve native text props and lay out horizontal boundaries"
+      "tests/native/catalog-presentation.test.cjs | gallery surfaces and readbacks pair semantic colors, preserve native text props and lay out horizontal boundaries",
+      "tests/modal-dialog/native.test.cjs | dark scoped controls keep their palette inside a dialog on a light device"
     ],
     "visual": [
       "modal-dialog/modal-dialog.visual.ts | modal dialog light phone",

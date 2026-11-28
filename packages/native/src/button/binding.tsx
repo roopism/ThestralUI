@@ -1,8 +1,11 @@
 import { type ComponentRef, type Ref, type ReactElement, useRef, useEffect, useState } from "react";
 import { type PressableProps, type StyleProp, type ViewStyle, type TextStyle, View, useColorScheme, useAnimatedValue, AccessibilityInfo, ActivityIndicator, Animated, Platform, Pressable, Text } from "react-native";
 import { tokens } from "@ui-lazy-dev/tokens";
+import type { ResolvedTokens } from "@ui-lazy-dev/tokens/modes";
 import { NativePressTarget } from "./press-target.js";
 export interface ButtonProps {
+  /** Tokens resolved for the surrounding theme. Defaults to the device scheme. */
+  theme?: ResolvedTokens;
   label: string;
   size?: 'sm' | 'md' | 'lg';
   /** A decorative icon replacing visible text. The label remains the accessible name. */
@@ -72,6 +75,7 @@ function decorativeIcon(graphic: ReactElement, testID?: string, hidden = false) 
   );
 }
 export function Button({
+  theme,
   label,
   testID,
   size,
@@ -91,8 +95,9 @@ export function Button({
   pressableStyle,
   labelStyle,
 }: ButtonProps) {
-  const dark = useColorScheme() === 'dark';
-  const colors = dark ? tokens.dark : tokens.light;
+  const scheme = useColorScheme();
+  const colors = theme?.color ?? (scheme === 'dark' ? tokens.dark : tokens.light);
+  const layout = theme ?? tokens;
   const scale = useAnimatedValue(1);
   const animate = useRef(false);
   const [highlighted, setHighlighted] = useState(false);
@@ -129,8 +134,8 @@ export function Button({
     if (Platform.OS === 'ios') setHighlighted(feedback && pressed);
     if (animate.current) {
       Animated.timing(scale, {
-        toValue: pressed ? tokens.motion.pressScale : 1,
-        duration: tokens.motion.pressDuration,
+        toValue: pressed ? layout.motion.pressScale : 1,
+        duration: layout.motion.pressDuration,
         useNativeDriver: true,
       }).start();
     }
@@ -140,17 +145,17 @@ export function Button({
   const link = tone === 'link';
   const quiet = tone === 'ghost' || link;
   const labelColor = primary || danger
-    ? dark ? tokens.dark.onAccent : tokens.light.onAccent
+    ? colors.onAccent
     : link
-      ? dark ? tokens.dark.accent : tokens.light.accent
-      : dark ? tokens.dark.text : tokens.light.text;
-  const target = size === 'lg' ? tokens.density.largeTarget : tokens.density.coarseTarget;
+      ? colors.accent
+      : colors.text;
+  const target = size === 'lg' ? layout.density.largeTarget : layout.density.coarseTarget;
   const horizontalPadding =
     size === 'sm'
-      ? tokens.space.spaceSm
+      ? layout.space.spaceSm
       : size === 'lg'
-        ? tokens.space.spaceLg
-        : tokens.space.spaceMd;
+        ? layout.space.spaceLg
+        : layout.space.spaceMd;
   const showBusyIndicator = busy && !unstyled;
   const part = (name: string) => testID && testID + '.' + name;
   return (
@@ -171,30 +176,30 @@ export function Button({
                 alignItems: 'center',
                 justifyContent: 'center',
                 ...(startIcon || endIcon
-                  ? { flexDirection: 'row', gap: tokens.space.spaceSm }
+                  ? { flexDirection: 'row', gap: layout.space.spaceSm }
                   : {}),
                 minHeight: target,
                 minWidth: target,
                 ...(icon ? { width: target, height: target } : {}),
                 paddingHorizontal: icon ? 0 : horizontalPadding,
-                paddingVertical: tokens.size.gap,
-                borderRadius: tokens.size.radius,
+                paddingVertical: layout.size.gap,
+                borderRadius: layout.size.radius,
                 borderWidth: 1,
                 borderColor: primary
                   ? colors.accent
                   : danger
-                    ? dark ? tokens.dark.danger : tokens.light.danger
+                    ? colors.danger
                     : quiet
                       ? 'transparent'
                       : colors.border,
                 backgroundColor: primary
                   ? colors.accent
                   : danger
-                    ? dark ? tokens.dark.danger : tokens.light.danger
+                    ? colors.danger
                     : quiet
                       ? 'transparent'
                       : colors.surface,
-                opacity: highlighted ? tokens.motion.pressOpacity : disabled ? 0.62 : 1,
+                opacity: highlighted ? layout.motion.pressOpacity : disabled ? 0.62 : 1,
               }),
         }, pressableStyle]}
       >
@@ -230,8 +235,8 @@ export function Button({
           >
             {showBusyIndicator && (reduceMotion ? (
               <View testID={part('busy-static')} style={{
-                alignSelf: 'center', width: tokens.space.spaceMd, height: tokens.space.spaceMd,
-                borderWidth: tokens.shape.indicatorStroke, borderRadius: tokens.shape.radiusLg,
+                alignSelf: 'center', width: layout.space.spaceMd, height: layout.space.spaceMd,
+                borderWidth: layout.shape.indicatorStroke, borderRadius: layout.shape.radiusLg,
                 borderColor: labelColor,
               }} />
             ) : <ActivityIndicator color={labelColor} />)}

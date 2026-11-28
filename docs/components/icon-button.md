@@ -91,6 +91,8 @@ Use among named toolbar actions or beside a text field. The button alone owns ac
 
 Both bindings require a localized `label`. Web uses `children` for the graphic and forwards Button props and its button ref. Native requires `icon` and `onPress` and inherits the native text-button size, tone, busy and disabled props. Native's dedicated icon-only binding omits startIcon/endIcon.
 
+The native component accepts a resolved `theme` for its scope. When omitted, its colors follow the device color scheme.
+
 | Export | Prop | Type | Default | Ownership | Ref target |
 | --- | --- | --- | --- | --- | --- |
 | `primitives:IconButton` | `busy` | `boolean \| undefined` | Unspecified | Caller input | — |
@@ -121,6 +123,7 @@ Both bindings require a localized `label`. Web uses `children` for the graphic a
 | `native:IconButton` | `size` | `"sm" \| "md" \| "lg" \| undefined` | Unspecified | Caller input | — |
 | `native:IconButton` | `style` | `import("react-native").StyleProp<import("react-native").ViewStyle> \| undefined` | Unspecified | Caller input | — |
 | `native:IconButton` | `testID` | `string \| undefined` | Unspecified | Caller input | — |
+| `native:IconButton` | `theme` | `import("@ui-lazy-dev/tokens/modes").ResolvedTokens \| undefined` | Unspecified | Caller input | — |
 | `native:IconButton` | `tone` | `"primary" \| "secondary" \| "ghost" \| "danger" \| "link" \| undefined` | Unspecified | Caller input | — |
 | `native:IconButton` | `unstyled` | `boolean \| undefined` | Unspecified | Caller input | — |
 
