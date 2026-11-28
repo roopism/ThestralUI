@@ -193,7 +193,8 @@ test.each(['resolves', 'rejects'])('a save that %s leaves focus in the search fi
 });
 
 test('an invalid table locale falls back for labels, sorting and search', () => {
-  render(<DataTable {...props} locale="en_US" defaultSort={{ column: 'name', ascending: true }} />);
+  render(<DataTable {...props} data-testid="queue" locale="en_US" defaultSort={{ column: 'name', ascending: true }} />);
+  expect(screen.getByTestId('queue').hasAttribute('locale')).toBe(false);
   fireEvent.change(screen.getByRole('searchbox', { name: 'Search records' }), { target: { value: 'BETA' } });
   expect(screen.getByText('Beta')).toBeTruthy();
 });

@@ -154,13 +154,13 @@ export function EditableCell<R extends { id: string }>({
   );
 }
 /** A semantic table with local collection processing or explicit server-owned pages. */
-export function DataTable<R extends { id: string }>({
-  label, rows, columns, getRowLabel, locale, labels: overrides, pageSize, bulkAction,
-  defaultSort, server, selectedIds, defaultSelectedIds, onSelectionChange, onSearchChange, onSortChange, onPageChange,
-  unstyled, layout = 'table', size, loading, error, toolbar, emptyState, readOnly, disabled, className, ...host
-}: DataTableProps<R>) {
-  const model = useDataTable({ rows, columns, locale, pageSize, defaultSort, server, selectedIds,
-    defaultSelectedIds, onSelectionChange, onSearchChange, onSortChange, onPageChange });
+export function DataTable<R extends { id: string }>(props: DataTableProps<R>) {
+  const model = useDataTable(props);
+  const {
+    label, rows, columns, getRowLabel, locale, labels: overrides, pageSize, bulkAction,
+    defaultSort, server, selectedIds, defaultSelectedIds, onSelectionChange, onSearchChange, onSortChange, onPageChange,
+    unstyled, layout = 'table', size, loading, error, toolbar, emptyState, readOnly, disabled, className, ...host
+  } = props;
   const { state, visible, pages, selected } = model;
   const labels = { ...english, ...overrides, viewport: overrides?.viewport ?? english.viewport };
   const id = useId();
